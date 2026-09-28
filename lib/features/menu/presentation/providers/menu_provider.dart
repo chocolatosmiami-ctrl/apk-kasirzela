@@ -11,6 +11,15 @@ class MenuProvider extends ChangeNotifier {
   bool _isLoading = false;
   int? _selectedCategoryId;
 
+  // ── Stock-tracking state (diset oleh syncStockToday) ──────
+  /// true setelah syncStockToday pertama kali selesai (berhasil atau gagal)
+  bool _stockLoadDone = false;
+  bool get stockLoadDone => _stockLoadDone;
+
+  /// true jika hari ini minimal 1 menu punya data stok (has_stock = 1)
+  bool get anyStockConfiguredToday =>
+      _menuItems.any((m) => m.hasStock);
+
   List<CategoryModel> get categories => _categories;
   List<MenuItemModel> get menuItems => _menuItems;
   bool get isLoading => _isLoading;
@@ -22,6 +31,30 @@ class MenuProvider extends ChangeNotifier {
   }
 
   List<MenuItemModel> get activeMenuItems => _menuItems.where((item) => item.isActive).toList();
+
+  // ── Stock helper methods (dipakai oleh _MenuCard di cashier_screen) ──
+
+  /// true jika menu ini diblokir karena stok habis hari ini
+  /// (has_stock = 1 AND stock = 0)
+  bool isMenuBlocked(int menuItemId) {
+    final item = _menuItems.where((m) => m.id == menuItemId).firstOrNull;
+    if (item == null) return false;
+    return item.hasStock && item.stock <= 0;
+  }
+
+  /// Kembalikan stok sisa hari ini, atau null jika menu tidak dikontrol stok
+  double? getEffectiveStockSisa(int menuItemId) {
+    final item = _menuItems.where((m) => m.id == menuItemId).firstOrNull;
+    if (item == null || !item.hasStock) return null;
+    return item.stock.toDouble();
+  }
+
+  /// true jika menu ini sudah di-set stok hari ini (has_stock = 1)
+  bool isMenuStockConfigured(int menuItemId) {
+    final item = _menuItems.where((m) => m.id == menuItemId).firstOrNull;
+    if (item == null) return false;
+    return item.hasStock;
+  }
 
   Future<void> loadData() async {
     debugPrint('📊 [MENU] <void> loadData called — isReordering=$_isReordering');
@@ -289,10 +322,13 @@ class MenuProvider extends ChangeNotifier {
 
       _menuItems = results.map((e) => MenuItemModel.fromMap(e)).toList();
       debugPrint('📦 [STOCK] ✅ syncStockToday selesai, ${_menuItems.length} menu dimuat ulang');
+      _stockLoadDone = true;
       notifyListeners();
     } catch (e) {
       debugPrint('📦 [STOCK] syncStockToday error: $e');
       // Non-fatal: kasir tetap bisa transaksi meski sync stok gagal
+      _stockLoadDone = true;
+      notifyListeners();
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/utils/app_constants.dart';
+import '../../../../core/database/database_helper.dart';
 
 class BahanBakuModel {
   final String id;         // master_bahan_baku.id
@@ -54,6 +55,8 @@ class InventoryProvider extends ChangeNotifier {
   String _branchId = '';
   String _userName = '';
 
+  /// Getter sync — hanya dipakai untuk kompatibilitas lama.
+  /// Gunakan getUnavailableMenuIds() (async) untuk hasil akurat.
   List<int> get unavailableMenuIds => [];
 
   // ── Load: master_bahan_baku + menu_stock hari ini ─────────
@@ -293,7 +296,57 @@ class InventoryProvider extends ChangeNotifier {
   Future<bool> unlinkIngredient(dynamic id) async => false;
   Future<void> deductIngredients(int id, int qty) async {}
   Future<bool> deductStockByMenuName(String n, double q) async => false;
-  Future<List<int>> getUnavailableMenuIds() async => [];
+  /// Kembalikan list ID menu item yang TIDAK BISA dipesan karena bahan bakunya habis.
+  ///
+  /// Cara kerja:
+  /// 1. Ambil semua bahan baku yang stokSisa <= 0 dari _items (sudah di-load oleh loadIngredients).
+  /// 2. Ambil semua menu item dari SQLite lokal (hanya yang is_active = 1).
+  /// 3. Jika nama menu item MENGANDUNG nama bahan baku yang habis (case-insensitive),
+  ///    atau nama bahan baku mengandung nama menu → menu dianggap unavailable.
+  /// 4. Return list id menu yang unavailable.
+  ///
+  /// Catatan: pendekatan ini pakai name-matching karena tidak ada tabel resep
+  /// (menu_bahan_baku). Untuk akurasi lebih tinggi, buat tabel resep di Supabase
+  /// dan join ke sini.
+  Future<List<int>> getUnavailableMenuIds() async {
+    try {
+      // Bahan baku yang habis
+      final outItems = _items.where((i) => i.isOut).toList();
+      if (outItems.isEmpty) return [];
+
+      // Ambil semua menu item aktif dari SQLite
+      final rows = await DatabaseHelper.instance.rawQuery(
+        'SELECT id, name FROM menu_items WHERE is_active = 1',
+      );
+      if (rows.isEmpty) return [];
+
+      final unavailable = <int>[];
+      for (final row in rows) {
+        final menuId = row['id'] as int?;
+        if (menuId == null) continue;
+        final menuName = (row['name'] as String).toLowerCase().trim();
+
+        // Cek apakah ada bahan baku habis yang nama-nya cocok dengan menu ini
+        final isBlocked = outItems.any((bahan) {
+          final bahanName = bahan.name.toLowerCase().trim();
+          // Match jika nama menu mengandung nama bahan, atau sebaliknya
+          return menuName.contains(bahanName) || bahanName.contains(menuName);
+        });
+
+        if (isBlocked) {
+          unavailable.add(menuId);
+          debugPrint('🔒 [STOCK] Menu "$menuName" (id=$menuId) terkunci — bahan baku habis');
+        }
+      }
+
+      debugPrint('🔒 [STOCK] getUnavailableMenuIds: ${unavailable.length} menu terkunci '
+          '(${outItems.length} bahan habis)');
+      return unavailable;
+    } catch (e) {
+      debugPrint('❌ getUnavailableMenuIds: $e');
+      return [];
+    }
+  }
   Future<bool> tambahStokByName(String nama, double jumlah) async {
     final item = _items.where(
             (i) => i.name.toLowerCase() == nama.toLowerCase()).firstOrNull;
