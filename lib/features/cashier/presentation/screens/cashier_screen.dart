@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../inventory/data/stock_availability_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/utils/app_constants.dart';
 import '../providers/cashier_provider.dart';
@@ -37,7 +39,8 @@ class _CashierScreenState extends State<CashierScreen> {
   String _searchQuery = '';
   int? _selectedCategoryId;
   final _searchCtrl = TextEditingController();
-  Set<int> _unavailableByIngredient = {};
+  StockAvailability _avail = StockAvailability.empty;
+  Timer? _availTimer;
   bool _balanceChecked = false;
   bool _balanceSufficient = true;
 
@@ -68,15 +71,26 @@ class _CashierScreenState extends State<CashierScreen> {
 
       _refreshIngredientAvailability();
       _checkBalance();
+      // Refresh stok tiap 60 detik — stok bisa berubah dari device lain / dashboard
+      _availTimer = Timer.periodic(
+          const Duration(seconds: 60), (_) => _refreshIngredientAvailability());
     });
   }
 
+  @override
+  void dispose() {
+    _availTimer?.cancel();
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  /// Ambil stok bahan hari ini + resep (menu_stock_components) dari Supabase.
   Future<void> _refreshIngredientAvailability() async {
     if (!mounted) return;
-    final inv = context.read<InventoryProvider>();
-    await inv.loadIngredients();
-    final ids = await inv.getUnavailableMenuIds();
-    if (mounted) setState(() => _unavailableByIngredient = ids.toSet());
+    final prefs = await SharedPreferences.getInstance();
+    final branchId = prefs.getString(AppConstants.keyBranchId) ?? '';
+    final avail = await StockAvailabilityService.load(branchId);
+    if (mounted) setState(() => _avail = avail);
   }
 
   Future<void> _checkBalance() async {
@@ -118,12 +132,6 @@ class _CashierScreenState extends State<CashierScreen> {
       diskonLabel: settings.branchDiskonLabel,
       rounding: settings.branchRounding,
     );
-  }
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
   }
 
   // ── Bottom sheet pilih platform online ──────────────────
@@ -361,6 +369,26 @@ class _CashierScreenState extends State<CashierScreen> {
       debugPrint('🌐 [ONLINE-UI] ❌ cart kosong, abort');
       return;
     }
+
+    // Cek stok bahan + resep sebelum order online (sama dengan checkout biasa)
+    {
+      final prefsStock = await SharedPreferences.getInstance();
+      final avail = await StockAvailabilityService.load(
+          prefsStock.getString(AppConstants.keyBranchId) ?? '');
+      final problem = avail.validateCart(cashier.cartItems
+          .map((c) => MapEntry<String, num>(c.menuItem.name, c.qty))
+          .toList());
+      if (problem != null) {
+        if (!mounted) return;
+        setState(() => _avail = avail);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('"${problem.key}" tidak bisa dijual: ${problem.value}'),
+          backgroundColor: Colors.red[700],
+        ));
+        return;
+      }
+    }
+    if (!mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -687,7 +715,7 @@ class _CashierScreenState extends State<CashierScreen> {
                 itemCount: items.length,
                 itemBuilder: (context, index) => _MenuCard(
                   item: items[index],
-                  unavailableByIngredient: _unavailableByIngredient,
+                  availability: _avail,
                 ),
               ),
             ),
@@ -861,7 +889,8 @@ class _CashierScreenState extends State<CashierScreen> {
                                   return;
                                 }
                                 Navigator.push(context,
-                                    MaterialPageRoute(builder: (_) => CheckoutScreen(tableId: widget.tableId)));
+                                    MaterialPageRoute(builder: (_) => CheckoutScreen(tableId: widget.tableId)))
+                                    .then((_) => _refreshIngredientAvailability());
                               },
                               icon: Icon(
                                   blocked ? Icons.lock : Icons.payment,
@@ -1181,8 +1210,11 @@ class _OnlinePlatformTile extends StatelessWidget {
 // ── Menu Card — Cureva Style (foto + inline qty) ─────────────
 class _MenuCard extends StatelessWidget {
   final MenuItemModel item;
-  final Set<int> unavailableByIngredient;
-  const _MenuCard({required this.item, this.unavailableByIngredient = const {}});
+  final StockAvailability availability;
+  const _MenuCard({
+    required this.item,
+    this.availability = StockAvailability.empty,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1193,21 +1225,16 @@ class _MenuCard extends StatelessWidget {
             .firstOrNull;
         final inCart = cartItem != null;
 
-        final ingredientOut = unavailableByIngredient.contains(item.id ?? -1);
-        final menuStockBlocked = menuProv.isMenuBlocked(item.id ?? -1);
-        final stockSisa = menuProv.getEffectiveStockSisa(item.id ?? -1);
+        // Sumber tunggal: stok bahan hari ini + resep (menu_stock_components)
+        final stockReason = availability.reasonFor(item.name);
+        final directStock = availability.enforced
+            ? availability.stock[StockAvailability.keyOf(item.name)]
+            : null;
+        final stockSisa = directStock;
         final hasStockTracking = stockSisa != null;
-        final stockLoadDone = menuProv.stockLoadDone;
-        final anyStockSet = menuProv.anyStockConfiguredToday;
-        final belumDiSet = stockLoadDone && anyStockSet &&
-            !menuProv.isMenuStockConfigured(item.id ?? -1);
 
-        final isUnavailable = !item.isAvailable || ingredientOut || menuStockBlocked || belumDiSet;
-
-        String unavailableReason = 'Habis';
-        if (belumDiSet) unavailableReason = 'Belum\nDiset';
-        else if (menuStockBlocked) unavailableReason = 'Habis\nHari Ini';
-        else if (ingredientOut) unavailableReason = 'Bahan\nHabis';
+        final isUnavailable = !item.isAvailable || stockReason != null;
+        final unavailableReason = stockReason ?? 'Habis';
 
         return Container(
           decoration: BoxDecoration(

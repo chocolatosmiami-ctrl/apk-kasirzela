@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/utils/app_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../orders/presentation/providers/orders_provider.dart';
 import '../../../inventory/presentation/providers/inventory_provider.dart';
 import '../../../shift/presentation/providers/shift_provider.dart';
 import '../../../subscription/presentation/providers/subscription_provider.dart';
@@ -13,7 +12,8 @@ typedef OnNavigate = void Function(int index);
 
 class HomeDashboardScreen extends StatefulWidget {
   final OnNavigate onNavigate;
-  const HomeDashboardScreen({super.key, required this.onNavigate});
+  final VoidCallback? onTapStok;
+  const HomeDashboardScreen({super.key, required this.onNavigate, this.onTapStok});
   @override
   State<HomeDashboardScreen> createState() => _HomeDashboardScreenState();
 }
@@ -23,9 +23,6 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
   final PageController _bannerCtrl = PageController();
   int _bannerIndex = 0;
   Timer? _bannerTimer;
-  double _omsetHariIni = 0;
-  int _trxHariIni = 0;
-  bool _loadingStats = true;
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
 
@@ -54,7 +51,6 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
         vsync: this, duration: const Duration(milliseconds: 800));
     _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
     _animCtrl.forward();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadStats());
     _startTimer();
   }
 
@@ -76,49 +72,6 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
     });
   }
 
-  Future<void> _loadStats() async {
-    if (!mounted) return;
-    setState(() => _loadingStats = true);
-    try {
-      final ordProv = context.read<OrdersProvider>();
-      // Load orders hari ini saja (filter server-side)
-      await ordProv.loadOrders();
-      if (!mounted) return;
-
-      // Filter hari ini — handle timezone WIB (UTC+7)
-      final now = DateTime.now();
-      final todayStr = '${now.year}-${now.month.toString().padLeft(2,'0')}-${now.day.toString().padLeft(2,'0')}';
-
-      final orders = ordProv.orders.where((o) {
-        if (o.createdAt == null || o.createdAt!.isEmpty) return false;
-        if (o.status == 'cancelled') return false;
-        // Coba parse dengan berbagai format
-        try {
-          DateTime d;
-          final raw = o.createdAt!;
-          if (raw.contains('T') || raw.contains('+') || raw.endsWith('Z')) {
-            d = DateTime.parse(raw).toLocal();
-          } else {
-            d = DateTime.parse(raw);
-          }
-          final dStr = '${d.year}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}';
-          return dStr == todayStr;
-        } catch (_) {
-          return o.createdAt!.startsWith(todayStr);
-        }
-      }).toList();
-
-      if (!mounted) return;
-      setState(() {
-        _omsetHariIni = orders.fold(0, (s, o) => s + o.total);
-        _trxHariIni = orders.length;
-        _loadingStats = false;
-      });
-    } catch (e) {
-      debugPrint('❌ loadStats error: $e');
-      if (mounted) setState(() => _loadingStats = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +88,9 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
         opacity: _fadeAnim,
         child: RefreshIndicator(
           color: const Color(0xFF00897B),
-          onRefresh: _loadStats,
+          onRefresh: () async {
+            // Tidak ada stats yang perlu di-refresh untuk kasir
+          },
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics()),
@@ -289,7 +244,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
                               onTap: () => widget.onNavigate(2)),
                           _QuickBtn(emoji: '📦', label: 'Stok',
                               bg: const Color(0xFFFFF3E0),
-                              onTap: () => widget.onNavigate(3)),
+                              onTap: () => widget.onTapStok?.call()),
                           _QuickBtn(emoji: '⏱️', label: 'Shift',
                               bg: const Color(0xFFFCE4EC),
                               onTap: () => widget.onNavigate(4)),
@@ -297,32 +252,6 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
                       ),
                     ),
 
-                    // ── Stat cards ─────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-                      child: Row(children: [
-                        Expanded(child: _StatCard(
-                          label: 'Omset Hari Ini',
-                          value: _loadingStats ? '...'
-                              : AppUtils.formatCurrency(_omsetHariIni),
-                          icon: Icons.payments_outlined,
-                          iconColor: const Color(0xFF00897B),
-                          iconBg: const Color(0xFFE0F7F4),
-                          trend: '+12%',
-                          trendUp: true,
-                        )),
-                        const SizedBox(width: 12),
-                        Expanded(child: _StatCard(
-                          label: 'Transaksi',
-                          value: _loadingStats ? '...' : '$_trxHariIni trx',
-                          icon: Icons.receipt_long_outlined,
-                          iconColor: const Color(0xFF1565C0),
-                          iconBg: const Color(0xFFE3F2FD),
-                          trend: 'hari ini',
-                          trendUp: true,
-                        )),
-                      ]),
-                    ),
 
                     // ── Saldo alert ────────────────────────
                     Consumer<SubscriptionProvider>(
@@ -473,7 +402,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen>
                                         color: Color(0xFF111111))),
                                 const Spacer(),
                                 GestureDetector(
-                                  onTap: () => widget.onNavigate(3),
+                                  onTap: () => widget.onTapStok?.call(),
                                   child: const Text('Lihat semua ›',
                                       style: TextStyle(
                                           fontSize: 11,
@@ -627,56 +556,6 @@ class _QuickBtn extends StatelessWidget {
   );
 }
 
-class _StatCard extends StatelessWidget {
-  final String label, value;
-  final IconData icon;
-  final Color iconColor, iconBg;
-  final String trend;
-  final bool trendUp;
-  const _StatCard({required this.label, required this.value,
-    required this.icon, required this.iconColor, required this.iconBg,
-    required this.trend, required this.trendUp});
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0xFFE8F5F3)),
-    ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(color: iconBg,
-              borderRadius: BorderRadius.circular(10)),
-          child: Icon(icon, size: 18, color: iconColor),
-        ),
-        const Spacer(),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-          decoration: BoxDecoration(
-            color: trendUp ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(trend,
-              style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  color: trendUp ? const Color(0xFF16A34A)
-                      : const Color(0xFFDC2626))),
-        ),
-      ]),
-      const SizedBox(height: 12),
-      Text(label, style: const TextStyle(
-          fontSize: 11, color: Color(0xFF9CA3AF))),
-      const SizedBox(height: 4),
-      Text(value, style: const TextStyle(
-          fontSize: 18, fontWeight: FontWeight.w800,
-          color: Color(0xFF111111), letterSpacing: -0.5)),
-    ]),
-  );
-}
 
 class _BannerCard extends StatelessWidget {
   final _PromoItem promo;

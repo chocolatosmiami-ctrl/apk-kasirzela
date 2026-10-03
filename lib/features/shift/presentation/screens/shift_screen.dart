@@ -32,8 +32,9 @@ class _ShiftScreenState extends State<ShiftScreen>
       final prefs = await SharedPreferences.getInstance();
       final uid = prefs.getString(AppConstants.keyUid) ?? auth.currentUser?.authId ?? '';
       debugPrint('🖥️ [SHIFT] loading shift for uid=$uid name=${auth.currentUser?.name}');
-      if (uid.isNotEmpty) {
-        prov.loadActiveShift(uid);
+      final resolved = await ShiftProvider.resolveShiftUserId(uid);
+      if (resolved.isNotEmpty) {
+        prov.loadActiveShift(resolved);
       } else {
         debugPrint('🖥️ [SHIFT] ⚠️ uid empty! currentUser=${auth.currentUser}');
         prov.loadAnyActiveShift();

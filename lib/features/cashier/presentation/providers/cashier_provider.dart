@@ -8,6 +8,7 @@ import '../../../menu/data/models/menu_models.dart';
 import '../../../orders/data/models/order_models.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../../../core/utils/app_utils.dart';
+import '../../../inventory/data/stock_availability_service.dart';
 
 class CashierProvider extends ChangeNotifier {
   List<CartItem> _cartItems = [];
@@ -610,27 +611,17 @@ class CashierProvider extends ChangeNotifier {
         }
       }
 
-      // Cek stok menu hari ini dari Supabase
+      // Cek stok bahan hari ini + resep (menu_stock_components) dari Supabase.
+      // Fail-open kalau offline: StockAvailabilityService mengembalikan empty.
       if (branchIdForOrder.isNotEmpty) {
-        final stockMap = await _getMenuStockToday(branchIdForOrder);
-        if (stockMap.isNotEmpty) {
-          for (final cartItem in _cartItems) {
-            final nameKey = cartItem.menuItem.name.toLowerCase().trim();
-            if (stockMap.containsKey(nameKey)) {
-              final sisa = stockMap[nameKey] ?? 0;
-              if (sisa <= 0) {
-                _checkoutInProgress = false;
-                notifyListeners();
-                throw _MenuStockHabisException(cartItem.menuItem.name);
-              }
-              if (sisa < cartItem.qty) {
-                _checkoutInProgress = false;
-                notifyListeners();
-                throw _MenuStockHabisException(
-                    '${cartItem.menuItem.name} (sisa ${sisa.toInt()} porsi)');
-              }
-            }
-          }
+        final avail = await StockAvailabilityService.load(branchIdForOrder);
+        final problem = avail.validateCart(_cartItems
+            .map((c) => MapEntry<String, num>(c.menuItem.name, c.qty))
+            .toList());
+        if (problem != null) {
+          _checkoutInProgress = false;
+          notifyListeners();
+          throw MenuStockHabisException(problem.key, detail: problem.value);
         }
       }
 
@@ -822,7 +813,7 @@ class CashierProvider extends ChangeNotifier {
       );
 
       return result;
-    } on _MenuStockHabisException {
+    } on MenuStockHabisException {
       rethrow;
     } catch (e, stackTrace) {
       debugPrint('🛒 [CHECKOUT] ❌ ERROR: $e\n$stackTrace');
@@ -958,16 +949,12 @@ class CashierProvider extends ChangeNotifier {
   }
 }
 
-class _MenuStockHabisException implements Exception {
-  final String menuName;
-  const _MenuStockHabisException(this.menuName);
-  @override
-  String toString() => 'Stok "$menuName" habis hari ini';
-}
-
 class MenuStockHabisException implements Exception {
   final String menuName;
-  const MenuStockHabisException(this.menuName);
+  final String? detail; // mis. "Bahan Habis" / "Stok nasi putih tidak cukup (...)"
+  const MenuStockHabisException(this.menuName, {this.detail});
   @override
-  String toString() => 'Stok "$menuName" habis hari ini';
+  String toString() => detail != null
+      ? 'Stok "$menuName": $detail'
+      : 'Stok "$menuName" habis hari ini';
 }

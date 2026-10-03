@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../../../core/utils/app_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -21,13 +22,22 @@ class SubscriptionService {
       String ownerId = (await _getOwnerId()) ?? '';
       final role = prefs.getString(AppConstants.keyRole) ?? '';
       final authId = prefs.getString(AppConstants.keyUid) ?? '';
+      final branchId = prefs.getString(AppConstants.keyBranchId) ?? '';
 
-      var res = await _db
-          .from('subscriptions')
-          .select()
-          .eq('owner_id', ownerId)
-          .maybeSingle();
+      debugPrint('💰 [SubService] getMySubscription: ownerId=$ownerId role=$role authId=$authId branchId=$branchId');
 
+      // ── 1. Coba lookup langsung pakai owner_id dari SharedPreferences ──
+      var res = ownerId.isNotEmpty
+          ? await _db
+              .from('subscriptions')
+              .select()
+              .eq('owner_id', ownerId)
+              .maybeSingle()
+          : null;
+
+      debugPrint('💰 [SubService] lookup #1 (ownerId=$ownerId): ${res != null ? 'FOUND' : 'NULL'}');
+
+      // ── 2. Fallback: cari lewat owners table (hanya owner/superadmin) ──
       if (res == null && authId.isNotEmpty &&
           (role == 'owner' || role == 'superadmin')) {
         final ownerRow = await _db.from('owners')
@@ -39,28 +49,34 @@ class SubscriptionService {
           if (res != null) {
             ownerId = realOwnerId;
             await prefs.setString(AppConstants.keyOwnerId, realOwnerId);
+            debugPrint('💰 [SubService] lookup #2 (owners): FOUND, saved ownerId=$realOwnerId');
+          }
+        }
+      }
+
+      // ── 3. Fallback: cari lewat branch_id → branches.owner_id ──
+      if (res == null && branchId.isNotEmpty) {
+        final branch = await _db.from('branches')
+            .select('owner_id').eq('id', branchId).maybeSingle();
+        final realOwnerId = branch?['owner_id'] as String? ?? '';
+        debugPrint('💰 [SubService] lookup #3 (branchId=$branchId): branch owner=$realOwnerId');
+        if (realOwnerId.isNotEmpty) {
+          res = await _db.from('subscriptions')
+              .select().eq('owner_id', realOwnerId).maybeSingle();
+          if (res != null) {
+            ownerId = realOwnerId;
+            await prefs.setString(AppConstants.keyOwnerId, realOwnerId);
+            debugPrint('💰 [SubService] lookup #3: FOUND, saved ownerId=$realOwnerId');
           }
         }
       }
 
       if (res == null) {
-        final branchId = prefs.getString(AppConstants.keyBranchId) ?? '';
-        if (branchId.isNotEmpty) {
-          final branch = await _db.from('branches')
-              .select('owner_id').eq('id', branchId).maybeSingle();
-          final realOwnerId = branch?['owner_id'] as String? ?? '';
-          if (realOwnerId.isNotEmpty) {
-            res = await _db.from('subscriptions')
-                .select().eq('owner_id', realOwnerId).maybeSingle();
-            if (res != null) {
-              ownerId = realOwnerId;
-              await prefs.setString(AppConstants.keyOwnerId, realOwnerId);
-            }
-          }
-        }
+        debugPrint('💰 [SubService] ❌ subscription NOT FOUND after all lookups');
+        return null;
       }
 
-      if (res == null) return null;
+      debugPrint('💰 [SubService] ✅ subscription FOUND: balance=${res['balance']} plan=${res['plan_type']} expires=${res['plan_expires_at']}');
 
       // Map semua field termasuk plan & cost_per_trx dari DB
       return SubscriptionModel.fromMap({
@@ -77,7 +93,8 @@ class SubscriptionService {
         'plan_expires_at': res['plan_expires_at'],
         'plan_price': res['plan_price'],
       });
-    } catch (_) {
+    } catch (e) {
+      debugPrint('💰 [SubService] ❌ getMySubscription ERROR: $e');
       return null;
     }
   }

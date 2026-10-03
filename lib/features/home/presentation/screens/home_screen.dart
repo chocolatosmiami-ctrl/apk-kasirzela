@@ -240,6 +240,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         debugPrint('🏠 onNavigate called with idx=$idx');
         setState(() => _selectedIndex = idx);
       },
+      onTapStok: () {
+        // Cari index InventoryScreen secara dinamis agar tidak salah arah
+        final idx = _screens.indexWhere(
+          (s) => s is InventoryScreen || s is RetailProductListScreen,
+        );
+        if (idx >= 0) {
+          debugPrint('🏠 onTapStok → index=$idx');
+          setState(() => _selectedIndex = idx);
+        }
+      },
     ));
     items.add(_NavItem(
         icon: Icons.home_rounded,
@@ -395,10 +405,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _loaded = true;
     });
 
-    // Load active shift
+    // Load active shift — pakai keyUid dari SharedPreferences (konsisten dgn PinVerifyScreen)
     final auth3 = context.read<AuthProvider>();
-    if (auth3.currentUser != null) {
-      context.read<ShiftProvider>().loadActiveShift(auth3.currentUser?.authId ?? '');
+    final shiftProv = context.read<ShiftProvider>();
+    if (!shiftProv.hasActiveShift) {
+      final prefsShift = await SharedPreferences.getInstance();
+      final shiftUid = prefsShift.getString(AppConstants.keyUid) ?? auth3.currentUser?.authId ?? '';
+      // userId kosong tetap dipanggil — ShiftProvider resolve ke users.id / email
+      shiftProv.loadActiveShift(shiftUid);
     }
     // Refresh role dari Firebase (pastikan role benar)
     await auth3.checkSession();
@@ -447,9 +461,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (i == shiftIdx && shiftIdx >= 0) {
       final auth = context.read<AuthProvider>();
       final uid = auth.currentUser?.authId ?? '';
-      if (uid.isNotEmpty) {
-        context.read<ShiftProvider>().loadActiveShift(uid);
-      }
+      context.read<ShiftProvider>().loadActiveShift(uid);
     }
     // Close drawer if open
     if (_useSideMenu && Navigator.canPop(context)) {

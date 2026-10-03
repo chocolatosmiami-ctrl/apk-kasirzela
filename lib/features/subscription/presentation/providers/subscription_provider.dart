@@ -156,10 +156,16 @@ class SubscriptionProvider extends ChangeNotifier {
       _subscription = await SubscriptionService.instance.getMySubscription();
       notifyListeners();
 
-      // Kalau plan aktif → selalu boleh transaksi
-      if (_subscription?.isPlanActive == true) return true;
+      // Kalau subscription tidak ditemukan → fail-open (jangan blokir kasir)
+      if (_subscription == null) {
+        debugPrint('💰 [checkBalanceOnline] subscription NULL → allow (fail-open)');
+        return true;
+      }
 
-      final bal = _subscription?.balance ?? 0;
+      // Kalau plan aktif → selalu boleh transaksi
+      if (_subscription!.isPlanActive) return true;
+
+      final bal = _subscription!.balance;
       debugPrint('💰 [checkBalanceOnline] bal=$bal minimum=$minimumBalance');
       return bal >= minimumBalance;
     } catch (e) {

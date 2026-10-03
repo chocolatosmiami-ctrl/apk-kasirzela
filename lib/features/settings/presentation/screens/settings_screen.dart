@@ -84,6 +84,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 subtitle: 'Bluetooth thermal printer',
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrinterSettingsScreen())),
               ),
+              const _CurevaDivider(),
+              _CurevaTile(
+                icon: Icons.print_outlined,
+                iconBg: const Color(0xFFE3F2FD),
+                iconColor: Colors.blue,
+                title: 'Printer Station',
+                subtitle: 'Kelola printer dapur, kasir & checker',
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrinterStationScreen())),
+              ),
             ]),
 
             // ── MANAJER ──────────────────────────────────────

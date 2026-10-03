@@ -265,8 +265,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     style: const TextStyle(fontWeight: FontWeight.bold,
                         color: Colors.red),
                   ),
-                  const TextSpan(
-                      text: ' sudah habis untuk hari ini.'),
+                  TextSpan(
+                      text: e.detail != null
+                          ? ' tidak bisa dijual: ${e.detail}.'
+                          : ' sudah habis untuk hari ini.'),
                 ],
               )),
               const SizedBox(height: 10),
