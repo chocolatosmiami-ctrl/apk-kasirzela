@@ -7,9 +7,11 @@ import '../../../core/config/supabase_config.dart';
 /// - `get_menu_stock_today(branch)` → stok bahan hari ini (menu_stock)
 /// - `get_menu_components(branch)`  → link menu → bahan (menu_stock_components)
 ///
-/// Aturan hanya AKTIF kalau cabang sudah set stok hari ini (ada minimal 1 baris
-/// menu_stock hari ini). Kalau belum ada stok sama sekali, tidak ada yang dikunci
-/// supaya cabang yang belum pakai fitur stok tetap bisa jualan.
+/// Aturan AKTIF kalau cabang sudah memakai sistem stok — punya minimal 1 link
+/// menu↔bahan (menu_stock_components) ATAU sudah set stok hari ini.
+/// Cabang aktif: menu tanpa link dikunci "Resep Belum Diset", menu yang bahannya
+/// belum diset stok hari ini dikunci "Stok Bahan Belum Diset".
+/// Cabang yang sama sekali belum pakai sistem stok tidak dikunci.
 class StockAvailability {
   final bool enforced;
   final Map<String, double> stock;                        // bahanKey → sisa
@@ -122,8 +124,11 @@ class StockAvailabilityService {
       }
 
       debugPrint('📦 [AVAIL] branch=$branchId stok=${stock.length} resep=${comps.length} '
-          'enforced=${stock.isNotEmpty}');
-      return StockAvailability(enforced: stock.isNotEmpty, stock: stock, comps: comps);
+          'enforced=${stock.isNotEmpty || comps.isNotEmpty}');
+      return StockAvailability(
+          enforced: stock.isNotEmpty || comps.isNotEmpty,
+          stock: stock,
+          comps: comps);
     } catch (e) {
       debugPrint('📦 [AVAIL] load error → fail-open: $e');
       return StockAvailability.empty;
