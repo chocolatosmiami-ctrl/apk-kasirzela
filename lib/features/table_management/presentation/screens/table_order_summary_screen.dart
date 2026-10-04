@@ -1,3 +1,4 @@
+import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../cashier/presentation/providers/cashier_provider.dart';
@@ -73,7 +74,7 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
     final cashier = context.watch<CashierProvider>();
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: const Color(0xFFF7F9F8),
       appBar: AppBar(
         title: Text('Pesanan — ${widget.table.name}'),
         backgroundColor: AppTheme.primaryRed,
@@ -85,78 +86,91 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
               widget.table.customerName != null
                   ? '👤 ${widget.table.customerName}'
                   : widget.table.zone,
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              style: const TextStyle(color: Colors.white, fontSize: 14),
             ),
           ),
         ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : cashier.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('🍽️', style: TextStyle(fontSize: 48)),
-            const SizedBox(height: 12),
-            Text('Belum ada pesanan di ${widget.table.name}',
-                style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 4),
-            Text('Tekan "Tambah Pesanan" untuk mulai',
-                style: TextStyle(
-                    color: Colors.grey[400], fontSize: 12)),
-          ],
-        ),
-      )
-          : ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: cashier.cartItems.length,
-        itemBuilder: (_, i) {
-          final item = cashier.cartItems[i];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor:
-                AppTheme.primaryRed.withOpacity(0.1),
-                child: Text('${item.qty}',
-                    style: const TextStyle(
-                        color: AppTheme.primaryRed,
-                        fontWeight: FontWeight.bold)),
+      body: ZelaPage(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : cashier.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('🍽️', style: TextStyle(fontSize: 48)),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Belum ada pesanan di ${widget.table.name}',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Tekan "Tambah Pesanan" untuk mulai',
+                      style: TextStyle(
+                        color: const Color(0xFF62736F),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: cashier.cartItems.length,
+                itemBuilder: (_, i) {
+                  final item = cashier.cartItems[i];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: AppTheme.primaryRed.withOpacity(0.1),
+                        child: Text(
+                          '${item.qty}',
+                          style: const TextStyle(
+                            color: AppTheme.primaryRed,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        item.menuItem.name,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: item.note != null && item.note!.isNotEmpty
+                          ? Text(
+                              '📝 ${item.note}',
+                              style: const TextStyle(fontSize: 14),
+                            )
+                          : Text(
+                              '@${AppUtils.formatCurrency(item.menuItem.price)}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: const Color(0xFF62736F),
+                              ),
+                            ),
+                      trailing: Text(
+                        AppUtils.formatCurrency(item.subtotal),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryRed,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
-              title: Text(item.menuItem.name,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600)),
-              subtitle: item.note != null && item.note!.isNotEmpty
-                  ? Text('📝 ${item.note}',
-                  style: const TextStyle(fontSize: 12))
-                  : Text(
-                  '@${AppUtils.formatCurrency(item.menuItem.price)}',
-                  style: TextStyle(
-                      fontSize: 12, color: Colors.grey[600])),
-              trailing: Text(
-                AppUtils.formatCurrency(item.subtotal),
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryRed),
-              ),
-            ),
-          );
-        },
       ),
       bottomNavigationBar: SafeArea(
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2)),
-            ],
+            boxShadow: const <BoxShadow>[],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -165,15 +179,20 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('TOTAL',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
+                    const Text(
+                      'TOTAL',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                     Text(
                       AppUtils.formatCurrency(cashier.total),
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                          color: AppTheme.primaryRed),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        color: AppTheme.primaryRed,
+                      ),
                     ),
                   ],
                 ),
@@ -191,26 +210,34 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
                         side: const BorderSide(color: AppTheme.primaryRed),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed:
-                      (_loading || cashier.isEmpty) ? null : _goBayar,
-                      icon: const Icon(Icons.payment,
-                          size: 18, color: Colors.white),
-                      label: const Text('Bayar',
-                          style: TextStyle(color: Colors.white)),
+                      onPressed: (_loading || cashier.isEmpty)
+                          ? null
+                          : _goBayar,
+                      icon: const Icon(
+                        Icons.payment,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'Bayar',
+                        style: TextStyle(color: Colors.white),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: cashier.isEmpty
-                            ? Colors.grey[400]
+                            ? const Color(0xFF62736F)
                             : AppTheme.primaryRed,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),

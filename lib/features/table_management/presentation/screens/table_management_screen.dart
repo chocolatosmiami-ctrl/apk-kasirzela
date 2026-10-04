@@ -1,3 +1,4 @@
+import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -59,84 +60,123 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(children: [
-        // ── Summary bar ───────────────────────────────────
-        Container(
-          color: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _summaryChip('🟢 Kosong', prov.emptyCount, Colors.green),
-              _summaryChip('🔴 Terisi', prov.occupiedCount, Colors.red),
-              _summaryChip('🟡 Minta Bill', prov.billCount, Colors.orange),
-              _summaryChip('Total', prov.allTables.length, Colors.grey),
-            ],
-          ),
-        ),
-
-        // ── Zone filter ───────────────────────────────────
-        SizedBox(
-          height: 40,
-          child: ListView(
-            physics: const ClampingScrollPhysics(),
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            children: prov.zones.map((z) {
-              final sel = prov.selectedZone == z;
-              return GestureDetector(
-                onTap: () => prov.setZone(z),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: sel ? AppTheme.primaryRed : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: sel ? AppTheme.primaryRed : Colors.grey[300]!),
+      body: ZelaPage(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  // ── Summary bar ───────────────────────────────────
+                  Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _summaryChip('Kosong', prov.emptyCount, Colors.green),
+                        _summaryChip(
+                          'Terisi',
+                          prov.occupiedCount,
+                          const Color(0xFF00796B),
+                        ),
+                        _summaryChip(
+                          'Minta bill',
+                          prov.billCount,
+                          Colors.orange,
+                        ),
+                        _summaryChip(
+                          'Total',
+                          prov.allTables.length,
+                          Colors.grey,
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Text(z, style: TextStyle(
-                      color: sel ? Colors.white : Colors.grey[700],
-                      fontSize: 12,
-                      fontWeight: sel ? FontWeight.w600 : FontWeight.normal)),
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-        const SizedBox(height: 4),
 
-        // ── Table grid ────────────────────────────────────
-        Expanded(
-          child: prov.loading
-              ? const Center(child: CircularProgressIndicator())
-              : prov.tables.isEmpty
-              ? const Center(child: Text('Belum ada meja',
-              style: TextStyle(color: Colors.grey)))
-              : GridView.builder(
-            physics: const ClampingScrollPhysics(),
-            padding: const EdgeInsets.all(12),
-            gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 0.78,
-            ),
-            itemCount: prov.tables.length,
-            itemBuilder: (_, i) => _TableCard(
-              table: prov.tables[i],
-              onTap: () => _onTableTap(prov.tables[i]),
-              onLongPress: auth.isAdmin
-                  ? () => _showTableOptions(prov.tables[i])
-                  : null,
-            ),
-          ),
-        ),
-      ]),
+                  // ── Zone filter ───────────────────────────────────
+                  SizedBox(
+                    height: 40,
+                    child: ListView(
+                      physics: const ClampingScrollPhysics(),
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      children: prov.zones.map((z) {
+                        final sel = prov.selectedZone == z;
+                        return GestureDetector(
+                          onTap: () => prov.setZone(z),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: sel ? AppTheme.primaryRed : Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: sel
+                                    ? AppTheme.primaryRed
+                                    : Colors.grey[300]!,
+                              ),
+                            ),
+                            child: Text(
+                              z,
+                              style: TextStyle(
+                                color: sel
+                                    ? Colors.white
+                                    : const Color(0xFF62736F),
+                                fontSize: 14,
+                                fontWeight: sel
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+
+                  // ── Table grid ────────────────────────────────────
+                  Expanded(
+                    child: prov.loading
+                        ? const Center(child: CircularProgressIndicator())
+                        : prov.tables.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Belum ada meja',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          )
+                        : GridView.builder(
+                            physics: const ClampingScrollPhysics(),
+                            padding: const EdgeInsets.all(12),
+                            gridDelegate:
+                                SliverGridDelegateWithMaxCrossAxisExtent(
+                                  maxCrossAxisExtent: 240,
+                                  mainAxisExtent:
+                                      210 +
+                                      (MediaQuery.textScalerOf(
+                                                context,
+                                              ).scale(14) -
+                                              14) *
+                                          5,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                ),
+                            itemCount: prov.tables.length,
+                            itemBuilder: (_, i) => _TableCard(
+                              table: prov.tables[i],
+                              onTap: () => _onTableTap(prov.tables[i]),
+                              onLongPress: auth.isAdmin
+                                  ? () => _showTableOptions(prov.tables[i])
+                                  : null,
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 
@@ -155,42 +195,56 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: Text('Dudukkan Tamu - ${table.name}'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(
-            controller: nameCtrl,
-            autofocus: true,
-            textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(
-              labelText: 'Nama Tamu (opsional)',
-              prefixIcon: Icon(Icons.person_outline),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Nama Tamu (opsional)',
+                prefixIcon: Icon(Icons.person_outline),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text('Kapasitas: ${table.capacity} orang',
-              style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-        ]),
+            const SizedBox(height: 8),
+            Text(
+              'Kapasitas: ${table.capacity} orang',
+              style: TextStyle(color: const Color(0xFF62736F), fontSize: 14),
+            ),
+          ],
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context),
-              child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryRed),
+              backgroundColor: AppTheme.primaryRed,
+            ),
             onPressed: () async {
               Navigator.pop(context);
               await context.read<TableProvider>().updateStatus(
-                table, TableStatus.occupied,
+                table,
+                TableStatus.occupied,
                 customerName: nameCtrl.text.trim().isEmpty
-                    ? null : nameCtrl.text.trim(),
+                    ? null
+                    : nameCtrl.text.trim(),
               );
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text('${table.name} ditandai terisi'),
-                  backgroundColor: Colors.red,
-                ));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${table.name} ditandai terisi'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
               }
             },
-            child: const Text('Mulai Layani',
-                style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Mulai Layani',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -201,37 +255,64 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (_) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(width: 36, height: 4,
-              margin: const EdgeInsets.only(top: 10),
-              decoration: BoxDecoration(color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2))),
+          Container(
+            width: 36,
+            height: 4,
+            margin: const EdgeInsets.only(top: 10),
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(children: [
-              const Icon(Icons.table_restaurant, color: AppTheme.primaryRed),
-              const SizedBox(width: 8),
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(table.name,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16)),
-                if (table.customerName != null)
-                  Text('👤 ${table.customerName}',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-              ]),
-            ]),
+            child: Row(
+              children: [
+                const Icon(Icons.table_restaurant, color: AppTheme.primaryRed),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      table.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    if (table.customerName != null)
+                      Text(
+                        '👤 ${table.customerName}',
+                        style: TextStyle(
+                          color: const Color(0xFF62736F),
+                          fontSize: 14,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
           const Divider(height: 1),
           ListTile(
-            leading: const Icon(Icons.point_of_sale, color: AppTheme.primaryRed),
+            leading: const Icon(
+              Icons.point_of_sale,
+              color: AppTheme.primaryRed,
+            ),
             title: const Text('Buka KASIR ZL untuk Meja Ini'),
             onTap: () {
               Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => TableOrderSummaryScreen(table: table)));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TableOrderSummaryScreen(table: table),
+                ),
+              );
             },
           ),
           ListTile(
@@ -239,12 +320,14 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             title: const Text('Minta Bill'),
             onTap: () async {
               Navigator.pop(context);
-              await context.read<TableProvider>()
-                  .updateStatus(table, TableStatus.bill);
+              await context.read<TableProvider>().updateStatus(
+                table,
+                TableStatus.bill,
+              );
             },
           ),
           ListTile(
-            leading: const Icon(Icons.swap_horiz, color: Colors.blue),
+            leading: const Icon(Icons.swap_horiz, color: Colors.teal),
             title: const Text('Pindah Meja'),
             onTap: () {
               if (!mounted) return;
@@ -256,16 +339,22 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             ListTile(
               leading: const Icon(Icons.price_check, color: Colors.teal),
               title: const Text('Tandai Sudah Bayar'),
-              subtitle: const Text('Bayar cash langsung, tanpa proses di Kasir'),
+              subtitle: const Text(
+                'Bayar cash langsung, tanpa proses di Kasir',
+              ),
               onTap: () async {
                 if (!mounted) return;
                 Navigator.pop(context);
                 await context.read<TableProvider>().clearTable(table.id!);
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('${table.name} ditandai sudah bayar & dikosongkan'),
-                    backgroundColor: Colors.green,
-                  ));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '${table.name} ditandai sudah bayar & dikosongkan',
+                      ),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
                 }
               },
             ),
@@ -299,33 +388,48 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
           width: double.maxFinite,
           child: emptyTables.isEmpty
               ? const Text('Tidak ada meja kosong')
-              : ListView(shrinkWrap: true, children: emptyTables.map((t) =>
-              ListTile(
-                leading: const Text('🟢'),
-                title: Text(t.name),
-                subtitle: Text('${t.zone} · ${t.capacity} kursi'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  // 1. Pindahkan isi cart (pesanan belum bayar) ke meja baru
-                  await prov.moveTableCart(fromTable.id!, t.id!);
-                  // 2. Set meja baru jadi terisi
-                  await prov.updateStatus(t, TableStatus.occupied,
-                      orderId: fromTable.activeOrderId,
-                      customerName: fromTable.customerName);
-                  // 3. Kosongkan status meja lama (cart sudah dipindah)
-                  await prov.clearTable(fromTable.id!);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('Pesanan dipindah ke ${t.name}'),
-                      backgroundColor: Colors.green,
-                    ));
-                  }
-                },
-              )).toList()),
+              : ListView(
+                  shrinkWrap: true,
+                  children: emptyTables
+                      .map(
+                        (t) => ListTile(
+                          leading: const Text('🟢'),
+                          title: Text(t.name),
+                          subtitle: Text('${t.zone} · ${t.capacity} kursi'),
+                          onTap: () async {
+                            Navigator.pop(context);
+                            // 1. Pindahkan isi cart (pesanan belum bayar) ke meja baru
+                            await prov.moveTableCart(fromTable.id!, t.id!);
+                            // 2. Set meja baru jadi terisi
+                            await prov.updateStatus(
+                              t,
+                              TableStatus.occupied,
+                              orderId: fromTable.activeOrderId,
+                              customerName: fromTable.customerName,
+                            );
+                            // 3. Kosongkan status meja lama (cart sudah dipindah)
+                            await prov.clearTable(fromTable.id!);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Pesanan dipindah ke ${t.name}',
+                                  ),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      )
+                      .toList(),
+                ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context),
-              child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
         ],
       ),
     );
@@ -342,60 +446,90 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
       builder: (_) => StatefulBuilder(
         builder: (ctx, setS) => AlertDialog(
           title: const Text('Tambah Meja Baru'),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(
-              controller: nameCtrl,
-              autofocus: true,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                autofocus: true,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
                   labelText: 'Nama Meja *',
-                  hintText: 'Contoh: Meja 9'),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: zone,
-              decoration: const InputDecoration(labelText: 'Area/Zone'),
-              items: zones.map((z) => DropdownMenuItem(
-                  value: z, child: Text(z))).toList(),
-              onChanged: (v) => setS(() => zone = v!),
-            ),
-            const SizedBox(height: 12),
-            Row(children: [
-              const Text('Kapasitas:'),
-              const Spacer(),
-              IconButton(
-                  tooltip: 'Remove Circle Outline',onPressed: capacity > 1
-                  ? () => setS(() => capacity--) : null,
-                  icon: const Icon(Icons.remove_circle_outline)),
-              Text('$capacity', style: const TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.bold)),
-              IconButton(
-                  tooltip: 'Remove Circle Outline',onPressed: () => setS(() => capacity++),
-                  icon: const Icon(Icons.add_circle_outline)),
-              const Text('kursi'),
-            ]),
-          ]),
+                  hintText: 'Contoh: Meja 9',
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: zone,
+                decoration: const InputDecoration(labelText: 'Area/Zone'),
+                items: zones
+                    .map((z) => DropdownMenuItem(value: z, child: Text(z)))
+                    .toList(),
+                onChanged: (v) => setS(() => zone = v!),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Text('Kapasitas:'),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'Remove Circle Outline',
+                    onPressed: capacity > 1
+                        ? () => setS(() => capacity--)
+                        : null,
+                    icon: const Icon(Icons.remove_circle_outline),
+                  ),
+                  Text(
+                    '$capacity',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Remove Circle Outline',
+                    onPressed: () => setS(() => capacity++),
+                    icon: const Icon(Icons.add_circle_outline),
+                  ),
+                  const Text('kursi'),
+                ],
+              ),
+            ],
+          ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context),
-                child: const Text('Batal')),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryRed),
+                backgroundColor: AppTheme.primaryRed,
+              ),
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) return;
                 Navigator.pop(context);
                 await context.read<TableProvider>().addTable(
-                    TableModel(name: nameCtrl.text.trim(),
-                        zone: zone, capacity: capacity));
+                  TableModel(
+                    name: nameCtrl.text.trim(),
+                    zone: zone,
+                    capacity: capacity,
+                  ),
+                );
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('${nameCtrl.text.trim()} berhasil ditambahkan'),
-                    backgroundColor: Colors.green,
-                  ));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '${nameCtrl.text.trim()} berhasil ditambahkan',
+                      ),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
                 }
               },
-              child: const Text('Tambah',
-                  style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'Tambah',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -425,9 +559,15 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
 
   Widget _summaryChip(String label, int count, Color color) => Column(
     children: [
-      Text('$count', style: TextStyle(
-          fontSize: 20, fontWeight: FontWeight.bold, color: color)),
-      Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+      Text(
+        '$count',
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
+      ),
+      Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
     ],
   );
 }
@@ -437,24 +577,35 @@ class _TableCard extends StatelessWidget {
   final TableModel table;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
-  const _TableCard({required this.table, required this.onTap,
-    this.onLongPress});
+  const _TableCard({
+    required this.table,
+    required this.onTap,
+    this.onLongPress,
+  });
 
   Color get _bgColor {
     switch (table.status) {
-      case TableStatus.empty: return Colors.green[50]!;
-      case TableStatus.occupied: return Colors.red[50]!;
-      case TableStatus.bill: return Colors.orange[50]!;
-      case TableStatus.reserved: return Colors.blue[50]!;
+      case TableStatus.empty:
+        return Colors.white;
+      case TableStatus.occupied:
+        return const Color(0xFFEAF5F1);
+      case TableStatus.bill:
+        return const Color(0xFFFFF4E5);
+      case TableStatus.reserved:
+        return const Color(0xFFF0F4F2);
     }
   }
 
   Color get _borderColor {
     switch (table.status) {
-      case TableStatus.empty: return Colors.green[300]!;
-      case TableStatus.occupied: return Colors.red[300]!;
-      case TableStatus.bill: return Colors.orange[300]!;
-      case TableStatus.reserved: return Colors.blue[300]!;
+      case TableStatus.empty:
+        return const Color(0xFF62736F);
+      case TableStatus.occupied:
+        return const Color(0xFF00796B);
+      case TableStatus.bill:
+        return const Color(0xFF845500);
+      case TableStatus.reserved:
+        return const Color(0xFF62736F);
     }
   }
 
@@ -468,41 +619,54 @@ class _TableCard extends StatelessWidget {
           color: _bgColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: _borderColor, width: 1.5),
-          boxShadow: [BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4, offset: const Offset(0, 2))],
+          boxShadow: const <BoxShadow>[],
         ),
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(table.status.emoji,
-                style: const TextStyle(fontSize: 22)),
+            Icon(
+              Icons.table_restaurant_outlined,
+              size: 28,
+              color: _borderColor,
+            ),
             const SizedBox(height: 4),
-            Text(table.name,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 12),
-                textAlign: TextAlign.center,
-                maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text(table.zone,
-                style: TextStyle(fontSize: 9, color: Colors.grey[600])),
+            Text(
+              table.name,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              table.zone,
+              style: TextStyle(fontSize: 12, color: const Color(0xFF62736F)),
+            ),
             const SizedBox(height: 3),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                  color: _borderColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(10)),
-              child: Text(table.status.label,
-                  style: TextStyle(fontSize: 9,
-                      color: _borderColor,
-                      fontWeight: FontWeight.w600)),
+                color: _borderColor.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                table.status.label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _borderColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
             if (table.customerName != null) ...[
               const SizedBox(height: 2),
-              Text('👤 ${table.customerName}',
-                  style: const TextStyle(fontSize: 8),
-                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              Text(
+                '👤 ${table.customerName}',
+                style: const TextStyle(fontSize: 12),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ],
         ),

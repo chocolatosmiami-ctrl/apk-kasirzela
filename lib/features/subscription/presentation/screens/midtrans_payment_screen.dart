@@ -1,3 +1,4 @@
+import '../../../../core/theme/minimal_ui.dart';
 // File ini tidak digunakan lagi.
 // Top up dilakukan via Website Dashboard, bukan in-app.
 // Dibiarkan kosong agar tidak ada broken import jika ada referensi lama.
@@ -13,18 +14,25 @@ class MidtransPaymentScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tidak Tersedia',
-            style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF111111))),
+        title: const Text(
+          'Tidak Tersedia',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF172B2A),
+          ),
+        ),
         backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF111111),
+        foregroundColor: const Color(0xFF172B2A),
         elevation: 0,
       ),
-      backgroundColor: const Color(0xFFF5FAFA),
-      body: const Center(
-        child: Text(
-          'Top up dilakukan via Website Dashboard.\n'
-          'Silakan buka aplikasi browser Anda.',
-          textAlign: TextAlign.center,
+      backgroundColor: const Color(0xFFF7F9F8),
+      body: ZelaPage(
+        child: const Center(
+          child: Text(
+            'Top up dilakukan via Website Dashboard.\n'
+            'Silakan buka aplikasi browser Anda.',
+            textAlign: TextAlign.center,
+          ),
         ),
       ),
     );

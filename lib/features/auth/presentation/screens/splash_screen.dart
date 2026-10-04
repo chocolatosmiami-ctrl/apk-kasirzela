@@ -1,3 +1,4 @@
+import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/services/supabase_auth_service.dart';
@@ -25,13 +26,17 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
     debugPrint('🖥️ [SPLASH] initState');
     _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1200));
-    _fadeAnim = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
     );
-    _scaleAnim = Tween<double>(begin: 0.7, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
-    );
+    _fadeAnim = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
+    _scaleAnim = Tween<double>(
+      begin: 0.7,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
     _controller.forward();
     Future.delayed(const Duration(seconds: 2), _checkAuth);
   }
@@ -67,10 +72,12 @@ class _SplashScreenState extends State<SplashScreen>
     if (fbSession != null) {
       // Sudah login → minta PIN dulu
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => PinVerifyScreen(
-          userName: fbSession!.name,
-          userRole: fbSession.role,
-        )),
+        MaterialPageRoute(
+          builder: (_) => PinVerifyScreen(
+            userName: fbSession!.name,
+            userRole: fbSession.role,
+          ),
+        ),
       );
     } else {
       // Belum login → ke halaman Login
@@ -86,72 +93,29 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppTheme.primaryRed, AppTheme.primaryOrange],
-          ),
-        ),
-        child: Center(
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _fadeAnim,
-                child: ScaleTransition(
-                  scale: _scaleAnim,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 120, height: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Text('🍽️',
-                              style: TextStyle(fontSize: 60)),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      const Text('POS Kasir',
-                          style: TextStyle(
-                              color: Colors.white, fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5)),
-                      const SizedBox(height: 8),
-                      Text('Kelola pesanan dengan mudah',
-                          style: TextStyle(
-                              color: Colors.white.withOpacity(0.85),
-                              fontSize: 15)),
-                      const SizedBox(height: 60),
-                      SizedBox(
-                        width: 40, height: 40,
-                        child: CircularProgressIndicator(
-                            color: Colors.white.withOpacity(0.7),
-                            strokeWidth: 3),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: AppTheme.surfaceLight,
+    body: Center(
+      child: FadeTransition(
+        opacity: _fadeAnim,
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ZelaBrand(),
+            SizedBox(height: 12),
+            Text(
+              'Operasional usaha lebih rapi.',
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 15),
+            ),
+            SizedBox(height: 32),
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
 }

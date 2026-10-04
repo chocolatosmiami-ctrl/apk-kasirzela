@@ -1,3 +1,4 @@
+import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/database/database_helper.dart';
@@ -30,26 +31,112 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
 
   // Semua permission dengan kategori
   static const Map<String, Map<String, dynamic>> permDefs = {
-    'kasir':          {'label': 'Transaksi & Kasir',    'icon': Icons.point_of_sale,     'cat': 'Transaksi',  'desc': 'Input pesanan & proses bayar'},
-    'diskon':         {'label': 'Beri Diskon',           'icon': Icons.local_offer,        'cat': 'Transaksi',  'desc': 'Tambah diskon saat checkout'},
-    'void_transaksi': {'label': 'Void Transaksi',        'icon': Icons.cancel,             'cat': 'Transaksi',  'desc': 'Batalkan transaksi lunas'},
-    'pesanan':        {'label': 'Lihat Pesanan',         'icon': Icons.receipt_long,       'cat': 'Pesanan',    'desc': 'Akses daftar pesanan & riwayat'},
-    'update_pesanan': {'label': 'Update Status Pesanan', 'icon': Icons.update,             'cat': 'Pesanan',    'desc': 'Ubah status pesanan'},
-    'menu':           {'label': 'Lihat Menu',            'icon': Icons.restaurant_menu,    'cat': 'Menu',       'desc': 'Akses halaman kelola menu'},
-    'tambah_menu':    {'label': 'Tambah/Edit Menu',      'icon': Icons.edit,               'cat': 'Menu',       'desc': 'Tambah atau ubah item menu'},
-    'hapus_menu':     {'label': 'Hapus Menu',            'icon': Icons.delete,             'cat': 'Menu',       'desc': 'Hapus item menu permanen'},
-    'pengeluaran':    {'label': 'Catat Pengeluaran',     'icon': Icons.money_off,          'cat': 'Keuangan',   'desc': 'Tambah & lihat pengeluaran'},
-    'laporan':        {'label': 'Lihat Laporan',         'icon': Icons.bar_chart,          'cat': 'Keuangan',   'desc': 'Akses laporan penjualan'},
-    'export_pdf':     {'label': 'Export PDF & Share',    'icon': Icons.picture_as_pdf,     'cat': 'Keuangan',   'desc': 'Export laporan ke PDF/WA'},
-    'inventory':      {'label': 'Kelola Stok Bahan',     'icon': Icons.inventory_2,        'cat': 'Inventori',  'desc': 'Tambah & update stok bahan'},
-    'shift':          {'label': 'Kelola Shift',          'icon': Icons.av_timer,           'cat': 'Shift',      'desc': 'Buka & tutup shift kasir'},
-    'pengaturan':     {'label': 'Akses Pengaturan',      'icon': Icons.settings,           'cat': 'Pengaturan', 'desc': 'Masuk ke menu pengaturan'},
-    'manajemen_user': {'label': 'Kelola Pengguna',       'icon': Icons.group,              'cat': 'Pengaturan', 'desc': 'Tambah/edit/hapus akun'},
-    'hak_akses':      {'label': 'Atur Hak Akses',        'icon': Icons.admin_panel_settings,'cat': 'Pengaturan','desc': 'Ubah permission pengguna'},
+    'kasir': {
+      'label': 'Transaksi & Kasir',
+      'icon': Icons.point_of_sale,
+      'cat': 'Transaksi',
+      'desc': 'Input pesanan & proses bayar',
+    },
+    'diskon': {
+      'label': 'Beri Diskon',
+      'icon': Icons.local_offer,
+      'cat': 'Transaksi',
+      'desc': 'Tambah diskon saat checkout',
+    },
+    'void_transaksi': {
+      'label': 'Void Transaksi',
+      'icon': Icons.cancel,
+      'cat': 'Transaksi',
+      'desc': 'Batalkan transaksi lunas',
+    },
+    'pesanan': {
+      'label': 'Lihat Pesanan',
+      'icon': Icons.receipt_long,
+      'cat': 'Pesanan',
+      'desc': 'Akses daftar pesanan & riwayat',
+    },
+    'update_pesanan': {
+      'label': 'Update Status Pesanan',
+      'icon': Icons.update,
+      'cat': 'Pesanan',
+      'desc': 'Ubah status pesanan',
+    },
+    'menu': {
+      'label': 'Lihat Menu',
+      'icon': Icons.restaurant_menu,
+      'cat': 'Menu',
+      'desc': 'Akses halaman kelola menu',
+    },
+    'tambah_menu': {
+      'label': 'Tambah/Edit Menu',
+      'icon': Icons.edit,
+      'cat': 'Menu',
+      'desc': 'Tambah atau ubah item menu',
+    },
+    'hapus_menu': {
+      'label': 'Hapus Menu',
+      'icon': Icons.delete,
+      'cat': 'Menu',
+      'desc': 'Hapus item menu permanen',
+    },
+    'pengeluaran': {
+      'label': 'Catat Pengeluaran',
+      'icon': Icons.money_off,
+      'cat': 'Keuangan',
+      'desc': 'Tambah & lihat pengeluaran',
+    },
+    'laporan': {
+      'label': 'Lihat Laporan',
+      'icon': Icons.bar_chart,
+      'cat': 'Keuangan',
+      'desc': 'Akses laporan penjualan',
+    },
+    'export_pdf': {
+      'label': 'Export PDF & Share',
+      'icon': Icons.picture_as_pdf,
+      'cat': 'Keuangan',
+      'desc': 'Export laporan ke PDF/WA',
+    },
+    'inventory': {
+      'label': 'Kelola Stok Bahan',
+      'icon': Icons.inventory_2,
+      'cat': 'Inventori',
+      'desc': 'Tambah & update stok bahan',
+    },
+    'shift': {
+      'label': 'Kelola Shift',
+      'icon': Icons.av_timer,
+      'cat': 'Shift',
+      'desc': 'Buka & tutup shift kasir',
+    },
+    'pengaturan': {
+      'label': 'Akses Pengaturan',
+      'icon': Icons.settings,
+      'cat': 'Pengaturan',
+      'desc': 'Masuk ke menu pengaturan',
+    },
+    'manajemen_user': {
+      'label': 'Kelola Pengguna',
+      'icon': Icons.group,
+      'cat': 'Pengaturan',
+      'desc': 'Tambah/edit/hapus akun',
+    },
+    'hak_akses': {
+      'label': 'Atur Hak Akses',
+      'icon': Icons.admin_panel_settings,
+      'cat': 'Pengaturan',
+      'desc': 'Ubah permission pengguna',
+    },
   };
 
   static const List<String> _cats = [
-    'Transaksi', 'Pesanan', 'Menu', 'Keuangan', 'Inventori', 'Shift', 'Pengaturan'
+    'Transaksi',
+    'Pesanan',
+    'Menu',
+    'Keuangan',
+    'Inventori',
+    'Shift',
+    'Pengaturan',
   ];
 
   // Admin only permissions - tidak bisa diberikan ke non-admin
@@ -73,11 +160,15 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
     setState(() => _loading = true);
 
     final kasirList = await DatabaseHelper.instance.getRolePermissions('kasir');
-    final manajerList = await DatabaseHelper.instance.getRolePermissions('manajer');
+    final manajerList = await DatabaseHelper.instance.getRolePermissions(
+      'manajer',
+    );
 
     final auth = context.read<AuthProvider>();
     final allUsers = await auth.getUsers();
-    final nonAdmin = allUsers.where((u) => u.role != 'admin' && (u.isActive as bool? ?? true)).toList();
+    final nonAdmin = allUsers
+        .where((u) => u.role != 'admin' && (u.isActive as bool? ?? true))
+        .toList();
 
     final userPermsMap = <String, Map<String, bool>>{};
     final userHasOverride = <String, bool>{};
@@ -103,11 +194,14 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
           if (rpcResult is List && rpcResult.isNotEmpty) {
             // Simpan ke SQLite lokal
             for (final r in rpcResult) {
-              final perm    = r['permission']?.toString() ?? '';
+              final perm = r['permission']?.toString() ?? '';
               final allowed = r['is_allowed'] as bool? ?? false;
               if (perm.isNotEmpty) {
                 await DatabaseHelper.instance.setPermissionLocalOnly(
-                    userRole, perm, allowed);
+                  userRole,
+                  perm,
+                  allowed,
+                );
               }
             }
             // Reload dari SQLite
@@ -124,35 +218,43 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
       if (rows.isNotEmpty) {
         userHasOverride[user.authId ?? ''] = true;
         userPermsMap[user.authId ?? ''] = {
-          for (var r in rows) r['permission'] as String: (r['is_allowed'] as int) == 1
+          for (var r in rows)
+            r['permission'] as String: (r['is_allowed'] as int) == 1,
         };
       } else {
         userHasOverride[user.authId ?? ''] = false;
         final rp = user.role == 'manajer' ? manajerList : kasirList;
-        userPermsMap[user.authId ?? ''] = {for (var p in permDefs.keys) p: rp.contains(p)};
+        userPermsMap[user.authId ?? ''] = {
+          for (var p in permDefs.keys) p: rp.contains(p),
+        };
       }
     }
 
     // Load custom presets
-    final presetRows = await DatabaseHelper.instance.query('presets', orderBy: 'sort_order ASC, id ASC');
+    final presetRows = await DatabaseHelper.instance.query(
+      'presets',
+      orderBy: 'sort_order ASC, id ASC',
+    );
     final presets = presetRows.map((r) => PresetModel.fromMap(r)).toList();
 
     if (!mounted) return;
     setState(() {
       _presets = presets;
-      _kasirPerms   = {for (var p in permDefs.keys) p: kasirList.contains(p)};
+      _kasirPerms = {for (var p in permDefs.keys) p: kasirList.contains(p)};
       _manajerPerms = {for (var p in permDefs.keys) p: manajerList.contains(p)};
       _users = nonAdmin;
       _userPerms = userPermsMap;
       _userHasOverride = userHasOverride;
       _loading = false;
     });
-
   }
 
   Future<void> _pushAllToSupabase() async {
     if (_isPushing) return;
-    setState(() { _isPushing = true; _pushSuccess = false; });
+    setState(() {
+      _isPushing = true;
+      _pushSuccess = false;
+    });
     try {
       final ownerId = await PermissionSyncService.instance.getOwnerId();
       if (ownerId.isEmpty) {
@@ -160,17 +262,28 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
         return;
       }
       await PermissionSyncService.instance.pushAllPermissions(
-          ownerId: ownerId, role: 'kasir', permissions: _kasirPerms);
+        ownerId: ownerId,
+        role: 'kasir',
+        permissions: _kasirPerms,
+      );
       await PermissionSyncService.instance.pushAllPermissions(
-          ownerId: ownerId, role: 'manajer', permissions: _manajerPerms);
+        ownerId: ownerId,
+        role: 'manajer',
+        permissions: _manajerPerms,
+      );
       debugPrint('✅ [PermScreen] Pushed all permissions to Supabase');
       if (mounted) {
-        setState(() { _isPushing = false; _pushSuccess = true; });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('✅ Hak akses berhasil diterapkan ke semua kasir'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 3),
-        ));
+        setState(() {
+          _isPushing = false;
+          _pushSuccess = true;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Hak akses berhasil diterapkan ke semua kasir'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
         // Reset success state setelah 3 detik
         Future.delayed(const Duration(seconds: 3), () {
           if (mounted) setState(() => _pushSuccess = false);
@@ -180,10 +293,9 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
       debugPrint('⚠️ [PermScreen] Push all failed: $e');
       if (mounted) {
         setState(() => _isPushing = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('❌ Gagal: $e'),
-          backgroundColor: Colors.red,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Gagal: $e'), backgroundColor: Colors.red),
+        );
       }
     }
   }
@@ -194,15 +306,22 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
     // Sync ke Supabase agar kasir di HP lain dapat permission terbaru
     final ownerId = await PermissionSyncService.instance.getOwnerId();
     await PermissionSyncService.instance.pushPermission(
-      ownerId: ownerId, role: role, permission: perm, allowed: val);
+      ownerId: ownerId,
+      role: role,
+      permission: perm,
+      allowed: val,
+    );
 
-    final presetRows = await DatabaseHelper.instance.query('presets', orderBy: 'sort_order ASC, id ASC');
+    final presetRows = await DatabaseHelper.instance.query(
+      'presets',
+      orderBy: 'sort_order ASC, id ASC',
+    );
     final presets = presetRows.map((r) => PresetModel.fromMap(r)).toList();
 
     if (!mounted) return;
     setState(() {
       _presets = presets;
-      if (role == 'kasir')   _kasirPerms[perm] = val;
+      if (role == 'kasir') _kasirPerms[perm] = val;
       if (role == 'manajer') _manajerPerms[perm] = val;
     });
   }
@@ -214,9 +333,16 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
     // Sync ke Supabase — pakai authId user sebagai role identifier
     final ownerId = await PermissionSyncService.instance.getOwnerId();
     await PermissionSyncService.instance.pushPermission(
-      ownerId: ownerId, role: userRole, permission: perm, allowed: val);
+      ownerId: ownerId,
+      role: userRole,
+      permission: perm,
+      allowed: val,
+    );
 
-    final presetRows = await DatabaseHelper.instance.query('presets', orderBy: 'sort_order ASC, id ASC');
+    final presetRows = await DatabaseHelper.instance.query(
+      'presets',
+      orderBy: 'sort_order ASC, id ASC',
+    );
     final presets = presetRows.map((r) => PresetModel.fromMap(r)).toList();
 
     if (!mounted) return;
@@ -230,10 +356,17 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
   Future<void> _enableOverride(UserModel user) async {
     final base = user.role == 'manajer' ? _manajerPerms : _kasirPerms;
     for (final e in base.entries) {
-      await DatabaseHelper.instance.setPermission('user_${user.id?.toString() ?? ''}', e.key, e.value);
+      await DatabaseHelper.instance.setPermission(
+        'user_${user.id?.toString() ?? ''}',
+        e.key,
+        e.value,
+      );
     }
     // Load custom presets
-    final presetRows = await DatabaseHelper.instance.query('presets', orderBy: 'sort_order ASC, id ASC');
+    final presetRows = await DatabaseHelper.instance.query(
+      'presets',
+      orderBy: 'sort_order ASC, id ASC',
+    );
     final presets = presetRows.map((r) => PresetModel.fromMap(r)).toList();
 
     if (!mounted) return;
@@ -247,10 +380,15 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
 
   Future<void> _disableOverride(UserModel user) async {
     await DatabaseHelper.instance.rawUpdate(
-      'DELETE FROM role_permissions WHERE role = ?', ['user_${user.id?.toString() ?? ''}']);
+      'DELETE FROM role_permissions WHERE role = ?',
+      ['user_${user.id?.toString() ?? ''}'],
+    );
     final base = user.role == 'manajer' ? _manajerPerms : _kasirPerms;
     // Load custom presets
-    final presetRows = await DatabaseHelper.instance.query('presets', orderBy: 'sort_order ASC, id ASC');
+    final presetRows = await DatabaseHelper.instance.query(
+      'presets',
+      orderBy: 'sort_order ASC, id ASC',
+    );
     final presets = presetRows.map((r) => PresetModel.fromMap(r)).toList();
 
     if (!mounted) return;
@@ -259,30 +397,40 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
       _userHasOverride[user.authId ?? ''] = false;
       _userPerms[user.authId ?? ''] = Map<String, bool>.from(base);
     });
-    _snack('↩️ ${user.name} kembali ke hak akses role ${_rn(user.role)}', Colors.blue);
+    _snack(
+      '↩️ ${user.name} kembali ke hak akses role ${_rn(user.role)}',
+      Colors.teal,
+    );
   }
 
   // Apply a custom preset from DB
   Future<void> _applyPresetFromModel(String target, PresetModel preset) async {
-    final newPerms = {
-      for (var p in permDefs.keys) p: preset.hasPermission(p)
-    };
+    final newPerms = {for (var p in permDefs.keys) p: preset.hasPermission(p)};
     for (final e in newPerms.entries) {
       await DatabaseHelper.instance.setPermission(target, e.key, e.value);
     }
     if (!mounted) return;
     setState(() {
-      if (target == 'kasir')         _kasirPerms = newPerms;
-      else if (target == 'manajer')  _manajerPerms = newPerms;
+      if (target == 'kasir')
+        _kasirPerms = newPerms;
+      else if (target == 'manajer')
+        _manajerPerms = newPerms;
       else {
         final uid = target.replaceAll('user_', '');
         if (uid.isNotEmpty) _userPerms[uid] = newPerms;
       }
     });
-    _snack('✅ Preset "${preset.emoji} ${preset.name}" diterapkan', preset.color);
+    _snack(
+      '✅ Preset "${preset.emoji} ${preset.name}" diterapkan',
+      preset.color,
+    );
   }
 
-  Future<void> _applyPreset(String target, String preset, {String? role}) async {
+  Future<void> _applyPreset(
+    String target,
+    String preset, {
+    String? role,
+  }) async {
     final r = role ?? 'kasir';
     final newPerms = {for (var p in permDefs.keys) p: _presetHas(r, preset, p)};
     for (final e in newPerms.entries) {
@@ -292,16 +440,24 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
     // Batch push ke Supabase
     final ownerId = await PermissionSyncService.instance.getOwnerId();
     await PermissionSyncService.instance.pushAllPermissions(
-      ownerId: ownerId, role: target, permissions: newPerms);
+      ownerId: ownerId,
+      role: target,
+      permissions: newPerms,
+    );
 
-    final presetRows = await DatabaseHelper.instance.query('presets', orderBy: 'sort_order ASC, id ASC');
+    final presetRows = await DatabaseHelper.instance.query(
+      'presets',
+      orderBy: 'sort_order ASC, id ASC',
+    );
     final presets = presetRows.map((r) => PresetModel.fromMap(r)).toList();
 
     if (!mounted) return;
     setState(() {
       _presets = presets;
-      if (target == 'kasir')   _kasirPerms = newPerms;
-      else if (target == 'manajer') _manajerPerms = newPerms;
+      if (target == 'kasir')
+        _kasirPerms = newPerms;
+      else if (target == 'manajer')
+        _manajerPerms = newPerms;
       else {
         final uid = target.replaceAll('user_', '');
         if (uid.isNotEmpty) _userPerms[uid] = newPerms;
@@ -313,31 +469,53 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
   bool _presetHas(String role, String preset, String perm) {
     if (_adminOnly.contains(perm)) return false;
     switch (preset) {
-      case 'minimal': return perm == 'kasir';
+      case 'minimal':
+        return perm == 'kasir';
       case 'standard':
-        if (role == 'manajer') return ['kasir','diskon','pesanan','update_pesanan',
-          'menu','tambah_menu','pengeluaran','laporan','export_pdf','inventory',
-          'shift','pengaturan'].contains(perm);
-        return ['kasir','pesanan','pengeluaran','shift'].contains(perm);
-      case 'full': return !_adminOnly.contains(perm);
-      default: return false;
+        if (role == 'manajer')
+          return [
+            'kasir',
+            'diskon',
+            'pesanan',
+            'update_pesanan',
+            'menu',
+            'tambah_menu',
+            'pengeluaran',
+            'laporan',
+            'export_pdf',
+            'inventory',
+            'shift',
+            'pengaturan',
+          ].contains(perm);
+        return ['kasir', 'pesanan', 'pengeluaran', 'shift'].contains(perm);
+      case 'full':
+        return !_adminOnly.contains(perm);
+      default:
+        return false;
     }
   }
 
   void _snack(String msg, Color color) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg), backgroundColor: color,
-      duration: const Duration(seconds: 2),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: color,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   String _rn(String role) {
-    switch(role) {
-      case 'kasir': return 'Kasir';
-      case 'manajer': return 'Manajer';
-      case 'admin': return 'Admin';
-      default: return role;
+    switch (role) {
+      case 'kasir':
+        return 'Kasir';
+      case 'manajer':
+        return 'Manajer';
+      case 'admin':
+        return 'Admin';
+      default:
+        return role;
     }
   }
 
@@ -358,9 +536,12 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
             child: _isPushing
                 ? const Center(
                     child: SizedBox(
-                      width: 20, height: 20,
+                      width: 20,
+                      height: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     ),
                   )
                 : TextButton.icon(
@@ -375,7 +556,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
                       style: TextStyle(
                         color: _pushSuccess ? Colors.greenAccent : Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                        fontSize: 14,
                       ),
                     ),
                   ),
@@ -385,7 +566,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
           controller: _tabCtrl,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
+          unselectedLabelColor: Colors.white,
           tabs: const [
             Tab(icon: Icon(Icons.badge, size: 18), text: 'Kasir'),
             Tab(icon: Icon(Icons.work, size: 18), text: 'Manajer'),
@@ -393,97 +574,149 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
           ],
         ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabCtrl,
-              children: [
-                _roleTab('kasir', _kasirPerms, Colors.blue),
-                _roleTab('manajer', _manajerPerms, Colors.green),
-                _perUserTab(),
-              ],
-            ),
+      body: ZelaPage(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : TabBarView(
+                controller: _tabCtrl,
+                children: [
+                  _roleTab('kasir', _kasirPerms, Colors.teal),
+                  _roleTab('manajer', _manajerPerms, Colors.green),
+                  _perUserTab(),
+                ],
+              ),
+      ),
     );
   }
 
   Widget _roleTab(String role, Map<String, bool> perms, Color color) {
     final count = perms.values.where((v) => v).length;
     return ListView(
-        physics: const ClampingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       padding: const EdgeInsets.all(14),
       children: [
         // Header + preset
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [color.withOpacity(0.7), color]),
+            color: const Color(0xFF00796B),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Row(children: [
-            Icon(role == 'kasir' ? Icons.badge : Icons.work,
-                color: Colors.white, size: 26),
-            const SizedBox(width: 10),
-            Expanded(child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Role: ${_rn(role)}', style: const TextStyle(
-                    color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                Text('$count dari ${permDefs.length} fitur diaktifkan',
-                    style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12)),
-              ],
-            )),
-            // Preset menu
-            PopupMenuButton<int>(
-              icon: const Icon(Icons.tune, color: Colors.white),
-              tooltip: 'Terapkan Preset',
-              onSelected: (presetId) async {
-                if (presetId == -1) {
-                  await Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const PresetManagementScreen()));
-                  await _loadAll();
-                  return;
-                }
-                final preset = _presets.firstWhere((p) => p.id == presetId);
-                await _applyPresetFromModel(role, preset);
-              },
-              itemBuilder: (_) => [
-                ..._presets.map((p) => PopupMenuItem<int>(
-                  value: p.id,
-                  child: Row(children: [
-                    Text(p.emoji, style: const TextStyle(fontSize: 18)),
-                    const SizedBox(width: 8),
-                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(p.name, style: const TextStyle(fontSize: 13)),
-                      Text('${p.permissions.length} fitur',
-                          style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-                    ]),
-                  ]),
-                )),
-                const PopupMenuDivider(),
-                const PopupMenuItem<int>(
-                  value: -1,
-                  child: Row(children: [
-                    Icon(Icons.settings, size: 16, color: Colors.grey),
-                    SizedBox(width: 8),
-                    Text('Kelola Preset...', style: TextStyle(fontSize: 13)),
-                  ]),
+          child: Row(
+            children: [
+              Icon(
+                role == 'kasir' ? Icons.badge : Icons.work,
+                color: Colors.white,
+                size: 26,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Role: ${_rn(role)}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '$count dari ${permDefs.length} fitur diaktifkan',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.85),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ]),
+              ),
+              // Preset menu
+              PopupMenuButton<int>(
+                icon: const Icon(Icons.tune, color: Colors.white),
+                tooltip: 'Terapkan Preset',
+                onSelected: (presetId) async {
+                  if (presetId == -1) {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const PresetManagementScreen(),
+                      ),
+                    );
+                    await _loadAll();
+                    return;
+                  }
+                  final preset = _presets.firstWhere((p) => p.id == presetId);
+                  await _applyPresetFromModel(role, preset);
+                },
+                itemBuilder: (_) => [
+                  ..._presets.map(
+                    (p) => PopupMenuItem<int>(
+                      value: p.id,
+                      child: Row(
+                        children: [
+                          Text(p.emoji, style: const TextStyle(fontSize: 18)),
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                p.name,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                              Text(
+                                '${p.permissions.length} fitur',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: const Color(0xFF62736F),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  const PopupMenuItem<int>(
+                    value: -1,
+                    child: Row(
+                      children: [
+                        Icon(Icons.settings, size: 16, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Text(
+                          'Kelola Preset...',
+                          style: TextStyle(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 14),
 
         // Permission list grouped by category
         ..._cats.expand((cat) {
-          final items = permDefs.entries.where((e) => e.value['cat'] == cat).toList();
+          final items = permDefs.entries
+              .where((e) => e.value['cat'] == cat)
+              .toList();
           if (items.isEmpty) return <Widget>[];
           return [
             Padding(
               padding: const EdgeInsets.fromLTRB(4, 8, 4, 6),
-              child: Text(cat, style: TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 12,
-                  color: Colors.grey[600], letterSpacing: 0.5)),
+              child: Text(
+                cat,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: const Color(0xFF62736F),
+                  letterSpacing: 0.5,
+                ),
+              ),
             ),
             Container(
               decoration: BoxDecoration(
@@ -509,7 +742,9 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
                         enabled: enabled,
                         locked: locked,
                         activeColor: color,
-                        onChanged: locked ? null : (v) => _toggleRole(role, perm, v),
+                        onChanged: locked
+                            ? null
+                            : (v) => _toggleRole(role, perm, v),
                       ),
                     ],
                   );
@@ -525,38 +760,49 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
 
   Widget _perUserTab() {
     if (_users.isEmpty) {
-      return const Center(child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text('👤', style: TextStyle(fontSize: 48)),
-          SizedBox(height: 12),
-          Text('Belum ada Kasir/Manajer', style: TextStyle(color: Colors.grey)),
-          Text('Tambah dulu di Manajemen Pengguna',
-              style: TextStyle(color: Colors.grey, fontSize: 12)),
-        ],
-      ));
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('👤', style: TextStyle(fontSize: 48)),
+            SizedBox(height: 12),
+            Text(
+              'Belum ada Kasir/Manajer',
+              style: TextStyle(color: Colors.grey),
+            ),
+            Text(
+              'Tambah dulu di Manajemen Pengguna',
+              style: TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+          ],
+        ),
+      );
     }
 
     return ListView(
-        physics: const ClampingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       padding: const EdgeInsets.all(14),
       children: [
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.purple[50],
+            color: Colors.teal[50],
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.purple[200]!),
+            border: Border.all(color: Colors.teal[200]!),
           ),
-          child: const Row(children: [
-            Icon(Icons.info_outline, color: Colors.purple, size: 16),
-            SizedBox(width: 8),
-            Expanded(child: Text(
-              'Atur hak akses khusus per individu. '
-              'Aktifkan toggle untuk override dari role.',
-              style: TextStyle(fontSize: 12, color: Colors.purple),
-            )),
-          ]),
+          child: const Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.teal, size: 16),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Atur hak akses khusus per individu. '
+                  'Aktifkan toggle untuk override dari role.',
+                  style: TextStyle(fontSize: 14, color: Colors.teal),
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
         ..._users.map((u) => _userCard(u)),
@@ -568,7 +814,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
     final hasOverride = _userHasOverride[user.authId ?? ''] ?? false;
     final perms = _userPerms[user.authId ?? ''] ?? {};
     final count = perms.values.where((v) => v).length;
-    final rc = user.role == 'manajer' ? Colors.green : Colors.blue;
+    final rc = user.role == 'manajer' ? Colors.green : Colors.teal;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -576,123 +822,200 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: hasOverride
-            ? const BorderSide(color: Colors.purple, width: 1.5)
+            ? const BorderSide(color: Colors.teal, width: 1.5)
             : BorderSide.none,
       ),
       child: ExpansionTile(
         leading: CircleAvatar(
-          backgroundColor: hasOverride ? Colors.purple[100] : rc.withOpacity(0.15),
-          child: Text(user.name[0].toUpperCase(),
-              style: TextStyle(fontWeight: FontWeight.bold,
-                  color: hasOverride ? Colors.purple : rc)),
-        ),
-        title: Wrap(spacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
-          Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-                color: rc.withOpacity(0.12), borderRadius: BorderRadius.circular(4)),
-            child: Text(_rn(user.role), style: TextStyle(fontSize: 10, color: rc)),
+          backgroundColor: hasOverride
+              ? Colors.teal[100]
+              : rc.withOpacity(0.15),
+          child: Text(
+            user.name[0].toUpperCase(),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: hasOverride ? Colors.teal : rc,
+            ),
           ),
-          if (hasOverride)
+        ),
+        title: Wrap(
+          spacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              user.name,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                  color: Colors.purple[100], borderRadius: BorderRadius.circular(4)),
-              child: const Text('Custom',
-                  style: TextStyle(fontSize: 10, color: Colors.purple)),
+                color: rc.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                _rn(user.role),
+                style: TextStyle(fontSize: 12, color: rc),
+              ),
             ),
-        ]),
+            if (hasOverride)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.teal[100],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'Custom',
+                  style: TextStyle(fontSize: 12, color: Colors.teal),
+                ),
+              ),
+          ],
+        ),
         subtitle: Text(
           hasOverride
               ? '$count fitur aktif (hak akses khusus)'
               : 'Mengikuti role ${_rn(user.role)}',
-          style: const TextStyle(fontSize: 11),
+          style: const TextStyle(fontSize: 12),
         ),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              // Override toggle
-              Row(children: [
-                Expanded(child: Text(
-                  hasOverride
-                      ? 'Hak akses khusus aktif'
-                      : 'Aktifkan pengaturan khusus untuk ${user.name}',
-                  style: const TextStyle(fontSize: 13),
-                )),
-                Switch(
-                  value: hasOverride,
-                  activeColor: Colors.purple,
-                  onChanged: (v) => v ? _enableOverride(user) : _disableOverride(user),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Override toggle
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        hasOverride
+                            ? 'Hak akses khusus aktif'
+                            : 'Aktifkan pengaturan khusus untuk ${user.name}',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
+                    Switch(
+                      value: hasOverride,
+                      activeColor: Colors.teal,
+                      onChanged: (v) =>
+                          v ? _enableOverride(user) : _disableOverride(user),
+                    ),
+                  ],
                 ),
-              ]),
 
-              if (hasOverride) ...[
-                const Divider(),
-                // Preset buttons
-                Row(children: [
-                  Expanded(child: _presetBtn('🔒', 'Minimal', Colors.red,
-                      () => _applyPreset('user_${user.id?.toString() ?? ''}', 'minimal', role: user.role))),
-                  const SizedBox(width: 6),
-                  Expanded(child: _presetBtn('📋', 'Standar', Colors.blue,
-                      () => _applyPreset('user_${user.id?.toString() ?? ''}', 'standard', role: user.role))),
-                  const SizedBox(width: 6),
-                  Expanded(child: _presetBtn('🔓', 'Penuh', Colors.green,
-                      () => _applyPreset('user_${user.id?.toString() ?? ''}', 'full', role: user.role))),
-                ]),
-                const SizedBox(height: 10),
+                if (hasOverride) ...[
+                  const Divider(),
+                  // Preset buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _presetBtn(
+                          '🔒',
+                          'Minimal',
+                          Colors.red,
+                          () => _applyPreset(
+                            'user_${user.id?.toString() ?? ''}',
+                            'minimal',
+                            role: user.role,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: _presetBtn(
+                          '📋',
+                          'Standar',
+                          Colors.teal,
+                          () => _applyPreset(
+                            'user_${user.id?.toString() ?? ''}',
+                            'standard',
+                            role: user.role,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: _presetBtn(
+                          '🔓',
+                          'Penuh',
+                          Colors.green,
+                          () => _applyPreset(
+                            'user_${user.id?.toString() ?? ''}',
+                            'full',
+                            role: user.role,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
 
-                // Per-category permission checklist
-                ..._cats.expand((cat) {
-                  final items = permDefs.entries.where((e) => e.value['cat'] == cat).toList();
-                  if (items.isEmpty) return <Widget>[];
-                  return [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Text(cat, style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 12,
-                          color: Colors.grey[600])),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[200]!),
-                        borderRadius: BorderRadius.circular(10),
+                  // Per-category permission checklist
+                  ..._cats.expand((cat) {
+                    final items = permDefs.entries
+                        .where((e) => e.value['cat'] == cat)
+                        .toList();
+                    if (items.isEmpty) return <Widget>[];
+                    return [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Text(
+                          cat,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: const Color(0xFF62736F),
+                          ),
+                        ),
                       ),
-                      child: Column(
-                        children: items.asMap().entries.map((entry) {
-                          final i = entry.key;
-                          final perm = entry.value.key;
-                          final def = entry.value.value;
-                          final enabled = perms[perm] ?? false;
-                          final locked = _adminOnly.contains(perm);
-                          return Column(children: [
-                            if (i > 0) const Divider(height: 1, indent: 50),
-                            _PermRow(
-                              icon: def['icon'] as IconData,
-                              label: def['label'] as String,
-                              desc: def['desc'] as String,
-                              enabled: enabled,
-                              locked: locked,
-                              dense: true,
-                              onChanged: locked ? null
-                                  : (v) => _toggleUserPerm(user, perm, v),
-                            ),
-                          ]);
-                        }).toList(),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey[200]!),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          children: items.asMap().entries.map((entry) {
+                            final i = entry.key;
+                            final perm = entry.value.key;
+                            final def = entry.value.value;
+                            final enabled = perms[perm] ?? false;
+                            final locked = _adminOnly.contains(perm);
+                            return Column(
+                              children: [
+                                if (i > 0) const Divider(height: 1, indent: 50),
+                                _PermRow(
+                                  icon: def['icon'] as IconData,
+                                  label: def['label'] as String,
+                                  desc: def['desc'] as String,
+                                  enabled: enabled,
+                                  locked: locked,
+                                  dense: true,
+                                  onChanged: locked
+                                      ? null
+                                      : (v) => _toggleUserPerm(user, perm, v),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
                       ),
-                    ),
-                  ];
-                }),
+                    ];
+                  }),
+                ],
               ],
-            ]),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _presetBtn(String emoji, String label, Color color, VoidCallback onTap) {
+  Widget _presetBtn(
+    String emoji,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return OutlinedButton(
       onPressed: onTap,
       style: OutlinedButton.styleFrom(
@@ -700,7 +1023,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
         padding: const EdgeInsets.symmetric(vertical: 6),
         side: BorderSide(color: color.withOpacity(0.5)),
       ),
-      child: Text('$emoji $label', style: const TextStyle(fontSize: 11)),
+      child: Text('$emoji $label', style: const TextStyle(fontSize: 12)),
     );
   }
 }
@@ -729,33 +1052,42 @@ class _PermRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = activeColor ?? AppTheme.primaryRed;
     return Padding(
-      padding: EdgeInsets.symmetric(
-          horizontal: 12, vertical: dense ? 4 : 6),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: dense ? 4 : 6),
       child: Row(
         children: [
           Container(
             width: dense ? 32 : 36,
             height: dense ? 32 : 36,
             decoration: BoxDecoration(
-              color: enabled ? color.withOpacity(0.1) : Colors.grey[100],
+              color: enabled ? color.withOpacity(0.1) : const Color(0xFFF7F9F8),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon,
-                size: dense ? 16 : 18,
-                color: enabled ? color : Colors.grey[400]),
+            child: Icon(
+              icon,
+              size: dense ? 16 : 18,
+              color: enabled ? color : const Color(0xFF62736F),
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: TextStyle(
+                Text(
+                  label,
+                  style: TextStyle(
                     fontSize: dense ? 12 : 13,
                     fontWeight: FontWeight.w600,
-                    color: locked ? Colors.grey[400] : null)),
-                Text(desc, style: TextStyle(
-                    fontSize: 11,
-                    color: locked ? Colors.grey[300] : Colors.grey[500])),
+                    color: locked ? const Color(0xFF62736F) : null,
+                  ),
+                ),
+                Text(
+                  desc,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: locked ? Colors.grey[300] : const Color(0xFF62736F),
+                  ),
+                ),
               ],
             ),
           ),

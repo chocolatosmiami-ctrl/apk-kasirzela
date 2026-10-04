@@ -1,3 +1,4 @@
+import '../../../../core/theme/minimal_ui.dart';
 import 'dart:async';
 import '../../../../core/utils/app_constants.dart';
 import '../../../../core/services/auto_report_service.dart';
@@ -60,8 +61,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // true = side menu, false = bottom nav
   bool _useSideMenu = false;
   // Cached broadcast stream — prevents "already listened" error on rebuild
-  final Stream<List<PendingApproval>> _approvalStream =
-  ApprovalService.instance.pendingApprovalsStream();
+  final Stream<List<PendingApproval>> _approvalStream = ApprovalService.instance
+      .pendingApprovalsStream();
 
   @override
   void initState() {
@@ -113,11 +114,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         context: context,
         barrierDismissible: false,
         builder: (_) => AlertDialog(
-          title: const Row(children: [
-            Icon(Icons.store, color: const Color(0xFF00897B)),
-            SizedBox(width: 8),
-            Text('Pilih Cabang', style: TextStyle(fontSize: 16)),
-          ]),
+          title: const Row(
+            children: [
+              Icon(Icons.store, color: const Color(0xFF00796B)),
+              SizedBox(width: 8),
+              Text('Pilih Cabang', style: TextStyle(fontSize: 16)),
+            ],
+          ),
           content: SizedBox(
             width: double.maxFinite,
             child: ListView.builder(
@@ -128,23 +131,37 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 final isAll = b['id'] == '';
                 return ListTile(
                   leading: Container(
-                    width: 36, height: 36,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
-                      color: isAll ? Colors.grey[100]
-                          : b['mode'] == 'retail' ? Colors.orange[50] : const Color(0xFFE0F7F4),
+                      color: isAll
+                          ? const Color(0xFFF7F9F8)
+                          : b['mode'] == 'retail'
+                          ? Colors.orange[50]
+                          : const Color(0xFFEAF5F1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Center(child: Text(
-                      isAll ? '🏢' : b['mode'] == 'retail' ? '🛍️' : '🍽️',
-                      style: const TextStyle(fontSize: 18),
-                    )),
+                    child: Center(
+                      child: Text(
+                        isAll
+                            ? '🏢'
+                            : b['mode'] == 'retail'
+                            ? '🛍️'
+                            : '🍽️',
+                        style: const TextStyle(fontSize: 18),
+                      ),
+                    ),
                   ),
-                  title: Text(b['name'] as String,
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  title: Text(
+                    b['name'] as String,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   subtitle: isAll
                       ? const Text('Lihat semua cabang sekaligus')
-                      : Text(b['mode'] == 'retail' ? 'Retail' : 'Rumah Makan',
-                      style: const TextStyle(fontSize: 11)),
+                      : Text(
+                          b['mode'] == 'retail' ? 'Retail' : 'Rumah Makan',
+                          style: const TextStyle(fontSize: 12),
+                        ),
                   onTap: () async {
                     Navigator.pop(ctx);
                     final selectedId = b['id'] as String;
@@ -152,9 +169,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     final selectedMode = b['mode'] as String? ?? 'food';
 
                     await prefs.setString(AppConstants.keyBranchId, selectedId);
-                    await prefs.setString(AppConstants.keyBranchName, selectedName);
+                    await prefs.setString(
+                      AppConstants.keyBranchName,
+                      selectedName,
+                    );
                     await prefs.setString('branch_mode', selectedMode);
-                    await prefs.setString(AppConstants.keyBranchMode, selectedMode);
+                    await prefs.setString(
+                      AppConstants.keyBranchMode,
+                      selectedMode,
+                    );
 
                     // Clear stok cache MenuProvider agar tidak tampil stok cabang lama
                     if (mounted) {
@@ -215,7 +238,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       final prefs = await SharedPreferences.getInstance();
       final lastSync = prefs.getInt(permCacheKey) ?? 0;
       final now = DateTime.now().millisecondsSinceEpoch;
-      const ttlMs = 30 * 1000; // 30 detik - agar perubahan dari dashboard cepat terbaca
+      const ttlMs =
+          30 * 1000; // 30 detik - agar perubahan dari dashboard cepat terbaca
 
       if (now - lastSync > ttlMs) {
         await PermissionSyncService.instance.pullAndSyncToLocal(ownerId);
@@ -234,27 +258,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final items = <_NavItem>[];
 
     // ── HOME DASHBOARD — index 0 untuk semua role ──
-    screens.add(HomeDashboardScreen(
-      key: const ValueKey('home_dashboard'),
-      onNavigate: (idx) {
-        debugPrint('🏠 onNavigate called with idx=$idx');
-        setState(() => _selectedIndex = idx);
-      },
-      onTapStok: () {
-        // Cari index InventoryScreen secara dinamis agar tidak salah arah
-        final idx = _screens.indexWhere(
-          (s) => s is InventoryScreen || s is RetailProductListScreen,
-        );
-        if (idx >= 0) {
-          debugPrint('🏠 onTapStok → index=$idx');
-          setState(() => _selectedIndex = idx);
-        }
-      },
-    ));
-    items.add(_NavItem(
+    screens.add(const SizedBox.shrink());
+    items.add(
+      _NavItem(
         icon: Icons.home_rounded,
         label: 'Home',
-        color: const Color(0xFF00897B)));
+        color: const Color(0xFF00796B),
+      ),
+    );
 
     // ── Tentukan akses berdasarkan role ─────────────────
     // superadmin = pemilik aplikasi (email hardcode)
@@ -275,7 +286,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final auth2 = context.read<AuthProvider>();
     final userBranchMode = auth2.currentUser?.branchMode ?? 'food';
     final prefs2 = await SharedPreferences.getInstance();
-    final savedMode = userBranchMode.isNotEmpty ? userBranchMode
+    final savedMode = userBranchMode.isNotEmpty
+        ? userBranchMode
         : (prefs2.getString(AppConstants.keyBranchMode) ?? 'food');
 
     final branchMode = BranchModeExt.fromString(savedMode);
@@ -283,41 +295,66 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     if (isRetailMode) {
       screens.add(RetailCashierScreen(key: ValueKey(_branchKey)));
-      items.add(_NavItem(
-          icon: Icons.storefront, label: 'KASIR ZL', color: const Color(0xFF26A69A)));
+      items.add(
+        _NavItem(
+          icon: Icons.storefront,
+          label: 'KASIR ZL',
+          color: const Color(0xFF00796B),
+        ),
+      );
     } else {
       screens.add(CashierScreen(key: ValueKey(_branchKey)));
-      items.add(_NavItem(
-          icon: Icons.point_of_sale, label: 'KASIR ZL', color: const Color(0xFF00897B)));
+      items.add(
+        _NavItem(
+          icon: Icons.point_of_sale,
+          label: 'KASIR ZL',
+          color: const Color(0xFF00796B),
+        ),
+      );
     }
 
     // ── 2. Shift — cek permission 'shift' untuk kasir & manajer ──
-    final canShift = isAdmin || isOwner || isSuperAdmin
-        || perms.contains('shift');
+    final canShift =
+        isAdmin || isOwner || isSuperAdmin || perms.contains('shift');
     if (canShift) {
       screens.add(const ShiftScreen());
-      items.add(_NavItem(
-          icon: Icons.av_timer, label: 'Shift', color: Colors.green));
+      items.add(
+        _NavItem(icon: Icons.av_timer, label: 'Shift', color: Colors.green),
+      );
     }
 
     // ── 3. Riwayat Transaksi / Pesanan ─────────────────
     // Kasir selalu bisa lihat riwayat transaksi (miliknya sendiri via filter)
     // Admin/manajer bisa lihat semua transaksi
-    if (isAdmin || isOwner || (isManajer && (perms.contains('pesanan') || perms.isEmpty)) || (!isManajer && !isAdmin && !isOwner && perms.contains('pesanan'))) {
+    if (isAdmin ||
+        isOwner ||
+        (isManajer && (perms.contains('pesanan') || perms.isEmpty)) ||
+        (!isManajer && !isAdmin && !isOwner && perms.contains('pesanan'))) {
       screens.add(OrdersScreen(key: ValueKey(_branchKey)));
-      items.add(_NavItem(
+      items.add(
+        _NavItem(
           icon: Icons.receipt_long,
           label: 'Riwayat',
-          color: Colors.orange));
+          color: Colors.orange,
+        ),
+      );
     }
 
     // ── 3b. Meja (hanya mode Rumah Makan) ────────────
-    if (!isRetailMode && (isAdmin || isManajer || isOwner ||
-        (isManajer && (perms.contains('pesanan') || perms.isEmpty)) || (!isManajer && perms.contains('pesanan')))) {
+    if (!isRetailMode &&
+        (isAdmin ||
+            isManajer ||
+            isOwner ||
+            (isManajer && (perms.contains('pesanan') || perms.isEmpty)) ||
+            (!isManajer && perms.contains('pesanan')))) {
       screens.add(const TableManagementScreen());
-      items.add(_NavItem(
-          icon: Icons.table_restaurant, label: 'Meja',
-          color: Colors.brown));
+      items.add(
+        _NavItem(
+          icon: Icons.table_restaurant,
+          label: 'Meja',
+          color: Colors.brown,
+        ),
+      );
     }
 
     // ── 4. Menu / Produk ─────────────────────────────────
@@ -325,21 +362,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (isRetailMode) {
         // Retail: manage products
         screens.add(RetailProductListScreen(key: ValueKey(_branchKey)));
-        items.add(_NavItem(
-            icon: Icons.inventory, label: 'Produk', color: Colors.teal));
+        items.add(
+          _NavItem(icon: Icons.inventory, label: 'Produk', color: Colors.teal),
+        );
       } else {
         // Food: manage menu
         screens.add(const MenuScreen());
-        items.add(_NavItem(
-            icon: Icons.restaurant_menu, label: 'Menu', color: Colors.teal));
+        items.add(
+          _NavItem(
+            icon: Icons.restaurant_menu,
+            label: 'Menu',
+            color: Colors.teal,
+          ),
+        );
       }
     }
 
     // ── 5. Pengeluaran ───────────────────────────────────
     if (isAdmin || isManajer || perms.contains('pengeluaran')) {
       screens.add(const ExpensesScreen());
-      items.add(_NavItem(
-          icon: Icons.money_off, label: 'Pengeluaran', color: Colors.red));
+      items.add(
+        _NavItem(
+          icon: Icons.money_off,
+          label: 'Pengeluaran',
+          color: Colors.red,
+        ),
+      );
     }
 
     // ── 6. Stok ──────────────────────────────────────────
@@ -347,57 +395,116 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (isRetailMode) {
         screens.add(const RetailProductListScreen()); // Stok produk retail
       } else {
-        screens.add(InventoryScreen(key: ValueKey(_branchKey))); // Stok bahan makanan
+        screens.add(
+          InventoryScreen(key: ValueKey(_branchKey)),
+        ); // Stok bahan makanan
       }
-      items.add(_NavItem(
+      items.add(
+        _NavItem(
           icon: Icons.inventory_2,
           label: isRetailMode ? 'Stok Produk' : 'Stok Bahan',
-          color: Colors.brown));
+          color: Colors.brown,
+        ),
+      );
     }
 
     // ── 7. Laporan ───────────────────────────────────────
     if (isAdmin || isManajer || perms.contains('laporan')) {
       screens.add(ReportsScreen(key: ValueKey(_branchKey)));
-      items.add(_NavItem(
-          icon: Icons.bar_chart, label: 'Laporan', color: Colors.blue));
+      items.add(
+        _NavItem(icon: Icons.bar_chart, label: 'Laporan', color: Colors.teal),
+      );
     }
 
     // ── 8. Semua Cabang - hanya admin/owner ──────────────
     if (isAdmin) {
       screens.add(const AdminReportScreen());
-      items.add(_NavItem(
-          icon: Icons.store, label: 'Semua Cabang', color: Colors.purple));
+      items.add(
+        _NavItem(
+          icon: Icons.store,
+          label: 'Semua Cabang',
+          color: Colors.teal,
+        ),
+      );
     }
 
     // ── 9. Dashboard Cabang - owner & superadmin ─────────
     if (isOwner || isSuperAdmin) {
       screens.add(const OwnerDashboardScreen());
-      items.add(_NavItem(
-          icon: Icons.business, label: 'Cabang Saya', color: Colors.teal));
+      items.add(
+        _NavItem(
+          icon: Icons.business,
+          label: 'Cabang Saya',
+          color: Colors.teal,
+        ),
+      );
     }
 
     // ── 10. Saldo - owner & superadmin ───────────────────
     if (isOwner || isSuperAdmin) {
       screens.add(const SubscriptionScreen());
-      items.add(_NavItem(
-          icon: Icons.account_balance_wallet, label: 'Saldo',
-          color: Colors.purple));
+      items.add(
+        _NavItem(
+          icon: Icons.account_balance_wallet,
+          label: 'Saldo',
+          color: Colors.teal,
+        ),
+      );
     }
 
     // ── 11. Super Admin Panel - hanya role 'superadmin' ──
     if (isSuperAdmin) {
       screens.add(const SuperAdminScreen());
-      items.add(_NavItem(
+      items.add(
+        _NavItem(
           icon: Icons.admin_panel_settings,
-          label: 'Super Admin', color: const Color(0xFF1A237E)));
+          label: 'Super Admin',
+          color: const Color(0xFF00796B),
+        ),
+      );
     }
 
     // ── 12. Pengaturan - owner/admin selalu, kasir hanya jika punya permission
-    if (isAdmin || isOwner || isSuperAdmin || isManajer || perms.contains('pengaturan')) {
+    if (isAdmin ||
+        isOwner ||
+        isSuperAdmin ||
+        isManajer ||
+        perms.contains('pengaturan')) {
       screens.add(const SettingsScreen());
-      items.add(_NavItem(
-          icon: Icons.settings, label: 'Pengaturan', color: Colors.grey));
+      items.add(
+        _NavItem(icon: Icons.settings, label: 'Pengaturan', color: Colors.grey),
+      );
     }
+
+    void openScreen(bool Function(Widget) matches) {
+      final idx = _screens.indexWhere(matches);
+      if (idx >= 0 && mounted) setState(() => _selectedIndex = idx);
+    }
+
+    screens[0] = HomeDashboardScreen(
+      key: const ValueKey('home_dashboard'),
+      onNavigate: (idx) => _selectIndex(idx),
+      onTapMeja: screens.any((s) => s is TableManagementScreen)
+          ? () => openScreen((s) => s is TableManagementScreen)
+          : null,
+      onTapRiwayat: screens.any((s) => s is OrdersScreen)
+          ? () => openScreen((s) => s is OrdersScreen)
+          : null,
+      onTapShift: screens.any((s) => s is ShiftScreen)
+          ? () => openScreen((s) => s is ShiftScreen)
+          : null,
+      onTapSubscription: screens.any((s) => s is SubscriptionScreen)
+          ? () => openScreen((s) => s is SubscriptionScreen)
+          : null,
+      onTapStok:
+          screens.any(
+            (s) => s is InventoryScreen || s is RetailProductListScreen,
+          )
+          ? () => openScreen(
+              (s) => s is InventoryScreen || s is RetailProductListScreen,
+            )
+          : null,
+    );
 
     setState(() {
       _screens = screens;
@@ -410,7 +517,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final shiftProv = context.read<ShiftProvider>();
     if (!shiftProv.hasActiveShift) {
       final prefsShift = await SharedPreferences.getInstance();
-      final shiftUid = prefsShift.getString(AppConstants.keyUid) ?? auth3.currentUser?.authId ?? '';
+      final shiftUid =
+          prefsShift.getString(AppConstants.keyUid) ??
+          auth3.currentUser?.authId ??
+          '';
       // userId kosong tetap dipanggil — ShiftProvider resolve ke users.id / email
       shiftProv.loadActiveShift(shiftUid);
     }
@@ -428,16 +538,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (result != ConnectivityResult.none && mounted) {
         final syncResult = await subProv.syncOfflineDebt();
         if (syncResult.success && (syncResult.hasDebt == true) && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(
-              syncResult.isLocked == true
-                  ? '⚠️ Saldo habis setelah sync offline. Lakukan top up!'
-                  : '✅ ${syncResult.trxSynced} transaksi offline berhasil disinkronkan',
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                syncResult.isLocked == true
+                    ? '⚠️ Saldo habis setelah sync offline. Lakukan top up!'
+                    : '✅ ${syncResult.trxSynced} transaksi offline berhasil disinkronkan',
+              ),
+              backgroundColor: syncResult.isLocked == true
+                  ? Colors.orange
+                  : Colors.green,
+              duration: const Duration(seconds: 4),
             ),
-            backgroundColor: syncResult.isLocked == true
-                ? Colors.orange : Colors.green,
-            duration: const Duration(seconds: 4),
-          ));
+          );
         }
       }
     });
@@ -472,7 +585,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     if (!_loaded) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: ZelaPage(child: Center(child: CircularProgressIndicator())),
+      );
     }
     return _useSideMenu ? _buildSideMenuLayout() : _buildBottomNavLayout();
   }
@@ -481,14 +596,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget _buildSideMenuLayout() {
     final auth = context.read<AuthProvider>();
     final user = auth.currentUser;
-    final currentItem = _navItems[_selectedIndex.clamp(0, _navItems.length - 1)];
+    final currentItem =
+        _navItems[_selectedIndex.clamp(0, _navItems.length - 1)];
 
     final isMgrMultiBranch = auth.currentUser?.role == 'manajer';
 
     return Scaffold(
       // AppBar dengan hamburger menu
       appBar: AppBar(
-        backgroundColor: const Color(0xFF00897B),
+        backgroundColor: const Color(0xFF00796B),
         leading: Builder(
           builder: (ctx) => IconButton(
             icon: const Icon(Icons.menu, color: Colors.white),
@@ -500,44 +616,63 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           children: [
             Icon(currentItem.icon, color: Colors.white, size: 20),
             const SizedBox(width: 8),
-            Text(currentItem.label,
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+            Text(
+              currentItem.label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ],
         ),
         // Banner cabang aktif untuk manajer — tap untuk ganti cabang
-        bottom: isMgrMultiBranch ? PreferredSize(
-          preferredSize: const Size.fromHeight(28),
-          child: FutureBuilder<SharedPreferences>(
-            future: SharedPreferences.getInstance(),
-            builder: (ctx, snap) {
-              if (!snap.hasData) return const SizedBox.shrink();
-              final branchName = snap.data!.getString(AppConstants.keyBranchName) ?? '';
-              return GestureDetector(
-                onTap: () => _checkMultiBranchManager(force: true),
-                child: Container(
-                  width: double.infinity,
-                  color: const Color(0xFF00695C),
-                  padding: const EdgeInsets.symmetric(vertical: 5),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.store, color: Colors.white70, size: 13),
-                      const SizedBox(width: 5),
-                      Text(
-                        branchName.isEmpty ? 'Semua Cabang' : branchName,
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 12,
-                            fontWeight: FontWeight.w600),
+        bottom: isMgrMultiBranch
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(28),
+                child: FutureBuilder<SharedPreferences>(
+                  future: SharedPreferences.getInstance(),
+                  builder: (ctx, snap) {
+                    if (!snap.hasData) return const SizedBox.shrink();
+                    final branchName =
+                        snap.data!.getString(AppConstants.keyBranchName) ?? '';
+                    return GestureDetector(
+                      onTap: () => _checkMultiBranchManager(force: true),
+                      child: Container(
+                        width: double.infinity,
+                        color: const Color(0xFF00695C),
+                        padding: const EdgeInsets.symmetric(vertical: 5),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.store,
+                              color: Colors.white,
+                              size: 13,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              branchName.isEmpty ? 'Semua Cabang' : branchName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            const Icon(
+                              Icons.swap_horiz,
+                              color: Colors.white,
+                              size: 13,
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(width: 5),
-                      const Icon(Icons.swap_horiz, color: Colors.white70, size: 13),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-        ) : null,
+              )
+            : null,
         actions: [
           // Toggle layout button
           IconButton(
@@ -553,9 +688,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // Drawer (side menu)
       drawer: _buildDrawer(user),
       // Main content
-      body: IndexedStack(
-        index: _selectedIndex.clamp(0, _screens.length - 1),
-        children: _screens,
+      body: ZelaPage(
+        child: IndexedStack(
+          index: _selectedIndex.clamp(0, _screens.length - 1),
+          children: _screens,
+        ),
       ),
     );
   }
@@ -575,14 +712,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               child: Container(
                 width: double.infinity,
                 padding: EdgeInsets.fromLTRB(
-                    16, MediaQuery.of(context).padding.top + 16, 16, 20),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF00897B), Color(0xFF00695C)],
-                  ),
+                  16,
+                  MediaQuery.of(context).padding.top + 16,
+                  16,
+                  20,
                 ),
+                decoration: const BoxDecoration(color: const Color(0xFF00796B)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -601,9 +736,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               ? user.name[0].toUpperCase()
                               : '?',
                           style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold),
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -625,14 +761,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             Text(
                               displayName,
                               style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold),
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 3),
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(12),
@@ -640,7 +779,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               child: Text(
                                 _roleLabel(displayRole),
                                 style: const TextStyle(
-                                    color: Colors.white, fontSize: 11),
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                             if (displayBranch.isNotEmpty) ...[
@@ -648,12 +789,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.store,
-                                      color: Colors.white60, size: 12),
+                                  const Icon(
+                                    Icons.store,
+                                    color: Colors.white,
+                                    size: 12,
+                                  ),
                                   const SizedBox(width: 4),
-                                  Text(displayBranch,
-                                      style: const TextStyle(
-                                          color: Colors.white70, fontSize: 11)),
+                                  Text(
+                                    displayBranch,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ],
@@ -669,12 +817,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         return GestureDetector(
                           onTap: () {
                             Navigator.pop(context);
-                            final idx = _navItems.indexWhere((n) => n.label == 'Saldo');
+                            final idx = _navItems.indexWhere(
+                              (n) => n.label == 'Saldo',
+                            );
                             if (idx >= 0) setState(() => _selectedIndex = idx);
                           },
                           child: Container(
                             margin: const EdgeInsets.only(top: 4, bottom: 4),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
                             decoration: BoxDecoration(
                               color: sub.isLocked
                                   ? Colors.red.withOpacity(0.25)
@@ -686,36 +839,54 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     : Colors.white.withOpacity(0.2),
                               ),
                             ),
-                            child: Row(children: [
-                              Icon(
-                                sub.isLocked ? Icons.lock : Icons.account_balance_wallet,
-                                color: sub.isLocked ? Colors.redAccent : Colors.white70,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Saldo',
-                                      style: TextStyle(
+                            child: Row(
+                              children: [
+                                Icon(
+                                  sub.isLocked
+                                      ? Icons.lock
+                                      : Icons.account_balance_wallet,
+                                  color: sub.isLocked
+                                      ? Colors.redAccent
+                                      : Colors.white,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Saldo',
+                                        style: TextStyle(
                                           color: Colors.white.withOpacity(0.7),
-                                          fontSize: 10)),
-                                  Text(
-                                    sub.isLocked
-                                        ? '🔒 Habis'
-                                        : AppUtils.formatCurrency(sub.balance),
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      Text(
+                                        sub.isLocked
+                                            ? '🔒 Habis'
+                                            : AppUtils.formatCurrency(
+                                                sub.balance,
+                                              ),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              )),
-                              Text('${sub.remainingTrx} trx',
+                                ),
+                                Text(
+                                  '${sub.remainingTrx} trx',
                                   style: TextStyle(
-                                      color: Colors.white.withOpacity(0.7),
-                                      fontSize: 11)),
-                            ]),
+                                    color: Colors.white.withOpacity(0.7),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -730,8 +901,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           return GestureDetector(
                             onTap: () {
                               Navigator.pop(context);
-                              Navigator.push(context, MaterialPageRoute(
-                                  builder: (_) => const ApprovalScreen()));
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const ApprovalScreen(),
+                                ),
+                              );
                             },
                             child: Container(
                               margin: const EdgeInsets.only(top: 8),
@@ -739,31 +914,45 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               decoration: BoxDecoration(
                                 color: Colors.orange.withOpacity(0.25),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.orange.withOpacity(0.5)),
-                              ),
-                              child: Row(children: [
-                                const Icon(Icons.pending_actions,
-                                    color: Colors.orange, size: 18),
-                                const SizedBox(width: 8),
-                                Expanded(child: Text(
-                                  '$count pendaftaran menunggu persetujuan',
-                                  style: const TextStyle(
-                                      color: Colors.orange, fontSize: 12,
-                                      fontWeight: FontWeight.w600),
-                                )),
-                                Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.orange,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Text('$count',
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold)),
+                                border: Border.all(
+                                  color: Colors.orange.withOpacity(0.5),
                                 ),
-                              ]),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.pending_actions,
+                                    color: Colors.orange,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '$count pendaftaran menunggu persetujuan',
+                                      style: const TextStyle(
+                                        color: Colors.orange,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.orange,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      '$count',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -771,14 +960,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     // Live shift stats in drawer
                     Consumer<ShiftProvider>(
                       builder: (ctx, shiftProv, _) {
-                        if (!shiftProv.hasActiveShift) return const SizedBox.shrink();
+                        if (!shiftProv.hasActiveShift)
+                          return const SizedBox.shrink();
                         final shift = shiftProv.activeShift!;
                         return GestureDetector(
                           onTap: () {
                             Navigator.pop(context);
                             // Navigate to shift tab
                             setState(() {
-                              final idx = _navItems.indexWhere((n) => n.label == 'Shift');
+                              final idx = _navItems.indexWhere(
+                                (n) => n.label == 'Shift',
+                              );
                               if (idx >= 0) _selectedIndex = idx;
                             });
                           },
@@ -790,14 +982,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     Text(
                       '🍽️ POS Kasir',
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.7), fontSize: 12),
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 14,
+                      ),
                     ),
                   ],
                 ),
               ),
-
-            ),  // close SingleChildScrollView
-          ),  // close Flexible
+            ), // close SingleChildScrollView
+          ), // close Flexible
           // Menu items
           Expanded(
             child: ListView(
@@ -836,15 +1029,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     child: Row(
                       children: [
-                        Icon(Icons.swap_vert,
-                            size: 20, color: Colors.grey[600]),
+                        Icon(
+                          Icons.swap_vert,
+                          size: 20,
+                          color: const Color(0xFF62736F),
+                        ),
                         const SizedBox(width: 10),
-                        Text('Ganti ke menu bawah',
-                            style: TextStyle(
-                                fontSize: 13, color: Colors.grey[600])),
+                        Text(
+                          'Ganti ke menu bawah',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: const Color(0xFF62736F),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -856,13 +1058,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   onTap: () => _showLogout(context),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 8),
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     child: Row(
                       children: [
                         const Icon(Icons.logout, size: 20, color: Colors.red),
                         const SizedBox(width: 10),
-                        const Text('Keluar / Ganti Kasir',
-                            style: TextStyle(fontSize: 13, color: Colors.red)),
+                        const Text(
+                          'Keluar / Ganti Kasir',
+                          style: TextStyle(fontSize: 14, color: Colors.red),
+                        ),
                       ],
                     ),
                   ),
@@ -879,51 +1085,60 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // ─── Bottom Nav Layout — Cureva Pill Style ────────────────
   Widget _buildBottomNavLayout() {
     // Tampilkan max 4 item di pill nav; sisanya via FAB/overflow
-    final visibleItems = _navItems.length > 5 ? _navItems.sublist(0, 4) : _navItems;
-    final visibleScreens = _navItems.length > 5 ? _screens.sublist(0, 4) : _screens;
+    final visibleItems = _navItems.length > 5
+        ? _navItems.sublist(0, 4)
+        : _navItems;
+    final visibleScreens = _navItems.length > 5
+        ? _screens.sublist(0, 4)
+        : _screens;
     final clampedIdx = _selectedIndex.clamp(0, _screens.length - 1);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5FAFA),
-      body: Stack(
-        children: [
-          IndexedStack(index: clampedIdx, children: _screens),
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 8,
-            right: 12,
-            child: GestureDetector(
-              onTap: () {
-                setState(() => _useSideMenu = true);
-                _saveMenuPref(true);
-              },
-              child: Container(
-                width: 30, height: 30,
-                decoration: BoxDecoration(
-                  color: Colors.white, shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE0F2F1)),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08),
-                      blurRadius: 6, offset: const Offset(0, 2))],
+      backgroundColor: const Color(0xFFF7F9F8),
+      body: ZelaPage(
+        child: Stack(
+          children: [
+            IndexedStack(index: clampedIdx, children: _screens),
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 8,
+              right: 12,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() => _useSideMenu = true);
+                  _saveMenuPref(true);
+                },
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0xFFDEE7E3)),
+                    boxShadow: const <BoxShadow>[],
+                  ),
+                  child: const Icon(
+                    Icons.menu_rounded,
+                    size: 15,
+                    color: Color(0xFF62736F),
+                  ),
                 ),
-                child: const Icon(Icons.menu_rounded, size: 15, color: Color(0xFF9CA3AF)),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       // Cureva pill bottom nav
       bottomNavigationBar: SafeArea(
         child: Container(
-          color: const Color(0xFFF5FAFA),
+          color: const Color(0xFFF7F9F8),
           padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: const Color(0xFFE0F2F1)),
-              boxShadow: [BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 12, offset: const Offset(0, 4))],
+              border: Border.all(color: const Color(0xFFDEE7E3)),
+              boxShadow: const <BoxShadow>[],
             ),
             child: LayoutBuilder(
               builder: (ctx, constraints) {
@@ -944,26 +1159,44 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           onTap: () => _selectIndex(i),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
-                            margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 7),
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 2,
+                              vertical: 2,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 7,
+                            ),
                             decoration: BoxDecoration(
-                              color: isSel ? const Color(0xFF00897B) : Colors.transparent,
+                              color: isSel
+                                  ? const Color(0xFF00796B)
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(22),
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(item.icon, size: 18,
-                                    color: isSel ? Colors.white : const Color(0xFFBBBBBB)),
+                                Icon(
+                                  item.icon,
+                                  size: 18,
+                                  color: isSel
+                                      ? Colors.white
+                                      : const Color(0xFF62736F),
+                                ),
                                 if (isSel) ...[
                                   const SizedBox(height: 2),
-                                  Text(item.label,
-                                      overflow: TextOverflow.clip,
-                                      maxLines: 1, softWrap: false,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(fontSize: 9,
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white)),
+                                  Text(
+                                    item.label,
+                                    overflow: TextOverflow.clip,
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                                 ],
                               ],
                             ),
@@ -978,24 +1211,37 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           onTap: _showNavOverflowSheet,
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
-                            margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 2,
+                              vertical: 2,
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 7),
                             decoration: BoxDecoration(
                               color: clampedIdx >= visCount
-                                  ? const Color(0xFF00897B) : Colors.transparent,
+                                  ? const Color(0xFF00796B)
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(22),
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.apps_rounded, size: 18,
-                                    color: clampedIdx >= visCount
-                                        ? Colors.white : const Color(0xFFBBBBBB)),
+                                Icon(
+                                  Icons.apps_rounded,
+                                  size: 18,
+                                  color: clampedIdx >= visCount
+                                      ? Colors.white
+                                      : const Color(0xFF62736F),
+                                ),
                                 if (clampedIdx >= visCount) ...[
                                   const SizedBox(height: 2),
-                                  const Text('Lainnya', style: TextStyle(
-                                      fontSize: 9, fontWeight: FontWeight.w700,
-                                      color: Colors.white)),
+                                  const Text(
+                                    'Lainnya',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                                 ],
                               ],
                             ),
@@ -1032,41 +1278,83 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(child: Container(width: 40, height: 4,
-                decoration: BoxDecoration(color: const Color(0xFFE0F7F4),
-                    borderRadius: BorderRadius.circular(2)))),
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF5F1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
-            const Text('Semua Menu', style: TextStyle(fontSize: 15,
-                fontWeight: FontWeight.w800, color: Color(0xFF111111))),
+            const Text(
+              'Semua Menu',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF172B2A),
+              ),
+            ),
             const SizedBox(height: 14),
-            Wrap(spacing: 8, runSpacing: 8,
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: _navItems.asMap().entries.map((entry) {
-                final i = entry.key; final item = entry.value;
+                final i = entry.key;
+                final item = entry.value;
                 final isSel = _selectedIndex == i;
                 return GestureDetector(
-                  onTap: () { Navigator.pop(ctx); _selectIndex(i); },
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _selectIndex(i);
+                  },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 9,
+                    ),
                     decoration: BoxDecoration(
-                        color: isSel ? const Color(0xFF00897B) : const Color(0xFFF5FAFA),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isSel
-                            ? const Color(0xFF00897B) : const Color(0xFFE8F5F3))),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(item.icon, size: 16,
-                          color: isSel ? Colors.white : item.color),
-                      const SizedBox(width: 6),
-                      Text(item.label, style: TextStyle(fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isSel ? Colors.white : const Color(0xFF374151))),
-                    ]),
+                      color: isSel
+                          ? const Color(0xFF00796B)
+                          : const Color(0xFFF7F9F8),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSel
+                            ? const Color(0xFF00796B)
+                            : const Color(0xFFDEE7E3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          item.icon,
+                          size: 16,
+                          color: isSel ? Colors.white : item.color,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          item.label,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: isSel
+                                ? Colors.white
+                                : const Color(0xFF172B2A),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }).toList(),
@@ -1083,13 +1371,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       builder: (_) => AlertDialog(
         title: const Text('Keluar?'),
         content: const Text(
-            'Keluar dari akun sekarang?\nData transaksi tersimpan.'),
+          'Keluar dari akun sekarang?\nData transaksi tersimpan.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00897B)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00796B),
+            ),
             onPressed: () {
               // Stop shift timer sebelum logout agar tidak query SQLite
               // di background setelah user keluar
@@ -1097,7 +1389,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               context.read<AuthProvider>().logout();
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (_) => const FirebaseLoginScreen()),
-                    (route) => false,
+                (route) => false,
               );
             },
             child: const Text('Keluar', style: TextStyle(color: Colors.white)),
@@ -1109,10 +1401,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   String _roleLabel(String role) {
     switch (role) {
-      case 'admin': return '👑 Admin';
-      case 'manajer': return '👔 Manajer';
-      case 'kasir': return '🧑‍💼 Kasir';
-      default: return role;
+      case 'admin':
+        return '👑 Admin';
+      case 'manajer':
+        return '👔 Manajer';
+      case 'kasir':
+        return '🧑‍💼 Kasir';
+      default:
+        return role;
     }
   }
 }
@@ -1150,11 +1446,34 @@ class _DailyMotivationCardState extends State<_DailyMotivationCard> {
 
   void _updateTime() {
     final now = DateTime.now();
-    final months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    final days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
+    final days = [
+      'Minggu',
+      'Senin',
+      'Selasa',
+      'Rabu',
+      'Kamis',
+      'Jumat',
+      'Sabtu',
+    ];
     setState(() {
-      _time = "${now.hour.toString().padLeft(2,'0')}:${now.minute.toString().padLeft(2,'0')}:${now.second.toString().padLeft(2,'0')}";
-      _date = "${days[now.weekday % 7]}, ${now.day} ${months[now.month - 1]} ${now.year}";
+      _time =
+          "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+      _date =
+          "${days[now.weekday % 7]}, ${now.day} ${months[now.month - 1]} ${now.year}";
     });
   }
 
@@ -1183,7 +1502,8 @@ class _DailyMotivationCardState extends State<_DailyMotivationCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(_time,
+          Text(
+            _time,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 28,
@@ -1191,17 +1511,19 @@ class _DailyMotivationCardState extends State<_DailyMotivationCard> {
               letterSpacing: 2,
             ),
           ),
-          Text(_date,
-            style: const TextStyle(color: Colors.white70, fontSize: 11),
+          Text(
+            _date,
+            style: const TextStyle(color: Colors.white, fontSize: 12),
           ),
           const SizedBox(height: 8),
           const Divider(color: Colors.white24, height: 1),
           const SizedBox(height: 8),
-          Text(_todayQuote,
+          Text(
+            _todayQuote,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 11,
+              fontSize: 12,
               fontStyle: FontStyle.italic,
               height: 1.4,
             ),
@@ -1221,9 +1543,18 @@ class _ShiftStatMini extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 10)),
-        Text(value, style: const TextStyle(
-            color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white54, fontSize: 12),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ],
     );
   }
@@ -1252,17 +1583,21 @@ class _DrawerMenuItem extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF00897B).withOpacity(0.1) : null,
+          color: isSelected ? const Color(0xFF00796B).withOpacity(0.1) : null,
           borderRadius: BorderRadius.circular(10),
         ),
         child: ListTile(
           dense: true,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           leading: Container(
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFF00897B) : color.withOpacity(0.12),
+              color: isSelected
+                  ? const Color(0xFF00796B)
+                  : color.withOpacity(0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -1276,18 +1611,20 @@ class _DrawerMenuItem extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? const Color(0xFF00897B) : const Color(0xFF1E293B),
+              color: isSelected
+                  ? const Color(0xFF00796B)
+                  : const Color(0xFF1E293B),
             ),
           ),
           trailing: isSelected
               ? Container(
-            width: 4,
-            height: 24,
-            decoration: BoxDecoration(
-              color: const Color(0xFF00897B),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          )
+                  width: 4,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00796B),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                )
               : null,
           onTap: onTap,
         ),
@@ -1300,8 +1637,11 @@ class _NavItem {
   final IconData icon;
   final String label;
   final Color color;
-  const _NavItem(
-      {required this.icon, required this.label, required this.color});
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
 }
 
 // Redirect to login after logout

@@ -1,3 +1,4 @@
+import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:print_bluetooth_thermal/print_bluetooth_thermal.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -48,23 +49,27 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
   }
 
   Future<void> _load() async {
-    _savedDevice        = await _svc.getSavedPrinter();
-    _connected          = await _svc.isConnected();
-    _paperWidth         = await _svc.getPaperWidth();
+    _savedDevice = await _svc.getSavedPrinter();
+    _connected = await _svc.isConnected();
+    _paperWidth = await _svc.getPaperWidth();
     _savedKitchenDevice = await _svc.getSavedKitchenPrinter();
-    _kitchenWidth       = await _svc.getKitchenPaperWidth();
-    _autoPrintKitchen   = await _svc.getAutoPrintKitchen();
+    _kitchenWidth = await _svc.getKitchenPaperWidth();
+    _autoPrintKitchen = await _svc.getAutoPrintKitchen();
     setState(() {});
     _scan();
   }
 
   Future<void> _scan() async {
-    setState(() { _scanning = true; _statusMsg = null; });
+    setState(() {
+      _scanning = true;
+      _statusMsg = null;
+    });
     final permOk = await _svc.requestPermissions();
     if (!permOk) {
       setState(() {
         _scanning = false;
-        _statusMsg = '⚠️ Izin Bluetooth belum diberikan.\n'
+        _statusMsg =
+            '⚠️ Izin Bluetooth belum diberikan.\n'
             'Buka Pengaturan HP → Aplikasi → POS Kasir → Izin → aktifkan Bluetooth.';
         _statusOk = false;
       });
@@ -75,7 +80,8 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
     if (!btEnabled) {
       setState(() {
         _scanning = false;
-        _statusMsg = 'Bluetooth tidak aktif. Aktifkan Bluetooth di HP terlebih dahulu.';
+        _statusMsg =
+            'Bluetooth tidak aktif. Aktifkan Bluetooth di HP terlebih dahulu.';
         _statusOk = false;
       });
       return;
@@ -83,10 +89,11 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
 
     final devices = await _svc.getPairedDevices();
     setState(() {
-      _paired   = devices;
+      _paired = devices;
       _scanning = false;
       if (devices.isEmpty) {
-        _statusMsg = 'Tidak ada perangkat Bluetooth yang ter-pair.\n'
+        _statusMsg =
+            'Tidak ada perangkat Bluetooth yang ter-pair.\n'
             'Pair printer di Pengaturan Bluetooth HP terlebih dahulu.';
         _statusOk = false;
       }
@@ -95,14 +102,17 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
 
   // ── Connect printer customer ──────────────────────────
   Future<void> _connect(PrinterDevice device) async {
-    setState(() { _connecting = true; _statusMsg = null; });
+    setState(() {
+      _connecting = true;
+      _statusMsg = null;
+    });
     final ok = await _svc.connect(device);
     if (ok) await _svc.savePrinter(device);
     setState(() {
-      _connecting  = false;
-      _connected   = ok;
+      _connecting = false;
+      _connected = ok;
       _savedDevice = ok ? device : _savedDevice;
-      _statusMsg   = ok
+      _statusMsg = ok
           ? '✅ Terhubung ke ${device.name}'
           : '❌ Gagal connect ke ${device.name}. Pastikan printer menyala.';
       _statusOk = ok;
@@ -114,16 +124,22 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
     setState(() {
       _connected = false;
       _statusMsg = 'Terputus dari printer';
-      _statusOk  = true;
+      _statusOk = true;
     });
   }
 
   Future<void> _testPrint() async {
     if (!_connected) {
-      setState(() { _statusMsg = 'Hubungkan printer dulu'; _statusOk = false; });
+      setState(() {
+        _statusMsg = 'Hubungkan printer dulu';
+        _statusOk = false;
+      });
       return;
     }
-    setState(() { _testing = true; _statusMsg = null; });
+    setState(() {
+      _testing = true;
+      _statusMsg = null;
+    });
     final result = await _svc.printTestPage();
     setState(() {
       _testing = false;
@@ -137,13 +153,16 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
 
   // ── Connect printer dapur ─────────────────────────────
   Future<void> _connectKitchen(PrinterDevice device) async {
-    setState(() { _connectingKitchen = true; _kitchenStatusMsg = null; });
+    setState(() {
+      _connectingKitchen = true;
+      _kitchenStatusMsg = null;
+    });
     final ok = await _svc.connect(device);
     if (ok) await _svc.saveKitchenPrinter(device);
     setState(() {
-      _connectingKitchen  = false;
+      _connectingKitchen = false;
       _savedKitchenDevice = ok ? device : _savedKitchenDevice;
-      _kitchenStatusMsg   = ok
+      _kitchenStatusMsg = ok
           ? '✅ Printer dapur tersimpan: ${device.name}'
           : '❌ Gagal connect ke ${device.name}';
       _kitchenStatusOk = ok;
@@ -156,17 +175,23 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
     await _svc.removeKitchenPrinter();
     setState(() {
       _savedKitchenDevice = null;
-      _kitchenStatusMsg   = 'Printer dapur dihapus';
-      _kitchenStatusOk    = true;
+      _kitchenStatusMsg = 'Printer dapur dihapus';
+      _kitchenStatusOk = true;
     });
   }
 
   Future<void> _testKitchenPrint() async {
     if (_savedKitchenDevice == null) {
-      setState(() { _kitchenStatusMsg = 'Pilih printer dapur dulu'; _kitchenStatusOk = false; });
+      setState(() {
+        _kitchenStatusMsg = 'Pilih printer dapur dulu';
+        _kitchenStatusOk = false;
+      });
       return;
     }
-    setState(() { _testingKitchen = true; _kitchenStatusMsg = null; });
+    setState(() {
+      _testingKitchen = true;
+      _kitchenStatusMsg = null;
+    });
     final result = await _svc.printKitchenTestPage();
     setState(() {
       _testingKitchen = false;
@@ -188,9 +213,13 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
           IconButton(
             icon: _scanning
                 ? const SizedBox(
-                width: 20, height: 20,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white))
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                 : const Icon(Icons.refresh),
             tooltip: 'Scan ulang',
             onPressed: _scanning ? null : _scan,
@@ -199,7 +228,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
         bottom: TabBar(
           controller: _tabCtrl,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
+          unselectedLabelColor: Colors.white,
           indicatorColor: Colors.white,
           tabs: const [
             Tab(icon: Icon(Icons.receipt_long), text: 'Printer Customer'),
@@ -207,12 +236,11 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabCtrl,
-        children: [
-          _buildCustomerTab(),
-          _buildKitchenTab(),
-        ],
+      body: ZelaPage(
+        child: TabBarView(
+          controller: _tabCtrl,
+          children: [_buildCustomerTab(), _buildKitchenTab()],
+        ),
       ),
     );
   }
@@ -230,26 +258,35 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
         ),
         const SizedBox(height: 12),
 
-        if (_statusMsg != null)
-          _buildMessageBox(_statusMsg!, _statusOk),
+        if (_statusMsg != null) _buildMessageBox(_statusMsg!, _statusOk),
 
         // Lebar kertas
-        const Text('Lebar Kertas',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        const Text(
+          'Lebar Kertas',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
         const SizedBox(height: 8),
-        Row(children: [
-          _PaperBtn(label: '58mm', selected: _paperWidth == '58',
+        Row(
+          children: [
+            _PaperBtn(
+              label: '58mm',
+              selected: _paperWidth == '58',
               onTap: () async {
                 await _svc.savePaperWidth('58');
                 setState(() => _paperWidth = '58');
-              }),
-          const SizedBox(width: 10),
-          _PaperBtn(label: '80mm', selected: _paperWidth == '80',
+              },
+            ),
+            const SizedBox(width: 10),
+            _PaperBtn(
+              label: '80mm',
+              selected: _paperWidth == '80',
               onTap: () async {
                 await _svc.savePaperWidth('80');
                 setState(() => _paperWidth = '80');
-              }),
-        ]),
+              },
+            ),
+          ],
+        ),
         const SizedBox(height: 20),
 
         // Daftar perangkat
@@ -267,15 +304,23 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
           child: ElevatedButton.icon(
             onPressed: (_testing || !_connected) ? null : _testPrint,
             icon: _testing
-                ? const SizedBox(width: 18, height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                 : const Icon(Icons.print),
             label: Text(_testing ? 'Mencetak...' : 'Test Print Customer'),
             style: ElevatedButton.styleFrom(
               backgroundColor: _connected ? AppTheme.primaryRed : Colors.grey,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           ),
         ),
@@ -306,9 +351,9 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
               Expanded(
                 child: Text(
                   'Printer dapur mencetak nota pesanan untuk dapur — '
-                      'tanpa harga, huruf besar, mudah dibaca dari jauh.\n'
-                      'Bisa pakai printer Bluetooth berbeda dari printer customer.',
-                  style: TextStyle(fontSize: 12, color: Colors.orange),
+                  'tanpa harga, huruf besar, mudah dibaca dari jauh.\n'
+                  'Bisa pakai printer Bluetooth berbeda dari printer customer.',
+                  style: TextStyle(fontSize: 14, color: Colors.orange),
                 ),
               ),
             ],
@@ -318,15 +363,20 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
 
         // Auto-print toggle
         Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           child: SwitchListTile(
-            title: const Text('Auto-Print Nota Dapur',
-                style: TextStyle(fontWeight: FontWeight.w600)),
+            title: const Text(
+              'Auto-Print Nota Dapur',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
             subtitle: const Text(
-                'Otomatis cetak nota dapur setiap transaksi selesai',
-                style: TextStyle(fontSize: 12)),
+              'Otomatis cetak nota dapur setiap transaksi selesai',
+              style: TextStyle(fontSize: 14),
+            ),
             value: _autoPrintKitchen,
-            activeColor: Colors.orange,
+            activeColor: const Color(0xFF00796B),
             secondary: const Icon(Icons.auto_awesome, color: Colors.orange),
             onChanged: (v) async {
               await _svc.setAutoPrintKitchen(v);
@@ -340,49 +390,61 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: _savedKitchenDevice != null ? Colors.orange[50] : Colors.grey[100],
+            color: _savedKitchenDevice != null
+                ? Colors.orange[50]
+                : const Color(0xFFF7F9F8),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: _savedKitchenDevice != null
-                    ? Colors.orange[300]!
-                    : Colors.grey[300]!),
+              color: _savedKitchenDevice != null
+                  ? Colors.orange[300]!
+                  : Colors.grey[300]!,
+            ),
           ),
-          child: Row(children: [
-            Icon(
-              _savedKitchenDevice != null
-                  ? Icons.soup_kitchen
-                  : Icons.soup_kitchen_outlined,
-              color: _savedKitchenDevice != null ? Colors.orange : Colors.grey,
-              size: 28,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _savedKitchenDevice != null
-                        ? 'Printer Dapur Tersimpan'
-                        : 'Belum ada printer dapur',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: _savedKitchenDevice != null
-                          ? Colors.orange[700]
-                          : Colors.grey[700],
+          child: Row(
+            children: [
+              Icon(
+                _savedKitchenDevice != null
+                    ? Icons.soup_kitchen
+                    : Icons.soup_kitchen_outlined,
+                color: _savedKitchenDevice != null
+                    ? Colors.orange
+                    : Colors.grey,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _savedKitchenDevice != null
+                          ? 'Printer Dapur Tersimpan'
+                          : 'Belum ada printer dapur',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: _savedKitchenDevice != null
+                            ? Colors.orange[700]
+                            : const Color(0xFF62736F),
+                      ),
                     ),
+                    if (_savedKitchenDevice != null)
+                      Text(
+                        _savedKitchenDevice!.name,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                  ],
+                ),
+              ),
+              if (_savedKitchenDevice != null)
+                TextButton(
+                  onPressed: _removeKitchenPrinter,
+                  child: const Text(
+                    'Hapus',
+                    style: TextStyle(color: Colors.red),
                   ),
-                  if (_savedKitchenDevice != null)
-                    Text(_savedKitchenDevice!.name,
-                        style: const TextStyle(fontSize: 13)),
-                ],
-              ),
-            ),
-            if (_savedKitchenDevice != null)
-              TextButton(
-                onPressed: _removeKitchenPrinter,
-                child: const Text('Hapus', style: TextStyle(color: Colors.red)),
-              ),
-          ]),
+                ),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
 
@@ -390,30 +452,44 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
           _buildMessageBox(_kitchenStatusMsg!, _kitchenStatusOk),
 
         // Lebar kertas dapur
-        const Text('Lebar Kertas Dapur',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        const Text(
+          'Lebar Kertas Dapur',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
         const SizedBox(height: 8),
-        Row(children: [
-          _PaperBtn(label: '58mm', selected: _kitchenWidth == '58',
+        Row(
+          children: [
+            _PaperBtn(
+              label: '58mm',
+              selected: _kitchenWidth == '58',
               onTap: () async {
                 await _svc.saveKitchenPaperWidth('58');
                 setState(() => _kitchenWidth = '58');
-              }),
-          const SizedBox(width: 10),
-          _PaperBtn(label: '80mm', selected: _kitchenWidth == '80',
+              },
+            ),
+            const SizedBox(width: 10),
+            _PaperBtn(
+              label: '80mm',
+              selected: _kitchenWidth == '80',
               onTap: () async {
                 await _svc.saveKitchenPaperWidth('80');
                 setState(() => _kitchenWidth = '80');
-              }),
-        ]),
+              },
+            ),
+          ],
+        ),
         const SizedBox(height: 20),
 
         // Pilih dari daftar paired
-        const Text('Pilih Printer Dapur',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        const Text(
+          'Pilih Printer Dapur',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
         const SizedBox(height: 4),
-        Text('Tap perangkat di bawah untuk dijadikan printer dapur',
-            style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        Text(
+          'Tap perangkat di bawah untuk dijadikan printer dapur',
+          style: TextStyle(fontSize: 14, color: const Color(0xFF62736F)),
+        ),
         const SizedBox(height: 8),
 
         _buildDeviceList(
@@ -421,7 +497,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
           savedAddress: _savedKitchenDevice?.address,
           isConnected: _savedKitchenDevice != null,
           connecting: _connectingKitchen,
-          activeColor: Colors.orange,
+          activeColor: const Color(0xFF00796B),
           chipLabel: 'Printer Dapur',
         ),
         const SizedBox(height: 20),
@@ -434,8 +510,14 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
                 ? null
                 : _testKitchenPrint,
             icon: _testingKitchen
-                ? const SizedBox(width: 18, height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                 : const Icon(Icons.soup_kitchen),
             label: Text(_testingKitchen ? 'Mencetak...' : 'Test Print Dapur'),
             style: ElevatedButton.styleFrom(
@@ -444,7 +526,9 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
                   : Colors.grey,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           ),
         ),
@@ -461,41 +545,45 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: connected ? Colors.green[50] : Colors.grey[100],
+        color: connected ? Colors.green[50] : const Color(0xFFF7F9F8),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: connected ? Colors.green[300]! : Colors.grey[300]!),
+          color: connected ? Colors.green[300]! : Colors.grey[300]!,
+        ),
       ),
-      child: Row(children: [
-        Icon(
-          connected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
-          color: connected ? Colors.green[700] : Colors.grey,
-          size: 28,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                connected ? 'Terhubung' : 'Tidak terhubung',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: connected ? Colors.green[700] : Colors.grey[700],
+      child: Row(
+        children: [
+          Icon(
+            connected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
+            color: connected ? Colors.green[700] : Colors.grey,
+            size: 28,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  connected ? 'Terhubung' : 'Tidak terhubung',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: connected
+                        ? Colors.green[700]
+                        : const Color(0xFF62736F),
+                  ),
                 ),
-              ),
-              if (savedDevice != null)
-                Text(savedDevice.name,
-                    style: const TextStyle(fontSize: 13)),
-            ],
+                if (savedDevice != null)
+                  Text(savedDevice.name, style: const TextStyle(fontSize: 14)),
+              ],
+            ),
           ),
-        ),
-        if (connected)
-          TextButton(
-            onPressed: onDisconnect,
-            child: const Text('Putus', style: TextStyle(color: Colors.red)),
-          ),
-      ]),
+          if (connected)
+            TextButton(
+              onPressed: onDisconnect,
+              child: const Text('Putus', style: TextStyle(color: Colors.red)),
+            ),
+        ],
+      ),
     );
   }
 
@@ -506,14 +594,14 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
       decoration: BoxDecoration(
         color: isOk ? Colors.green[50] : Colors.red[50],
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-            color: isOk ? Colors.green[200]! : Colors.red[200]!),
+        border: Border.all(color: isOk ? Colors.green[200]! : Colors.red[200]!),
       ),
       child: Text(
         msg,
         style: TextStyle(
-            fontSize: 13,
-            color: isOk ? Colors.green[800] : Colors.red[800]),
+          fontSize: 14,
+          color: isOk ? Colors.green[800] : Colors.red[800],
+        ),
       ),
     );
   }
@@ -542,13 +630,13 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
             SizedBox(height: 8),
             Text(
               'Belum ada perangkat ter-pair.\n\n'
-                  'Cara pair printer:\n'
-                  '1. Nyalakan printer thermal\n'
-                  '2. Buka Pengaturan HP → Bluetooth\n'
-                  '3. Cari & pair printer\n'
-                  '4. Kembali ke sini & tap Refresh',
+              'Cara pair printer:\n'
+              '1. Nyalakan printer thermal\n'
+              '2. Buka Pengaturan HP → Bluetooth\n'
+              '3. Cari & pair printer\n'
+              '4. Kembali ke sini & tap Refresh',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13),
+              style: TextStyle(fontSize: 14),
             ),
           ],
         ),
@@ -571,37 +659,48 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
           child: ListTile(
             leading: Icon(
               isSaved ? Icons.bluetooth_connected : Icons.bluetooth,
-              color: isSaved ? color : Colors.blue,
+              color: isSaved ? color : Colors.teal,
             ),
-            title: Text(device.name,
-                style: TextStyle(
-                    fontWeight: isSaved ? FontWeight.bold : FontWeight.normal)),
-            subtitle: Text(device.address,
-                style: const TextStyle(fontSize: 11)),
+            title: Text(
+              device.name,
+              style: TextStyle(
+                fontWeight: isSaved ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            subtitle: Text(
+              device.address,
+              style: const TextStyle(fontSize: 12),
+            ),
             trailing: connecting && isSaved
-                ? const SizedBox(width: 20, height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : isSaved
                 ? Chip(
-              label: Text(chipLabel ?? 'Terhubung',
-                  style: const TextStyle(fontSize: 11)),
-              backgroundColor: color,
-              labelStyle: const TextStyle(color: Colors.white),
-              padding: EdgeInsets.zero,
-            )
+                    label: Text(
+                      chipLabel ?? 'Terhubung',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    backgroundColor: color,
+                    labelStyle: const TextStyle(color: Colors.white),
+                    padding: EdgeInsets.zero,
+                  )
                 : ElevatedButton(
-              onPressed: connecting ? null : () => onConnect(device),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: color,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 6),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: const Text('Pilih',
-                  style: TextStyle(fontSize: 12)),
-            ),
+                    onPressed: connecting ? null : () => onConnect(device),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Pilih', style: TextStyle(fontSize: 14)),
+                  ),
             onTap: isSaved ? null : () => onConnect(device),
           ),
         );
@@ -613,17 +712,17 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
+        color: Colors.teal[50],
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.blue[200]!),
+        border: Border.all(color: Colors.teal[200]!),
       ),
       child: const Text(
         '💡 Tips:\n'
-            '• Printer akan auto-reconnect saat cetak struk\n'
-            '• Pastikan printer menyala sebelum checkout\n'
-            '• Kompatibel: Xprinter, GOOJPRT, ZJ-5890, '
-            'dan thermal printer Bluetooth 58mm/80mm lainnya',
-        style: TextStyle(fontSize: 12, color: Colors.blue),
+        '• Printer akan auto-reconnect saat cetak struk\n'
+        '• Pastikan printer menyala sebelum checkout\n'
+        '• Kompatibel: Xprinter, GOOJPRT, ZJ-5890, '
+        'dan thermal printer Bluetooth 58mm/80mm lainnya',
+        style: TextStyle(fontSize: 14, color: Colors.teal),
       ),
     );
   }
@@ -633,8 +732,11 @@ class _PaperBtn extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  const _PaperBtn(
-      {required this.label, required this.selected, required this.onTap});
+  const _PaperBtn({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -643,15 +745,16 @@ class _PaperBtn extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.primaryRed : Colors.grey[100],
+          color: selected ? AppTheme.primaryRed : const Color(0xFFF7F9F8),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-              color: selected ? AppTheme.primaryRed : Colors.grey[300]!),
+            color: selected ? AppTheme.primaryRed : Colors.grey[300]!,
+          ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : Colors.grey[700],
+            color: selected ? Colors.white : const Color(0xFF62736F),
             fontWeight: FontWeight.bold,
           ),
         ),

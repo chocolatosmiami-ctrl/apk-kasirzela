@@ -1,3 +1,4 @@
+import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/models/subscription_model.dart';
@@ -54,12 +55,17 @@ class _AdminSubscriptionScreenState extends State<AdminSubscriptionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5FAFA),
+      backgroundColor: const Color(0xFFF7F9F8),
       appBar: AppBar(
-        title: const Text('Monitor Saldo Cabang',
-            style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF111111))),
+        title: const Text(
+          'Monitor Saldo Cabang',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF172B2A),
+          ),
+        ),
         backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF111111),
+        foregroundColor: const Color(0xFF172B2A),
         elevation: 0,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
@@ -70,87 +76,110 @@ class _AdminSubscriptionScreenState extends State<AdminSubscriptionScreen> {
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // Banner top up via website
-                GestureDetector(
-                  onTap: _openDashboard,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    color: const Color(0xFF00897B),
-                    child: const Row(children: [
-                      Icon(Icons.open_in_browser,
-                          color: Colors.white, size: 18),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Top up saldo dilakukan via Website Dashboard →',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500),
-                        ),
+      body: ZelaPage(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  // Banner top up via website
+                  GestureDetector(
+                    onTap: _openDashboard,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
-                    ]),
+                      color: const Color(0xFF00796B),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            Icons.open_in_browser,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Top up saldo dilakukan via Website Dashboard →',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
 
-                // Summary
-                if (_subs.isNotEmpty) _buildSummary(),
+                  // Summary
+                  if (_subs.isNotEmpty) _buildSummary(),
 
-                // List cabang
-                Expanded(
-                  child: _subs.isEmpty
-                      ? const Center(
-                          child: Text('Belum ada cabang terdaftar',
-                              style: TextStyle(color: Colors.grey)))
-                      : ListView.builder(
-                          physics: const ClampingScrollPhysics(),
-                          padding: const EdgeInsets.all(14),
-                          itemCount: _subs.length,
-                          itemBuilder: (_, i) => _BranchCard(sub: _subs[i]),
-                        ),
-                ),
-              ],
-            ),
+                  // List cabang
+                  Expanded(
+                    child: _subs.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Belum ada cabang terdaftar',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          )
+                        : ListView.builder(
+                            physics: const ClampingScrollPhysics(),
+                            padding: const EdgeInsets.all(14),
+                            itemCount: _subs.length,
+                            itemBuilder: (_, i) => _BranchCard(sub: _subs[i]),
+                          ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 
   Widget _buildSummary() {
-    final totalBalance =
-        _subs.fold<double>(0, (s, b) => s + b.balance);
+    final totalBalance = _subs.fold<double>(0, (s, b) => s + b.balance);
     final locked = _subs.where((s) => s.isLocked).length;
     final warning = _subs.where((s) => s.isWarning).length;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      color: const Color(0xFFF5FAFA),
-      child: Row(children: [
-        _statBox('${_subs.length}', 'Cabang', Colors.blue),
-        _statBox('$locked', 'Terkunci', Colors.red),
-        _statBox('$warning', 'Warning', Colors.orange),
-        _statBox(AppUtils.formatCurrency(totalBalance), 'Total Saldo',
-            Colors.green),
-      ]),
+      color: const Color(0xFFF7F9F8),
+      child: Row(
+        children: [
+          _statBox('${_subs.length}', 'Cabang', Colors.teal),
+          _statBox('$locked', 'Terkunci', Colors.red),
+          _statBox('$warning', 'Warning', Colors.orange),
+          _statBox(
+            AppUtils.formatCurrency(totalBalance),
+            'Total Saldo',
+            Colors.green,
+          ),
+        ],
+      ),
     );
   }
 
   Widget _statBox(String value, String label, Color color) => Expanded(
-        child: Column(children: [
-          Text(value,
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: color)),
-          Text(label,
-              style:
-                  TextStyle(fontSize: 10, color: Colors.grey[600])),
-        ]),
-      );
+    child: Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: const Color(0xFF62736F)),
+        ),
+      ],
+    ),
+  );
 }
 
 class _BranchCard extends StatelessWidget {
@@ -167,8 +196,8 @@ class _BranchCard extends StatelessWidget {
           color: sub.isLocked
               ? Colors.red[300]!
               : sub.isWarning
-                  ? Colors.orange[300]!
-                  : Colors.transparent,
+              ? Colors.orange[300]!
+              : Colors.transparent,
         ),
       ),
       child: ListTile(
@@ -179,8 +208,8 @@ class _BranchCard extends StatelessWidget {
             color: sub.isLocked
                 ? Colors.red[50]
                 : sub.isWarning
-                    ? Colors.orange[50]
-                    : Colors.green[50],
+                ? Colors.orange[50]
+                : Colors.green[50],
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
@@ -188,16 +217,18 @@ class _BranchCard extends StatelessWidget {
             color: sub.isLocked
                 ? Colors.red
                 : sub.isWarning
-                    ? Colors.orange
-                    : Colors.green,
+                ? Colors.orange
+                : Colors.green,
             size: 20,
           ),
         ),
-        title: Text(sub.branchName,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(
+          sub.branchName,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         subtitle: Text(
           '${sub.remainingTransactions} trx tersisa · ${sub.totalTransactions} trx total',
-          style: const TextStyle(fontSize: 11),
+          style: const TextStyle(fontSize: 12),
         ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -206,20 +237,24 @@ class _BranchCard extends StatelessWidget {
             Text(
               AppUtils.formatCurrency(sub.balance),
               style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: sub.isLocked
-                      ? Colors.red
-                      : sub.isWarning
-                          ? Colors.orange
-                          : Colors.green,
-                  fontSize: 13),
+                fontWeight: FontWeight.bold,
+                color: sub.isLocked
+                    ? Colors.red
+                    : sub.isWarning
+                    ? Colors.orange
+                    : Colors.green,
+                fontSize: 14,
+              ),
             ),
             if (sub.isLocked)
-              const Text('TERKUNCI',
-                  style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold)),
+              const Text(
+                'TERKUNCI',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
           ],
         ),
       ),

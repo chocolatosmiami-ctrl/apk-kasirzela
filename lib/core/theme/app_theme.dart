@@ -3,60 +3,70 @@ import 'package:flutter/material.dart';
 class AppTheme {
   // ── CUREVA PALETTE ──────────────────────────────────────────
   // Primary: Teal (signature Cureva)
-  static const Color primary        = Color(0xFF00897B); // teal utama
-  static const Color primaryLight   = Color(0xFF26A69A); // teal muda
-  static const Color primaryDark    = Color(0xFF00695C); // teal gelap
-  static const Color primarySurface = Color(0xFFE0F7F4); // teal wash (bg icon, chip)
+  static const Color primary = Color(0xFF00796B); // teal utama
+  static const Color primaryLight = Color(0xFF00796B); // teal muda
+  static const Color primaryDark = Color(0xFF00695C); // teal gelap
+  static const Color primarySurface = Color(
+    0xFFEAF5F1,
+  ); // teal wash (bg icon, chip)
 
   // Accent & Status
-  static const Color accentMint     = Color(0xFFB2DFDB); // border, frame
-  static const Color success        = Color(0xFF26A69A);
-  static const Color warning        = Color(0xFFF59E0B);
-  static const Color danger         = Color(0xFFEF4444);
-  static const Color dangerSurface  = Color(0xFFFCE4EC);
+  static const Color accentMint = Color(0xFFB2DFDB); // border, frame
+  static const Color success = Color(0xFF00796B);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color danger = Color(0xFFBA3A3A);
+  static const Color dangerSurface = Color(0xFFFBEDEC);
 
   // Neutrals
-  static const Color surfaceLight   = Color(0xFFF5FAFA); // bg halaman
-  static const Color cardLight      = Color(0xFFFFFFFF); // bg card
-  static const Color borderLight    = Color(0xFFE8F5F3); // border card
-  static const Color textPrimary    = Color(0xFF111111);
-  static const Color textSecondary  = Color(0xFF6B7280);
-  static const Color textMuted      = Color(0xFFBBBBBB);
+  static const Color surfaceLight = Color(0xFFF7F9F8); // bg halaman
+  static const Color cardLight = Color(0xFFFFFFFF); // bg card
+  static const Color borderLight = Color(0xFFDEE7E3); // border card
+  static const Color textPrimary = Color(0xFF172B2A);
+  static const Color textSecondary = Color(0xFF62736F);
+  static const Color textMuted = Color(0xFF62736F);
 
   // Dark mode
-  static const Color surfaceDark    = Color(0xFF0F1A1A);
-  static const Color cardDark       = Color(0xFF1A2A2A);
-  static const Color borderDark     = Color(0xFF1E3A3A);
+  static const Color surfaceDark = Color(0xFF0F1A1A);
+  static const Color cardDark = Color(0xFF1A2A2A);
+  static const Color borderDark = Color(0xFF1E3A3A);
 
   // ── LEGACY ALIASES (supaya semua file lama tidak error) ─────
   // File-file screen masih pakai AppTheme.primaryRed, lightOrange, dll.
   // Alias ini memetakan warna lama → warna Cureva baru.
-  static const Color primaryRed     = primary;        // was 0xFFE53935
-  static const Color primaryOrange  = primaryLight;   // was 0xFFF57C00
-  static const Color accentAmber    = accentMint;     // was 0xFFFFB300
-  static const Color darkRed        = primaryDark;    // was 0xFFB71C1C
-  static const Color lightOrange    = primarySurface; // was 0xFFFFE0B2
+  static const Color primaryRed = primary; // was 0xFFE53935
+  static const Color primaryOrange = primaryLight; // was 0xFFF57C00
+  static const Color accentAmber = accentMint; // was 0xFFFFB300
+  static const Color darkRed = primaryDark; // was 0xFFB71C1C
+  static const Color lightOrange = primarySurface; // was 0xFFFFE0B2
 
   // ── RADIUS & SPACING ────────────────────────────────────────
-  static const double radiusSm  = 8.0;
-  static const double radiusMd  = 12.0;
-  static const double radiusLg  = 16.0;
-  static const double radiusXl  = 20.0;
+  static const double radiusSm = 8.0;
+  static const double radiusMd = 12.0;
+  static const double radiusLg = 16.0;
+  static const double radiusXl = 20.0;
   static const double radiusPill = 30.0;
 
   // ── TEXT STYLES ─────────────────────────────────────────────
   static const TextStyle headingLg = TextStyle(
-    fontSize: 18, fontWeight: FontWeight.w800,
-    color: textPrimary, letterSpacing: -0.5,
+    fontSize: 20,
+    fontWeight: FontWeight.w700,
+    color: textPrimary,
+    letterSpacing: -0.5,
   );
   static const TextStyle headingMd = TextStyle(
-    fontSize: 14, fontWeight: FontWeight.w800, color: textPrimary,
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    color: textPrimary,
   );
   static const TextStyle labelSm = TextStyle(
-    fontSize: 11, fontWeight: FontWeight.w600, color: textSecondary,
+    fontSize: 13,
+    fontWeight: FontWeight.w600,
+    color: textSecondary,
   );
   static const TextStyle priceLg = TextStyle(
-    fontSize: 16, fontWeight: FontWeight.w800, color: textPrimary,
+    fontSize: 16,
+    fontWeight: FontWeight.w800,
+    color: textPrimary,
   );
 
   // ── LIGHT THEME ─────────────────────────────────────────────
@@ -64,6 +74,53 @@ class AppTheme {
     useMaterial3: true,
     fontFamily: 'Roboto',
     scaffoldBackgroundColor: surfaceLight,
+    textTheme: const TextTheme(
+      bodyLarge: TextStyle(fontSize: 16, height: 1.4, color: textPrimary),
+      bodyMedium: TextStyle(fontSize: 14, height: 1.4, color: textPrimary),
+      bodySmall: TextStyle(fontSize: 12, height: 1.4, color: textSecondary),
+      titleLarge: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+        color: textPrimary,
+      ),
+      titleMedium: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+      labelLarge: TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: primary,
+        foregroundColor: Colors.white,
+        disabledBackgroundColor: borderLight,
+        disabledForegroundColor: textSecondary,
+        minimumSize: const Size(48, 52),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusMd),
+        ),
+        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+      ),
+    ),
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(
+        minimumSize: const Size(48, 48),
+        foregroundColor: primary,
+      ),
+    ),
+    tabBarTheme: const TabBarThemeData(
+      labelColor: primaryDark,
+      unselectedLabelColor: textSecondary,
+      indicatorColor: primary,
+      dividerColor: borderLight,
+      labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      unselectedLabelStyle: TextStyle(fontSize: 14),
+    ),
 
     colorScheme: const ColorScheme(
       brightness: Brightness.light,
@@ -100,12 +157,12 @@ class AppTheme {
       backgroundColor: cardLight,
       foregroundColor: textPrimary,
       elevation: 0,
-      centerTitle: true,
+      centerTitle: false,
       surfaceTintColor: Colors.transparent,
       titleTextStyle: TextStyle(
         color: textPrimary,
-        fontSize: 16,
-        fontWeight: FontWeight.w800,
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
         fontFamily: 'Roboto',
         letterSpacing: -0.3,
       ),
@@ -135,7 +192,9 @@ class AppTheme {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         textStyle: const TextStyle(
-          fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Roboto',
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          fontFamily: 'Roboto',
         ),
       ),
     ),
@@ -198,7 +257,9 @@ class AppTheme {
       backgroundColor: primarySurface,
       selectedColor: primary,
       labelStyle: const TextStyle(
-        fontSize: 12, fontWeight: FontWeight.w600, color: primaryDark,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: primaryDark,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radiusPill),
@@ -214,8 +275,10 @@ class AppTheme {
         borderRadius: BorderRadius.circular(radiusXl),
       ),
       titleTextStyle: const TextStyle(
-        fontSize: 16, fontWeight: FontWeight.w800,
-        color: textPrimary, fontFamily: 'Roboto',
+        fontSize: 16,
+        fontWeight: FontWeight.w800,
+        color: textPrimary,
+        fontFamily: 'Roboto',
       ),
     ),
 
@@ -230,7 +293,9 @@ class AppTheme {
 
     // Divider
     dividerTheme: const DividerThemeData(
-      color: borderLight, thickness: 1, space: 0,
+      color: borderLight,
+      thickness: 1,
+      space: 0,
     ),
 
     // ListTile
@@ -242,15 +307,15 @@ class AppTheme {
     // Switch & Checkbox
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith(
-            (s) => s.contains(WidgetState.selected) ? primary : Colors.white,
+        (s) => s.contains(WidgetState.selected) ? primary : Colors.white,
       ),
       trackColor: WidgetStateProperty.resolveWith(
-            (s) => s.contains(WidgetState.selected) ? primaryLight : accentMint,
+        (s) => s.contains(WidgetState.selected) ? primaryLight : accentMint,
       ),
     ),
     checkboxTheme: CheckboxThemeData(
       fillColor: WidgetStateProperty.resolveWith(
-            (s) => s.contains(WidgetState.selected) ? primary : Colors.transparent,
+        (s) => s.contains(WidgetState.selected) ? primary : Colors.transparent,
       ),
       side: const BorderSide(color: borderLight, width: 1.5),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
@@ -265,9 +330,7 @@ class AppTheme {
     ),
 
     // ProgressIndicator
-    progressIndicatorTheme: const ProgressIndicatorThemeData(
-      color: primary,
-    ),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(color: primary),
   );
 
   // ── DARK THEME ───────────────────────────────────────────────
@@ -297,7 +360,7 @@ class AppTheme {
       surface: surfaceDark,
       onSurface: Colors.white,
       surfaceContainerHighest: cardDark,
-      onSurfaceVariant: Color(0xFF9CA3AF),
+      onSurfaceVariant: Color(0xFF62736F),
       outline: borderDark,
       outlineVariant: Color(0xFF1E3A3A),
       shadow: Colors.black26,
@@ -323,7 +386,7 @@ class AppTheme {
 
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       selectedItemColor: primaryLight,
-      unselectedItemColor: Color(0xFF6B7280),
+      unselectedItemColor: Color(0xFF62736F),
       type: BottomNavigationBarType.fixed,
       backgroundColor: cardDark,
       elevation: 0,
@@ -366,7 +429,7 @@ class AppTheme {
         borderRadius: BorderRadius.circular(radiusMd),
         borderSide: const BorderSide(color: primaryLight, width: 1.5),
       ),
-      hintStyle: const TextStyle(color: Color(0xFF6B7280), fontSize: 13),
+      hintStyle: const TextStyle(color: Color(0xFF62736F), fontSize: 13),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     ),
 
@@ -374,7 +437,9 @@ class AppTheme {
       backgroundColor: primaryDark,
       selectedColor: primaryLight,
       labelStyle: const TextStyle(
-        fontSize: 12, fontWeight: FontWeight.w600, color: accentMint,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: accentMint,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radiusPill),
@@ -388,8 +453,10 @@ class AppTheme {
         borderRadius: BorderRadius.circular(radiusXl),
       ),
       titleTextStyle: const TextStyle(
-        fontSize: 16, fontWeight: FontWeight.w800,
-        color: Colors.white, fontFamily: 'Roboto',
+        fontSize: 16,
+        fontWeight: FontWeight.w800,
+        color: Colors.white,
+        fontFamily: 'Roboto',
       ),
     ),
 
@@ -420,19 +487,14 @@ class AppTheme {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 28, height: 28,
+        width: 28,
+        height: 28,
         decoration: BoxDecoration(
           color: solid ? primary : cardLight,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: solid ? primary : borderLight,
-            width: 1,
-          ),
+          border: Border.all(color: solid ? primary : borderLight, width: 1),
         ),
-        child: Icon(
-          icon, size: 16,
-          color: solid ? Colors.white : primary,
-        ),
+        child: Icon(icon, size: 16, color: solid ? Colors.white : primary),
       ),
     );
   }
@@ -449,7 +511,9 @@ class AppTheme {
       child: Text(
         'Sisa ${stock.toInt()}',
         style: const TextStyle(
-          color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700,
+          color: Colors.white,
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -469,9 +533,7 @@ class AppTheme {
         decoration: BoxDecoration(
           color: selected ? primary : cardLight,
           borderRadius: BorderRadius.circular(radiusPill),
-          border: Border.all(
-            color: selected ? primary : borderLight,
-          ),
+          border: Border.all(color: selected ? primary : borderLight),
         ),
         child: Text(
           label,
@@ -505,7 +567,9 @@ class AppTheme {
                 Text(
                   '$itemCount item dipilih',
                   style: const TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w700, color: textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: textPrimary,
                   ),
                 ),
                 if (previewText.isNotEmpty)
@@ -522,7 +586,9 @@ class AppTheme {
           Text(
             totalText,
             style: const TextStyle(
-              fontSize: 14, fontWeight: FontWeight.w800, color: textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: textPrimary,
             ),
           ),
           const SizedBox(width: 10),
@@ -537,7 +603,9 @@ class AppTheme {
               child: const Text(
                 'Bayar →',
                 style: TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -566,9 +634,11 @@ class AppTheme {
         child: Stack(
           children: [
             Positioned(
-              right: -10, top: -10,
+              right: -10,
+              top: -10,
               child: Container(
-                width: 80, height: 80,
+                width: 80,
+                height: 80,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.08),
                   shape: BoxShape.circle,
@@ -586,7 +656,8 @@ class AppTheme {
                         Text(
                           title,
                           style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
                             color: Colors.white,
                           ),
                         ),
@@ -606,7 +677,9 @@ class AppTheme {
               ),
             ),
             Positioned(
-              bottom: 0, left: 0, right: 0,
+              bottom: 0,
+              left: 0,
+              right: 0,
               child: GestureDetector(
                 onTap: onTap,
                 child: Container(
@@ -621,7 +694,9 @@ class AppTheme {
                     ctaText,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
                     ),
                   ),
                 ),

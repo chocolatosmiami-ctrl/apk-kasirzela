@@ -1,3 +1,4 @@
+import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -37,7 +38,7 @@ class _StockTransferScreenState extends State<StockTransferScreen>
         bottom: TabBar(
           controller: _tabCtrl,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
+          unselectedLabelColor: Colors.white,
           indicatorColor: Colors.white,
           tabs: const [
             Tab(icon: Icon(Icons.swap_horiz), text: 'Transfer'),
@@ -45,12 +46,11 @@ class _StockTransferScreenState extends State<StockTransferScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabCtrl,
-        children: const [
-          _TransferTab(),
-          _HistoryTab(),
-        ],
+      body: ZelaPage(
+        child: TabBarView(
+          controller: _tabCtrl,
+          children: const [_TransferTab(), _HistoryTab()],
+        ),
       ),
     );
   }
@@ -103,8 +103,10 @@ class _TransferTabState extends State<_TransferTab> {
       _branches = List<Map<String, dynamic>>.from(branches);
 
       // Ambil stok semua cabang hari ini
-      final stock = await SupabaseConfig.client
-          .rpc('get_all_branches_stock_today', params: {'p_owner_id': ownerId});
+      final stock = await SupabaseConfig.client.rpc(
+        'get_all_branches_stock_today',
+        params: {'p_owner_id': ownerId},
+      );
       _allStock = stock != null ? List<Map<String, dynamic>>.from(stock) : [];
     } catch (e) {
       debugPrint('Transfer load error: $e');
@@ -116,8 +118,10 @@ class _TransferTabState extends State<_TransferTab> {
   List<String> get _availableMenus {
     if (_fromBranchId == null) return [];
     return _allStock
-        .where((s) => s['branch_id'] == _fromBranchId &&
-            (s['stock_sisa'] as num) > 0)
+        .where(
+          (s) =>
+              s['branch_id'] == _fromBranchId && (s['stock_sisa'] as num) > 0,
+        )
         .map((s) => s['menu_name'] as String)
         .toList();
   }
@@ -125,9 +129,9 @@ class _TransferTabState extends State<_TransferTab> {
   double get _sisaStokAsal {
     if (_fromBranchId == null || _selectedMenu == null) return 0;
     final row = _allStock.firstWhere(
-        (s) => s['branch_id'] == _fromBranchId &&
-            s['menu_name'] == _selectedMenu,
-        orElse: () => {});
+      (s) => s['branch_id'] == _fromBranchId && s['menu_name'] == _selectedMenu,
+      orElse: () => {},
+    );
     return (row['stock_sisa'] as num?)?.toDouble() ?? 0;
   }
 
@@ -142,7 +146,10 @@ class _TransferTabState extends State<_TransferTab> {
       return;
     }
     if (qty > _sisaStokAsal) {
-      _showSnack('Stok tidak cukup (sisa ${_sisaStokAsal.toInt()} porsi)', isError: true);
+      _showSnack(
+        'Stok tidak cukup (sisa ${_sisaStokAsal.toInt()} porsi)',
+        isError: true,
+      );
       return;
     }
 
@@ -151,14 +158,17 @@ class _TransferTabState extends State<_TransferTab> {
       final prefs = await SharedPreferences.getInstance();
       final email = prefs.getString(AppConstants.keyEmail) ?? '';
 
-      final result = await SupabaseConfig.client.rpc('transfer_menu_stock', params: {
-        'p_from_branch_id': _fromBranchId,
-        'p_to_branch_id':   _toBranchId,
-        'p_menu_name':      _selectedMenu,
-        'p_qty':            qty,
-        'p_notes':          _notesCtrl.text.trim(),
-        'p_created_by':     email,
-      });
+      final result = await SupabaseConfig.client.rpc(
+        'transfer_menu_stock',
+        params: {
+          'p_from_branch_id': _fromBranchId,
+          'p_to_branch_id': _toBranchId,
+          'p_menu_name': _selectedMenu,
+          'p_qty': qty,
+          'p_notes': _notesCtrl.text.trim(),
+          'p_created_by': email,
+        },
+      );
 
       if (result?['success'] == true) {
         _showSnack(
@@ -167,7 +177,9 @@ class _TransferTabState extends State<_TransferTab> {
         );
         _qtyCtrl.clear();
         _notesCtrl.clear();
-        setState(() { _selectedMenu = null; });
+        setState(() {
+          _selectedMenu = null;
+        });
         await _load();
       } else {
         _showSnack(result?['error'] ?? 'Transfer gagal', isError: true);
@@ -179,11 +191,13 @@ class _TransferTabState extends State<_TransferTab> {
   }
 
   void _showSnack(String msg, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: isError ? Colors.red : Colors.green,
-      duration: const Duration(seconds: 4),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        duration: const Duration(seconds: 4),
+      ),
+    );
   }
 
   @override
@@ -206,12 +220,19 @@ class _TransferTabState extends State<_TransferTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(children: [
-                    Icon(Icons.swap_horiz, color: AppTheme.primaryRed),
-                    SizedBox(width: 8),
-                    Text('Form Transfer Stok',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                  ]),
+                  const Row(
+                    children: [
+                      Icon(Icons.swap_horiz, color: AppTheme.primaryRed),
+                      SizedBox(width: 8),
+                      Text(
+                        'Form Transfer Stok',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 16),
 
                   // Cabang asal
@@ -224,10 +245,12 @@ class _TransferTabState extends State<_TransferTab> {
                     ),
                     items: _branches
                         .where((b) => b['id'] != _toBranchId)
-                        .map((b) => DropdownMenuItem<String>(
-                              value: b['id'] as String,
-                              child: Text(b['name'] as String),
-                            ))
+                        .map(
+                          (b) => DropdownMenuItem<String>(
+                            value: b['id'] as String,
+                            child: Text(b['name'] as String),
+                          ),
+                        )
                         .toList(),
                     onChanged: (v) => setState(() {
                       _fromBranchId = v;
@@ -246,10 +269,12 @@ class _TransferTabState extends State<_TransferTab> {
                     ),
                     items: _branches
                         .where((b) => b['id'] != _fromBranchId)
-                        .map((b) => DropdownMenuItem<String>(
-                              value: b['id'] as String,
-                              child: Text(b['name'] as String),
-                            ))
+                        .map(
+                          (b) => DropdownMenuItem<String>(
+                            value: b['id'] as String,
+                            child: Text(b['name'] as String),
+                          ),
+                        )
                         .toList(),
                     onChanged: (v) => setState(() => _toBranchId = v),
                   ),
@@ -265,22 +290,23 @@ class _TransferTabState extends State<_TransferTab> {
                       helperText: _fromBranchId == null
                           ? 'Pilih cabang asal dulu'
                           : _availableMenus.isEmpty
-                              ? '⚠️ Tidak ada stok di cabang ini hari ini'
-                              : null,
+                          ? '⚠️ Tidak ada stok di cabang ini hari ini'
+                          : null,
                     ),
-                    items: _availableMenus
-                        .map((m) {
-                          final sisa = _allStock
-                              .firstWhere(
-                                (s) => s['branch_id'] == _fromBranchId && s['menu_name'] == m,
-                                orElse: () => {},
-                              )['stock_sisa'];
-                          return DropdownMenuItem<String>(
-                            value: m,
-                            child: Text('$m (sisa ${(sisa as num?)?.toInt() ?? 0})'),
-                          );
-                        })
-                        .toList(),
+                    items: _availableMenus.map((m) {
+                      final sisa = _allStock.firstWhere(
+                        (s) =>
+                            s['branch_id'] == _fromBranchId &&
+                            s['menu_name'] == m,
+                        orElse: () => {},
+                      )['stock_sisa'];
+                      return DropdownMenuItem<String>(
+                        value: m,
+                        child: Text(
+                          '$m (sisa ${(sisa as num?)?.toInt() ?? 0})',
+                        ),
+                      );
+                    }).toList(),
                     onChanged: _availableMenus.isEmpty
                         ? null
                         : (v) => setState(() => _selectedMenu = v),
@@ -295,14 +321,20 @@ class _TransferTabState extends State<_TransferTab> {
                         color: Colors.orange[50],
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Row(children: [
-                        const Icon(Icons.inventory_2, color: Colors.orange, size: 16),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Stok tersedia: ${_sisaStokAsal.toInt()} porsi',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ]),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.inventory_2,
+                            color: Colors.orange,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Stok tersedia: ${_sisaStokAsal.toInt()} porsi',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
                     ),
                   const SizedBox(height: 12),
 
@@ -340,12 +372,21 @@ class _TransferTabState extends State<_TransferTab> {
                     child: ElevatedButton.icon(
                       onPressed: _submitting ? null : _doTransfer,
                       icon: _submitting
-                          ? const SizedBox(width: 18, height: 18,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
                           : const Icon(Icons.swap_horiz, color: Colors.white),
                       label: Text(
                         _submitting ? 'Memproses...' : 'Transfer Stok',
-                        style: const TextStyle(color: Colors.white, fontSize: 15),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                        ),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryRed,
@@ -371,11 +412,17 @@ class _TransferTabState extends State<_TransferTab> {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: Colors.orange[200]!),
         ),
-        child: const Row(children: [
-          Icon(Icons.info_outline, color: Colors.orange),
-          SizedBox(width: 10),
-          Expanded(child: Text('Belum ada stok yang diset hari ini di semua cabang.')),
-        ]),
+        child: const Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.orange),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Belum ada stok yang diset hari ini di semua cabang.',
+              ),
+            ),
+          ],
+        ),
       );
     }
 
@@ -389,48 +436,60 @@ class _TransferTabState extends State<_TransferTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('📊 Stok Hari Ini — Semua Cabang',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        const Text(
+          '📊 Stok Hari Ini — Semua Cabang',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
         const SizedBox(height: 8),
-        ...byBranch.entries.map((entry) => Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ExpansionTile(
-            leading: const Icon(Icons.store, color: AppTheme.primaryRed),
-            title: Text(entry.key, style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text('${entry.value.length} menu diset'),
-            children: entry.value.map((row) {
-              final sisa = (row['stock_sisa'] as num).toDouble();
-              final minAlert = (row['min_alert'] as num?)?.toDouble() ?? 3;
-              return ListTile(
-                dense: true,
-                title: Text(row['menu_name'] as String,
-                    style: const TextStyle(fontSize: 13)),
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: sisa <= 0
-                        ? Colors.red[100]
-                        : sisa <= minAlert
-                            ? Colors.orange[100]
-                            : Colors.green[100],
-                    borderRadius: BorderRadius.circular(8),
+        ...byBranch.entries.map(
+          (entry) => Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ExpansionTile(
+              leading: const Icon(Icons.store, color: AppTheme.primaryRed),
+              title: Text(
+                entry.key,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text('${entry.value.length} menu diset'),
+              children: entry.value.map((row) {
+                final sisa = (row['stock_sisa'] as num).toDouble();
+                final minAlert = (row['min_alert'] as num?)?.toDouble() ?? 3;
+                return ListTile(
+                  dense: true,
+                  title: Text(
+                    row['menu_name'] as String,
+                    style: const TextStyle(fontSize: 14),
                   ),
-                  child: Text(
-                    '${sisa.toInt()} porsi',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                  trailing: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
                       color: sisa <= 0
-                          ? Colors.red
+                          ? Colors.red[100]
                           : sisa <= minAlert
-                              ? Colors.orange[800]
-                              : Colors.green[800],
+                          ? Colors.orange[100]
+                          : Colors.green[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${sisa.toInt()} porsi',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: sisa <= 0
+                            ? Colors.red
+                            : sisa <= minAlert
+                            ? Colors.orange[800]
+                            : Colors.green[800],
+                      ),
                     ),
                   ),
-                ),
-              );
-            }).toList(),
+                );
+              }).toList(),
+            ),
           ),
-        )),
+        ),
       ],
     );
   }
@@ -461,12 +520,10 @@ class _HistoryTabState extends State<_HistoryTab> {
       final ownerId = prefs.getString(AppConstants.keyOwnerId) ?? '';
       final dateStr = _selectedDate.toIso8601String().substring(0, 10);
 
-      final result = await SupabaseConfig.client
-          .rpc('get_transfer_history', params: {
-        'p_owner_id': ownerId,
-        'p_date': dateStr,
-        'p_limit': 100,
-      });
+      final result = await SupabaseConfig.client.rpc(
+        'get_transfer_history',
+        params: {'p_owner_id': ownerId, 'p_date': dateStr, 'p_limit': 100},
+      );
       _history = result != null ? List<Map<String, dynamic>>.from(result) : [];
     } catch (e) {
       debugPrint('History load error: $e');
@@ -494,10 +551,14 @@ class _HistoryTabState extends State<_HistoryTab> {
         // Date picker bar
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          color: Colors.grey[100],
+          color: const Color(0xFFF7F9F8),
           child: Row(
             children: [
-              const Icon(Icons.calendar_today, size: 18, color: AppTheme.primaryRed),
+              const Icon(
+                Icons.calendar_today,
+                size: 18,
+                color: AppTheme.primaryRed,
+              ),
               const SizedBox(width: 8),
               Text(
                 '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
@@ -516,108 +577,132 @@ class _HistoryTabState extends State<_HistoryTab> {
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : _history.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('📦', style: TextStyle(fontSize: 40)),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Tidak ada transfer pada\n'
-                            '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ],
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text('📦', style: TextStyle(fontSize: 40)),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tidak ada transfer pada\n'
+                        '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.grey),
                       ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.all(12),
-                      itemCount: _history.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (_, i) {
-                        final h = _history[i];
-                        final time = DateTime.tryParse(
-                            h['created_at']?.toString() ?? '');
-                        final timeStr = time != null
-                            ? '${time.hour.toString().padLeft(2, '0')}:'
+                    ],
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: _history.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (_, i) {
+                    final h = _history[i];
+                    final time = DateTime.tryParse(
+                      h['created_at']?.toString() ?? '',
+                    );
+                    final timeStr = time != null
+                        ? '${time.hour.toString().padLeft(2, '0')}:'
                               '${time.minute.toString().padLeft(2, '0')}'
-                            : '';
-                        return Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                        : '';
+                    return Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               children: [
-                                Row(
-                                  children: [
-                                    const Icon(Icons.swap_horiz,
-                                        color: AppTheme.primaryRed, size: 18),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        h['menu_name'] as String,
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14),
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: Colors.green[100],
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        '${(h['qty'] as num).toInt()} porsi',
-                                        style: TextStyle(
-                                            color: Colors.green[800],
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 13),
-                                      ),
-                                    ),
-                                  ],
+                                const Icon(
+                                  Icons.swap_horiz,
+                                  color: AppTheme.primaryRed,
+                                  size: 18,
                                 ),
-                                const SizedBox(height: 6),
-                                Row(children: [
-                                  const Icon(Icons.arrow_forward, size: 14,
-                                      color: Colors.grey),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${h['from_branch']}  →  ${h['to_branch']}',
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    h['menu_name'] as String,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green[100],
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    '${(h['qty'] as num).toInt()} porsi',
                                     style: TextStyle(
-                                        color: Colors.grey[700], fontSize: 12),
-                                  ),
-                                ]),
-                                if ((h['notes'] as String?)?.isNotEmpty == true)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: Text(
-                                      '📝 ${h['notes']}',
-                                      style: TextStyle(
-                                          color: Colors.grey[600], fontSize: 12),
+                                      color: Colors.green[800],
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
                                     ),
                                   ),
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Row(children: [
-                                    Icon(Icons.person_outline,
-                                        size: 12, color: Colors.grey[500]),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${h['created_by']}  ·  $timeStr',
-                                      style: TextStyle(
-                                          color: Colors.grey[500], fontSize: 11),
-                                    ),
-                                  ]),
                                 ),
                               ],
                             ),
-                          ),
-                        );
-                      },
-                    ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.arrow_forward,
+                                  size: 14,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${h['from_branch']}  →  ${h['to_branch']}',
+                                  style: TextStyle(
+                                    color: const Color(0xFF62736F),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if ((h['notes'] as String?)?.isNotEmpty == true)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  '📝 ${h['notes']}',
+                                  style: TextStyle(
+                                    color: const Color(0xFF62736F),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.person_outline,
+                                    size: 12,
+                                    color: const Color(0xFF62736F),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${h['created_by']}  ·  $timeStr',
+                                    style: TextStyle(
+                                      color: const Color(0xFF62736F),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
         ),
       ],
     );
