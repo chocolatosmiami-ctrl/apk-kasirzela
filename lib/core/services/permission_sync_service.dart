@@ -1,4 +1,6 @@
 import '../utils/app_constants.dart';
+import 'service_health.dart';
+import 'startup_policy.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -77,56 +79,42 @@ class PermissionSyncService {
 
   // ── Pull permission dari Supabase → simpan ke SQLite lokal ──
   // Pakai RPC SECURITY DEFINER agar kasir tanpa Auth session bisa pull
-  Future<void> pullAndSyncToLocal(String ownerId) async {
+  Future<bool>? _pull;
+  String _pullOwner = '';
+  Future<bool> pullAndSyncToLocal(String ownerId) {
+    if (_pull != null && _pullOwner == ownerId) return _pull!;
+    _pullOwner = ownerId;
+    final job = _pullPermissions(ownerId);
+    _pull = job;
+    return job.whenComplete(() { if (_pullOwner == ownerId) _pull = null; });
+  }
+  Future<bool> _pullPermissions(String ownerId) async {
+    if (ownerId.isEmpty) return false;
     try {
-      if (ownerId.isEmpty) {
-        return;
-      }
       final prefs = await SharedPreferences.getInstance();
-      final role     = prefs.getString(AppConstants.keyRole) ?? '';
-      final branchId = prefs.getString(AppConstants.keyBranchId) ?? '';
-
+      final uid = prefs.getString(AppConstants.keyUid) ?? '';
       final result = await _db.rpc('get_role_permissions', params: {
-        'p_owner_id': ownerId,
-        'p_role': null,
+        'p_owner_id': ownerId, 'p_role': null,
+      }).timeout(const Duration(seconds: 8));
+      if (result is! List ||
+          prefs.getString(AppConstants.keyOwnerId) != ownerId ||
+          prefs.getString(AppConstants.keyUid) != uid) return false;
+      await DatabaseHelper.instance.runTransaction((txn) async {
+        await txn.delete('role_permissions');
+        for (final row in result) {
+          final role = row['role']?.toString() ?? '';
+          final permission = row['permission']?.toString() ?? '';
+          if (role.isEmpty || permission.isEmpty) continue;
+          await txn.insert('role_permissions', {'role': role, 'permission': permission,
+            'is_allowed': row['is_allowed'] == true ? 1 : 0});
+        }
       });
-
-      if (result == null || result is! List || result.isEmpty) {
-        return;
-      }
-
-      final db = DatabaseHelper.instance;
-
-      // Kumpulkan semua role yang ada di result
-      final roles = result.map((r) => r['role']?.toString() ?? '').toSet();
-
-      // Hapus semua permission lama untuk role-role tersebut
-      // TERMASUK data per-user lama (user_<id>) agar tidak ada yang stale
-      for (final r in roles) {
-        if (r.isEmpty) continue;
-        await db.rawUpdate('DELETE FROM role_permissions WHERE role = ?', [r]);
-      }
-
-      // Hapus juga data per-user lama di SQLite agar pakai role permission
-      // Data per-user lama bisa override role permission yang sudah benar
-      final prefs2 = await SharedPreferences.getInstance();
-      final uid = prefs2.getString(AppConstants.keyUid) ?? '';
-      if (uid.isNotEmpty) {
-        await db.rawUpdate(
-            'DELETE FROM role_permissions WHERE role = ?', ['user_$uid']);
-      }
-
-      // Insert semua permission baru dari Supabase
-      int saved = 0;
-      for (final row in result) {
-        final r       = row['role']?.toString() ?? '';
-        final perm    = row['permission']?.toString() ?? '';
-        final allowed = row['is_allowed'] as bool? ?? false;
-        if (r.isEmpty || perm.isEmpty) continue;
-        await db.setPermissionLocalOnly(r, perm, allowed);
-        saved++;
-      }
-    } catch (e) {}
+      if (prefs.getString(AppConstants.keyOwnerId) != ownerId || prefs.getString(AppConstants.keyUid) != uid) return false;
+      await prefs.setString('_permission_cache_owner', ownerId);
+      await prefs.setString('_permission_cache_time', DateTime.now().toUtc().toIso8601String());
+      ServiceHealth.instance.record('permissions', null);
+      return true;
+    } catch (e) { ServiceHealth.log('permissions',1,0,failureKind(e)); return false; }
   }
 
   // ── Ambil ownerId dari SharedPreferences ──────────────

@@ -175,6 +175,7 @@ class ReportsProvider extends ChangeNotifier {
         ''', [fromStr, toStr]);
       }
 
+      if (token != _loadToken) return;
       _reportData = ReportData(
         totalRevenue: totalRevenue,
         totalTransactions: totalTransactions,
@@ -187,6 +188,7 @@ class ReportsProvider extends ChangeNotifier {
 
       debugPrint('📊 [REPORTS] ✅ done');
     } catch (e, st) {
+      if (token != _loadToken) return;
       debugPrint('📊 [REPORTS] ❌ error: $e');
       debugPrint('$st');
       // Set empty data agar tidak loading selamanya
@@ -200,8 +202,7 @@ class ReportsProvider extends ChangeNotifier {
         dailyBreakdown: const [],
       );
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (token == _loadToken) { _isLoading = false; notifyListeners(); }
     }
   }
 }

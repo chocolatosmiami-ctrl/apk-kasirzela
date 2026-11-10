@@ -10,6 +10,7 @@ class TableProvider extends ChangeNotifier {
   bool _loading = false;
   String _selectedZone = 'Semua';
   String _currentBranchId = '';
+  String? lastError;
 
   List<TableModel> get tables => _selectedZone == 'Semua'
       ? _tables
@@ -43,40 +44,101 @@ class TableProvider extends ChangeNotifier {
     try {
       final branchId = await _getBranchId();
       _currentBranchId = branchId;
+      lastError = null;
+      if (branchId.isEmpty) {
+        _tables = [];
+        throw StateError('Pilih cabang terlebih dahulu.');
+      }
       debugPrint('🪑 [TABLE] loadTables branchId=$branchId');
+
+      var cloudLoaded = false;
+      try {
+        final remote = await SupabaseConfig.client.rpc('app_restaurant_tables',
+          params: {'p_branch_id': branchId}).timeout(const Duration(seconds: 10));
+        if (remote is! List) throw StateError('Respons daftar meja tidak valid');
+        for (final row in remote) {
+          await _cacheRemote(Map<String, dynamic>.from(row as Map), branchId);
+        }
+        cloudLoaded = true;
+      } catch (e) {
+        lastError = 'Daftar lokal ditampilkan. Gagal memuat meja server: $e';
+      }
+      if (branchId != await _getBranchId()) return;
 
       final results = await DatabaseHelper.instance.query(
         'tables',
-        where: branchId.isNotEmpty
-            ? 'is_active = 1 AND (branch_id = ? OR branch_id IS NULL)'
-            : 'is_active = 1',
-        whereArgs: branchId.isNotEmpty ? [branchId] : null,
+        where: cloudLoaded
+            ? 'is_active = 1 AND branch_id = ? AND server_id IS NOT NULL'
+            : 'is_active = 1 AND (branch_id = ? OR branch_id IS NULL)',
+        whereArgs: [branchId],
         orderBy: 'zone ASC, name ASC',
       );
       _tables = results.map((r) => TableModel.fromMap(r)).toList();
+      if (!zones.contains(_selectedZone)) _selectedZone = 'Semua';
       debugPrint('🪑 [TABLE] loaded ${_tables.length} meja untuk cabang=$branchId');
     } catch (e) {
+      lastError = e.toString();
       debugPrint('🪑 [TABLE] loadTables error: $e');
+    } finally {
+      _loading = false;
+      notifyListeners();
     }
-    _loading = false;
-    notifyListeners();
+  }
+
+  /// Cache metadata in place. Local IDs and held cart/status are preserved.
+  Future<void> _cacheRemote(Map<String, dynamic> row, String branchId) async {
+    await DatabaseHelper.instance.runTransaction((txn) async {
+      var local = await txn.query('tables', where: 'branch_id = ? AND server_id = ?',
+        whereArgs: [branchId, row['id']]);
+      if (local.isEmpty) {
+        local = await txn.query('tables',
+          where: '(branch_id = ? OR branch_id IS NULL) AND server_id IS NULL AND LOWER(TRIM(name)) = LOWER(TRIM(?))',
+          whereArgs: [branchId, row['name']], orderBy: 'branch_id IS NULL ASC, id ASC', limit: 1);
+      }
+      final metadata = <String, Object?>{
+        'server_id': row['id'], 'branch_id': branchId, 'name': row['name'],
+        'zone': row['zone'] ?? 'Dalam', 'capacity': row['capacity'] ?? 4,
+        'is_active': row['is_active'] == true ? 1 : 0,
+      };
+      if (local.isEmpty) {
+        await txn.insert('tables', {...metadata, 'status': 'empty'});
+      } else {
+        await txn.update('tables', metadata, where: 'id = ?', whereArgs: [local.first['id']]);
+      }
+    });
   }
 
   Future<bool> addTable(TableModel table) async {
+    return saveTable(name: table.name, zone: table.zone, capacity: table.capacity);
+  }
+
+  Future<bool> saveTable({TableModel? existing, required String name,
+      required String zone, required int capacity}) async {
+    lastError = null;
     try {
       final branchId = await _getBranchId();
-      final withBranch = TableModel(
-        name: table.name,
-        zone: table.zone,
-        capacity: table.capacity,
-        branchId: branchId.isNotEmpty ? branchId : null,
-      );
-      await DatabaseHelper.instance.insert('tables', withBranch.toMap());
+      if (branchId.isEmpty) throw StateError('Pilih cabang terlebih dahulu.');
+      if (SupabaseConfig.client.auth.currentSession == null) {
+        throw StateError('Login online terlebih dahulu untuk menyimpan meja ke server.');
+      }
+      if (existing != null && existing.serverId == null) {
+        throw StateError('Muat ulang daftar meja dari server sebelum mengedit.');
+      }
+      if (existing?.branchId != null && existing!.branchId != branchId) {
+        throw StateError('Cabang berubah. Buka kembali daftar meja.');
+      }
+      final result = await SupabaseConfig.client.rpc('app_restaurant_tables', params: {
+        'p_branch_id': branchId, 'p_action': 'save', 'p_id': existing?.serverId,
+        'p_name': name.trim(), 'p_zone': zone.trim(), 'p_capacity': capacity,
+      }).timeout(const Duration(seconds: 15));
+      if (result is! Map || result['id'] is! num) throw StateError('Server belum mengonfirmasi meja.');
+      // Persist first on server. A failed HTTP request must never report success.
+      await _cacheRemote(Map<String, dynamic>.from(result), branchId);
       await loadTables();
-      debugPrint('🪑 [TABLE] addTable "${table.name}" branchId=$branchId');
       return true;
     } catch (e) {
-      debugPrint('🪑 [TABLE] addTable error: $e');
+      lastError = 'Meja belum dikonfirmasi tersimpan di server. Muat ulang daftar sebelum mencoba lagi. $e';
+      notifyListeners();
       return false;
     }
   }
@@ -177,50 +239,25 @@ class TableProvider extends ChangeNotifier {
 
   Future<bool> deleteTable(int id) async {
     try {
-      await DatabaseHelper.instance.update(
-          'tables', {'is_active': 0}, 'id = ?', [id]);
+      final table = _tables.where((t) => t.id == id).firstOrNull;
+      if (table == null || table.serverId == null || !table.isEmpty) {
+        throw StateError('Muat ulang daftar dan kosongkan meja terlebih dahulu.');
+      }
+      final branchId = await _getBranchId();
+      final result = await SupabaseConfig.client.rpc('app_restaurant_tables', params: {
+        'p_branch_id': branchId, 'p_action': 'archive', 'p_id': table.serverId,
+      }).timeout(const Duration(seconds: 15));
+      if (result is! Map || result['is_active'] != false) throw StateError('Server belum menghapus meja.');
+      await _cacheRemote(Map<String, dynamic>.from(result), branchId);
       await loadTables();
       return true;
     } catch (e) {
+      lastError = e.toString();
       debugPrint('🪑 [TABLE] deleteTable error: $e');
       return false;
     }
   }
 
-  /// Seed meja default hanya jika cabang ini belum punya meja sama sekali.
-  Future<void> seedDefaultTables() async {
-    final branchId = await _getBranchId();
-    _currentBranchId = branchId;
-
-    // Cek per-cabang dulu; jika sudah ada, skip
-    List<Map<String, dynamic>> existing;
-    if (branchId.isNotEmpty) {
-      existing = await DatabaseHelper.instance.query(
-        'tables',
-        where: 'is_active = 1 AND (branch_id = ? OR branch_id IS NULL)',
-        whereArgs: [branchId],
-      );
-    } else {
-      existing = await DatabaseHelper.instance.query(
-          'tables', where: 'is_active = 1');
-    }
-
-    if (existing.isNotEmpty) {
-      debugPrint('🪑 [TABLE] seedDefault skip — sudah ada ${existing.length} meja');
-      return;
-    }
-
-    debugPrint('🪑 [TABLE] seeding default tables untuk branchId=$branchId');
-    final defaults = [
-      for (int i = 1; i <= 10; i++)
-        TableModel(name: 'Meja $i', zone: 'Dalam', capacity: 4,
-            branchId: branchId.isNotEmpty ? branchId : null),
-    ];
-
-    for (final t in defaults) {
-      await DatabaseHelper.instance.insert('tables', t.toMap());
-    }
-    debugPrint('🪑 [TABLE] seeded ${defaults.length} meja default');
-    await loadTables();
-  }
+  // Existing callers now load the server catalog; do not invent local-only tables.
+  Future<void> seedDefaultTables() => loadTables();
 }

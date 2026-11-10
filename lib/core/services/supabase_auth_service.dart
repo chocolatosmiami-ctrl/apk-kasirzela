@@ -1,8 +1,13 @@
+import 'dart:async';
+import 'dart:convert';
+import 'startup_policy.dart';
+import 'service_health.dart';
 import '../utils/app_constants.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/supabase_config.dart';
 import '../database/database_helper.dart';
+import 'login_route.dart';
 
 class SupabaseAuthService {
   static final SupabaseAuthService instance = SupabaseAuthService._();
@@ -15,115 +20,115 @@ class SupabaseAuthService {
 
   AppUserProfile? get currentUser => null;
 
-  Future<AppUserProfile?> getSession() async {
+  Future<AppUserProfile?>? _sessionRead;
+  String _sessionReadUid = '';
+  int _profileGeneration = 0;
+
+  /// Only call after the server accepted a PIN change. Preserve the original
+  /// verification time and access fields; an offline fallback must not revive
+  /// the previous PIN or extend cached authorization.
+  Future<void> recordAcceptedPin(String uid, String pinHash) async {
+    if (uid.isEmpty || _client.auth.currentUser?.id != uid) return;
+    _profileGeneration++;
+    _sessionRead = null;
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('verified_profile_$uid');
+    if (raw == null) return;
     try {
-      final session = _client.auth.currentSession;
+      final saved = Map<String, dynamic>.from(jsonDecode(raw) as Map);
+      final row = Map<String, dynamic>.from(saved['row'] as Map);
+      if (row['auth_id'] != uid || _client.auth.currentUser?.id != uid) return;
+      row['pin_hash'] = pinHash;
+      saved['row'] = row;
+      await prefs.setString('verified_profile_$uid', jsonEncode(saved));
+    } catch (_) {
+      await prefs.remove('verified_profile_$uid');
+    }
+  }
 
-      if (session != null) {
-        final uid = session.user.id;
-        final res = await _client
-            .from('users')
-            .select('*, branches(name, mode)')
-            .eq('auth_id', uid)
-            .maybeSingle();
+  Future<AppUserProfile?> getSession() {
+    final uid = _client.auth.currentUser?.id ?? '';
+    if (_sessionRead != null && _sessionReadUid == uid) return _sessionRead!;
+    _sessionReadUid = uid;
+    final generation = ++_profileGeneration;
+    final future = _readSession(uid, generation);
+    _sessionRead = future;
+    return future.whenComplete(() { if (generation == _profileGeneration) _sessionRead = null; });
+  }
 
-        if (res != null) {
-          final role = res['role'] as String? ?? 'kasir';
-          final branchData = res['branches'] as Map<String, dynamic>?;
-          return AppUserProfile(
-            authId: uid,
-            email: session.user.email ?? '',
-            name: res['name'] as String? ?? '',
-            role: role,
-            ownerId: res['owner_id'] as String? ?? uid,
-            branchId: res['branch_id'] as String? ?? '',
-            branchName: branchData?['name'] as String? ?? '',
-            branchMode: branchData?['mode'] as String? ?? 'food',
-            pin: res['pin_hash'] as String?,
-          );
-        }
+  AppUserProfile _profile(Map<String, dynamic> row, String uid) {
+    final branch = row['branches'] as Map<String, dynamic>?;
+    return AppUserProfile(authId: uid, email: row['email']?.toString() ?? '',
+      name: row['name']?.toString() ?? '', role: row['role']?.toString() ?? 'kasir',
+      ownerId: row['owner_id']?.toString() ?? '', branchId: row['branch_id']?.toString() ?? '',
+      branchName: branch?['name']?.toString() ?? '', branchMode: branch?['mode']?.toString() ?? 'food',
+      pin: row['pin_hash']?.toString());
+  }
+
+  Future<void> _storeProfileContext(AppUserProfile profile, bool Function() current) async {
+    final prefs = await SharedPreferences.getInstance();
+    final sameOwner = prefs.getString(AppConstants.keyUid) == profile.authId &&
+        prefs.getString(AppConstants.keyOwnerId) == profile.ownerId;
+    final selectedBranch = sameOwner && profile.branchId.isEmpty &&
+        const {'owner', 'superadmin', 'manajer'}.contains(profile.role);
+    final values = <String, String>{
+      AppConstants.keyUid: profile.authId, AppConstants.keyEmail: profile.email,
+      AppConstants.keyName: profile.name, AppConstants.keyRole: profile.role,
+      AppConstants.keyOwnerId: profile.ownerId,
+      if (!selectedBranch) ...{
+        AppConstants.keyBranchId: profile.branchId, AppConstants.keyBranchName: profile.branchName,
+        AppConstants.keyBranchMode: profile.branchMode,
+      },
+    };
+    for (final entry in values.entries) {
+      if (!current()) return;
+      if (prefs.getString(entry.key) != entry.value) await prefs.setString(entry.key, entry.value);
+    }
+  }
+
+  Future<AppUserProfile?> _readSession(String uid, int generation) async {
+    if (uid.isEmpty) return null; // PIN/preferences cannot manufacture an Auth session.
+    final watch = Stopwatch()..start();
+    final prefs = await SharedPreferences.getInstance();
+    bool current() => generation == _profileGeneration && _client.auth.currentUser?.id == uid;
+    try {
+      final row = await _client.from('users')
+        .select('auth_id,email,name,role,owner_id,branch_id,is_active,is_approved,pin_hash,branches(name,mode)')
+        .eq('auth_id', uid).maybeSingle().timeout(const Duration(seconds: 8));
+      if (!current()) throw StateError('Superseded profile attempt');
+      if (row == null || row['is_active'] != true || row['is_approved'] != true) {
+        await prefs.remove('verified_profile_$uid');
+        ServiceHealth.instance.record('profile', FailureKind.denied);
+        return null;
       }
-
-      final prefs = await SharedPreferences.getInstance();
-      final email = prefs.getString(AppConstants.keyEmail) ?? '';
-      final name = prefs.getString(AppConstants.keyName) ?? '';
-      final role = prefs.getString(AppConstants.keyRole) ?? '';
-      final uid = prefs.getString(AppConstants.keyUid) ?? '';
-      final ownerId = prefs.getString(AppConstants.keyOwnerId) ?? '';
-      final branchId = prefs.getString(AppConstants.keyBranchId) ?? '';
-
-      if (email.isNotEmpty && role.isNotEmpty &&
-          role != 'owner' && role != 'superadmin') {
+      await prefs.setString('verified_profile_$uid', jsonEncode({
+        'verified_at': DateTime.now().toUtc().toIso8601String(), 'row': row}));
+      if (!current()) return null;
+      ServiceHealth.instance.profileCache(false);
+      ServiceHealth.log('profile', 1, watch.elapsedMilliseconds, null);
+      final profile = _profile(row, uid);
+      await _storeProfileContext(profile, current);
+      return current() ? profile : null;
+    } catch (e) {
+      if (!current()) rethrow;
+      final kind = failureKind(e);
+      ServiceHealth.log('profile', 1, watch.elapsedMilliseconds, kind);
+      if (kind == FailureKind.invalidSession || kind == FailureKind.denied) rethrow;
+      // Only a previously server-approved, account-scoped, fresh profile qualifies.
+      final raw = prefs.getString('verified_profile_$uid');
+      if (raw != null) {
         try {
-          final staffData = await _client.rpc(
-              'get_staff_by_email', params: {'p_email': email});
-
-          Map<String, dynamic>? profile;
-          if (staffData is Map<String, dynamic>) {
-            profile = staffData;
-          } else if (staffData is List && staffData.isNotEmpty) {
-            profile = staffData.first as Map<String, dynamic>;
-          } else {
-            profile = null;
-          }
-
-          if (profile != null) {
-            final profileBranchId =
-                profile['branch_id']?.toString() ?? branchId;
-            String profileBranchMode = 'food';
-            String profileBranchName = '';
-            if (profileBranchId.isNotEmpty) {
-              try {
-                final branchRow = await _client
-                    .from('branches')
-                    .select('mode, name')
-                    .eq('id', profileBranchId)
-                    .maybeSingle();
-                profileBranchMode =
-                    branchRow?['mode'] as String? ?? 'food';
-                profileBranchName =
-                    branchRow?['name'] as String? ?? '';
-              } catch (_) {}
-            }
-
-            final sp2 = await SharedPreferences.getInstance();
-            await sp2.setString(
-                AppConstants.keyBranchMode, profileBranchMode);
-            await sp2.setString(
-                AppConstants.keyBranchName, profileBranchName);
-
-            return AppUserProfile(
-              authId: uid,
-              email: email,
-              name: profile['name'] as String? ?? name,
-              role: profile['role'] as String? ?? role,
-              ownerId: profile['owner_id']?.toString() ?? ownerId,
-              branchId: profileBranchId,
-              branchName: profileBranchName,
-              branchMode: profileBranchMode,
-              pin: profile['pin_hash'] as String?,
-            );
+          final saved = jsonDecode(raw) as Map;
+          final row = Map<String, dynamic>.from(saved['row'] as Map);
+          if (canUseProfileCache(row, uid, DateTime.tryParse(saved['verified_at'].toString()), DateTime.now().toUtc())) {
+            ServiceHealth.instance.profileCache(true);
+            final profile = _profile(row, uid);
+            await _storeProfileContext(profile, current);
+            return current() ? profile : null;
           }
         } catch (_) {}
-
-        if (name.isNotEmpty) {
-          return AppUserProfile(
-            authId: uid,
-            email: email,
-            name: name,
-            role: role,
-            ownerId: ownerId,
-            branchId: branchId,
-            branchName: prefs.getString(AppConstants.keyBranchName) ?? '',
-            branchMode: prefs.getString(AppConstants.keyBranchMode) ?? 'food',
-            pin: null,
-          );
-        }
       }
-
-      return null;
-    } catch (_) {
-      return null;
+      rethrow; // Show recovery, not an erroneous logout/login due to a 5xx.
     }
   }
 
@@ -256,43 +261,17 @@ class SupabaseAuthService {
       if (res.user == null) return AuthResult.error('Login super admin gagal');
       final uid = res.user!.id;
 
-      String ownerId = uid;
-      try {
-        final rpcRes = await _client.rpc('setup_superadmin', params: {
-          'p_auth_id': uid,
-          'p_email': email,
-        });
-        ownerId = rpcRes?['owner_id'] as String? ?? uid;
-      } catch (_) {
-        try {
-          final userRow = await _client
-              .from('users')
-              .select('owner_id')
-              .eq('auth_id', uid)
-              .maybeSingle();
-          if (userRow != null) {
-            ownerId = userRow['owner_id']?.toString() ?? uid;
-          } else {
-            await _client.from('users').upsert({
-              'auth_id': uid,
-              'owner_id': uid,
-              'name': 'Super Admin',
-              'email': email,
-              'role': 'superadmin',
-              'is_active': true,
-              'is_approved': true,
-            }, onConflict: 'auth_id');
-          }
-        } catch (_) {}
+      // Login verifies existing server authority; it never provisions privilege.
+      final row = await _client.from('users')
+          .select('owner_id,name,email,role,is_active,is_approved')
+          .eq('auth_id', uid).maybeSingle().timeout(const Duration(seconds: 8));
+      if (row == null || row['role'] != 'superadmin' ||
+          row['is_active'] != true || row['is_approved'] != true) {
+        return AuthResult.error('Akun ini tidak memiliki hak superadmin.');
       }
-
-      await _saveSession(
-        uid: uid,
-        name: 'Super Admin',
-        email: email,
-        role: 'superadmin',
-        ownerId: ownerId,
-      );
+      await _saveSession(uid: uid, name: row['name']?.toString() ?? 'Super Admin',
+        email: row['email']?.toString() ?? email, role: 'superadmin',
+        ownerId: row['owner_id']?.toString() ?? '');
 
       return AuthResult.success();
     } catch (e) {

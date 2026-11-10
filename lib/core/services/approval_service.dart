@@ -1,3 +1,4 @@
+import 'read_work.dart';
 import '../utils/app_constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -59,27 +60,20 @@ class ApprovalService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final ownerId = prefs.getString(AppConstants.keyOwnerId) ?? '';
+      final uid = prefs.getString(AppConstants.keyUid) ?? '';
+      final role = prefs.getString(AppConstants.keyRole) ?? '';
+      if (ownerId.isEmpty || !const {'admin','owner','superadmin'}.contains(role)) return [];
       final res = await _db.from('users')
-          .select()
+          .select('id,name,email,role,branch_id,created_at')
           .eq('owner_id', ownerId)
           .eq('is_approved', false)
           .order('created_at', ascending: false);
+      if (prefs.getString(AppConstants.keyUid) != uid || prefs.getString(AppConstants.keyOwnerId) != ownerId) return [];
       return res.map((r) => PendingApproval.fromMap(r)).toList();
     } catch (e) { return []; }
   }
 
-  // Cached broadcast stream - safe for multiple listeners
-  Stream<List<PendingApproval>>? _stream;
-  
-  Stream<List<PendingApproval>> pendingApprovalsStream() {
-    _stream ??= _createStream().asBroadcastStream();
-    return _stream!;
-  }
-
-  Stream<List<PendingApproval>> _createStream() async* {
-    yield await getPendingApprovals();
-    await for (final _ in Stream.periodic(const Duration(seconds: 60))) {
-      yield await getPendingApprovals();
-    }
-  }
+  late final _poller = SharedReadPoller<List<PendingApproval>>(getPendingApprovals);
+  void setPollingEnabled(bool enabled) => _poller.setEnabled(enabled);
+  Stream<List<PendingApproval>> pendingApprovalsStream() => _poller.stream;
 }

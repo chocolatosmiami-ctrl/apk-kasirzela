@@ -1,8 +1,7 @@
+import '../../../../core/services/ai_chat_service.dart';
 import '../../../../core/theme/minimal_ui.dart';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import '../../../../core/utils/app_utils.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -18,9 +17,6 @@ class AiChatScreen extends StatefulWidget {
 class _AiChatScreenState extends State<AiChatScreen>
     with TickerProviderStateMixin {
   // ── API config ───────────────────────────────────────────
-  static const _apiKey = 'sk-XhMUeyZyQSw1nmoXoH3pOgaXhklUunnOtS9fY7Na8fOXFonE';
-  static const _baseUrl = 'https://api.cometapi.com/v1';
-  static const _model = 'gpt-4.1-mini';
 
   final _scrollCtrl = ScrollController();
   final _textCtrl = TextEditingController();
@@ -38,7 +34,7 @@ class _AiChatScreenState extends State<AiChatScreen>
     _typingAnim = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
-    )..repeat(reverse: true);
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _buildContext();
@@ -120,10 +116,12 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
         ? 'Selamat sore'
         : 'Selamat malam';
 
+    _typingAnim.repeat(reverse: true);
     setState(() => _isTyping = true);
     await Future.delayed(const Duration(milliseconds: 800));
 
     if (!mounted) return;
+    _typingAnim.stop();
     setState(() {
       _isTyping = false;
       _messages.add(
@@ -152,6 +150,7 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
     final userMsg = text.trim();
     _textCtrl.clear();
 
+    _typingAnim.repeat(reverse: true);
     setState(() {
       _messages.add(
         _ChatMessage(text: userMsg, isUser: true, time: DateTime.now()),
@@ -164,62 +163,28 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
       // Build message history (max 20 pesan terakhir untuk hemat token)
       final history = _messages
           .where((m) => !m.isError)
-          .take(20)
+          .toList().reversed.take(20).toList().reversed
           .map(
             (m) => {'role': m.isUser ? 'user' : 'assistant', 'content': m.text},
           )
           .toList();
 
-      final response = await http
-          .post(
-            Uri.parse('$_baseUrl/chat/completions'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $_apiKey',
-            },
-            body: jsonEncode({
-              'model': _model,
-              'messages': [
-                {'role': 'system', 'content': _businessContext},
-                ...history,
-              ],
-              'max_tokens': 1000,
-              'temperature': 0.7,
-              'stream': false,
-            }),
-          )
-          .timeout(const Duration(seconds: 30));
-
+      final reply = await AiChatService.reply(_businessContext, history);
       if (!mounted) return;
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final reply = data['choices'][0]['message']['content'] as String;
-
-        setState(() {
-          _isTyping = false;
-          _messages.add(
-            _ChatMessage(
-              text: reply.trim(),
-              isUser: false,
-              time: DateTime.now(),
-            ),
-          );
-        });
-      } else {
-        final err = jsonDecode(response.body);
-        throw Exception(
-          err['error']?['message'] ?? 'Error ${response.statusCode}',
-        );
-      }
+      _typingAnim.stop();
+      setState(() {
+        _isTyping = false;
+        _messages.add(_ChatMessage(text: reply.trim(), isUser: false, time: DateTime.now()));
+      });
     } catch (e) {
       if (!mounted) return;
+      _typingAnim.stop();
       setState(() {
         _isTyping = false;
         _messages.add(
           _ChatMessage(
             text:
-                'Maaf, ada gangguan koneksi. Coba lagi ya 🙏\n\n_${e.toString()}_',
+                'Layanan AI belum tersedia atau batas penggunaan tercapai. Silakan coba lagi nanti.',
             isUser: false,
             time: DateTime.now(),
             isError: true,

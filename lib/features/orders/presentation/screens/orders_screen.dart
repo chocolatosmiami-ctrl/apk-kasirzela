@@ -97,8 +97,9 @@ class _OrdersScreenState extends State<OrdersScreen>
                 unselectedLabelColor: const Color(0xFF62736F),
                 labelStyle: const TextStyle(
                   fontWeight: FontWeight.w700,
-                  fontSize: 143,
+                  fontSize: 14,
                 ),
+                unselectedLabelStyle: const TextStyle(fontSize: 14),
                 dividerColor: Colors.transparent,
                 tabs: const [
                   Tab(text: 'Aktif'),
@@ -352,14 +353,18 @@ class _HistoryTabState extends State<_HistoryTab> {
                     color: Color(0xFF62736F),
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    '${AppUtils.formatDate(ordProv.filterFrom)} — ${AppUtils.formatDate(ordProv.filterTo)}',
-                    style: const TextStyle(
-                      color: Color(0xFF62736F),
-                      fontSize: 142,
+                  Expanded(
+                    child: Text(
+                      '${AppUtils.formatDate(ordProv.filterFrom)} — ${AppUtils.formatDate(ordProv.filterTo)}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF62736F),
+                        fontSize: 14,
+                      ),
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -373,7 +378,7 @@ class _HistoryTabState extends State<_HistoryTab> {
                       '${ordProv.orders.length} transaksi',
                       style: const TextStyle(
                         color: Color(0xFF00796B),
-                        fontSize: 121,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -473,7 +478,7 @@ Widget _CurevaChip(
         label,
         style: TextStyle(
           color: isSelected ? Colors.white : const Color(0xFF62736F),
-          fontSize: 142,
+          fontSize: 14,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
@@ -574,7 +579,7 @@ class _OrderCard extends StatelessWidget {
                         order.orderNumber,
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
-                          fontSize: 143,
+                          fontSize: 14,
                           color: Color(0xFF172B2A),
                         ),
                       ),
@@ -593,7 +598,7 @@ class _OrderCard extends StatelessWidget {
                             ),
                             style: const TextStyle(
                               color: Color(0xFF62736F),
-                              fontSize: 121,
+                              fontSize: 12,
                             ),
                           ),
                           if (order.tableNumber != null) ...[
@@ -611,7 +616,7 @@ class _OrderCard extends StatelessWidget {
                                 'Meja ${order.tableNumber}',
                                 style: const TextStyle(
                                   color: Color(0xFF00796B),
-                                  fontSize: 120,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -637,7 +642,7 @@ class _OrderCard extends StatelessWidget {
                     AppUtils.getStatusLabel(order.status),
                     style: TextStyle(
                       color: statusColor,
-                      fontSize: 121,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -679,7 +684,7 @@ class _OrderCard extends StatelessWidget {
                         .join(', '),
                     style: const TextStyle(
                       color: Color(0xFF62736F),
-                      fontSize: 142,
+                      fontSize: 14,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -707,7 +712,7 @@ class _OrderCard extends StatelessWidget {
                         order.cashierName!,
                         style: const TextStyle(
                           color: Color(0xFF62736F),
-                          fontSize: 121,
+                          fontSize: 12,
                         ),
                       ),
                     ],
@@ -746,7 +751,7 @@ class _OrderCard extends StatelessWidget {
                         'Alasan batal: ${order.cancelReason}',
                         style: const TextStyle(
                           color: Colors.red,
-                          fontSize: 121,
+                          fontSize: 12,
                         ),
                       ),
                     ),
@@ -843,7 +848,7 @@ class _CurevaActionBtn extends StatelessWidget {
               label,
               style: TextStyle(
                 color: outlined ? color : Colors.white,
-                fontSize: 142,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
             ),

@@ -1,3 +1,4 @@
+import '../../../../core/services/read_work.dart';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:http/http.dart' as http;
@@ -189,7 +190,24 @@ class PrinterService {
   static const List<int> _lf     = [0x0A];
   static const List<int> _cut    = [0x1D, 0x56, 0x41, 0x10];
 
-  static Future<List<int>?> _fetchAndConvertLogo(
+  static final _logoReads = ReadFlights<List<int>?>();
+  static final _logoCache = <String, _CachedLogo>{};
+  static Future<List<int>?> _fetchAndConvertLogo(String url, int lineWidth) async {
+    final key = '$lineWidth:$url';
+    final saved = _logoCache.remove(key);
+    final age = saved == null ? null : DateTime.now().difference(saved.created);
+    if (saved != null && age != null && !age.isNegative && age < const Duration(minutes: 1)) {
+      _logoCache[key] = saved;
+      return List.of(saved.bytes);
+    }
+    final bytes = await _logoReads.run(key, () => _downloadAndConvertLogo(url, lineWidth));
+    if (bytes != null) {
+      _logoCache[key] = _CachedLogo(List.of(bytes), DateTime.now());
+      while (_logoCache.length > 4) { _logoCache.remove(_logoCache.keys.first); }
+    }
+    return bytes;
+  }
+  static Future<List<int>?> _downloadAndConvertLogo(
       String url, int lineWidth) async {
     try {
       final uri = Uri.parse(url);
@@ -610,4 +628,9 @@ class PrinterService {
     sb.writeln('Terima kasih!');
     return sb.toString();
   }
+}
+class _CachedLogo {
+  final List<int> bytes;
+  final DateTime created;
+  _CachedLogo(this.bytes, this.created);
 }

@@ -1,3 +1,4 @@
+import '../../../../core/services/read_work.dart';
 import '../../../../core/utils/app_constants.dart';
 import '../../../../core/config/supabase_config.dart';
 import 'dart:async';
@@ -11,6 +12,13 @@ class ShiftProvider extends ChangeNotifier {
   List<ShiftModel> _history = [];
   bool _isLoading = false;
   Timer? _refreshTimer;
+  bool _foreground = true;
+  final _statsReads = ReadFlights<void>();
+  void setForeground(bool active) {
+    _foreground = active;
+    if (!active) { stopAutoRefresh(); }
+    else if (_activeShift != null) { startAutoRefresh(_activeShift!.userId); }
+  }
   bool _tableChecked = false; // ← flag agar _ensureShiftsTableCorrect hanya jalan sekali
 
   ShiftModel? get activeShift => _activeShift;
@@ -20,6 +28,7 @@ class ShiftProvider extends ChangeNotifier {
 
   void startAutoRefresh(String userId) {
     _refreshTimer?.cancel();
+    if (!_foreground) return;
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (_activeShift != null) refreshLiveSales();
     });
@@ -129,7 +138,7 @@ class ShiftProvider extends ChangeNotifier {
     final effectiveUserId = await resolveShiftUserId(userId);
 
     if (effectiveUserId.isEmpty) {
-      try {
+      if (const bool.fromEnvironment('KASIR_REMOTE_DIAGNOSTICS')) try {
         await SupabaseConfig.client.rpc('log_debug', params: {
           'p_email': email, 'p_key_uid': keyUid,
           'p_key_branch_id': branchId, 'p_shift_user_id': effectiveUserId,
@@ -164,7 +173,7 @@ class ShiftProvider extends ChangeNotifier {
 
       debugPrint('🔵 [SHIFT] loadActiveShift userId=$effectiveUserId found=${results.length}');
 
-      try {
+      if (const bool.fromEnvironment('KASIR_REMOTE_DIAGNOSTICS')) try {
         final shiftId = results.isNotEmpty ? (results.first['id'] as int? ?? 0) : 0;
         await SupabaseConfig.client.rpc('log_debug', params: {
           'p_email': email, 'p_key_uid': keyUid,
@@ -201,7 +210,8 @@ class ShiftProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> refreshLiveSales() async {
+  Future<void> refreshLiveSales() => _statsReads.run('${_activeShift?.id}', _refreshLiveSales);
+  Future<void> _refreshLiveSales() async {
     if (_activeShift == null) return;
 
     try {
@@ -253,6 +263,7 @@ class ShiftProvider extends ChangeNotifier {
       final totalTransactions = (salesData.first['total_transactions'] as num?)?.toInt()    ?? 0;
       final totalExpenses     = (expenseData.first['total_expenses']   as num?)?.toDouble() ?? 0;
 
+      if (_activeShift?.id != shift.id) return;
       _activeShift = shift.copyWith(
         totalSales: totalSales, totalCash: totalCash,
         totalNonCash: totalNonCash, totalTransactions: totalTransactions,

@@ -32,7 +32,7 @@ class SupabaseDB {
   Future<int?> insertOrder(Map<String, dynamic> data) async {
     try {
       final branchId = await _getBranchId();
-      if (branchId == null) return [];
+      if (branchId == null) return null;
       final res = await _db.from('orders').insert({
         ...data,
         'branch_id': branchId,
@@ -61,8 +61,7 @@ class SupabaseDB {
   }) async {
     try {
       var query = _db.from('orders')
-          .select('*, order_items(*)')
-          .order('created_at', ascending: false);
+          .select('*, order_items(*)');
 
       if (from != null) {
         query = query.gte('created_at', from.toIso8601String());
@@ -74,7 +73,8 @@ class SupabaseDB {
         query = query.eq('status', status);
       }
 
-      return List<Map<String, dynamic>>.from(await query);
+      return List<Map<String, dynamic>>.from(
+          await query.order('created_at', ascending: false));
     } catch (e) {
       debugPrint('getOrders error: $e');
       return [];
@@ -122,7 +122,7 @@ class SupabaseDB {
 
   Future<void> upsertMenuItem(Map<String, dynamic> data) async {
     final branchId = await _getBranchId();
-    if (branchId == null) return [];
+    if (branchId == null) return;
     await _db.from('menu_items').upsert({...data, 'branch_id': branchId});
   }
 
@@ -155,7 +155,7 @@ class SupabaseDB {
   }) async {
     try {
       final branchId = await _getBranchId();
-      if (branchId == null) return [];
+      if (branchId == null) return null;
       final res = await _db.from('shifts').insert({
         'branch_id': branchId,
         'user_id': userId,
@@ -241,7 +241,7 @@ class SupabaseDB {
 
   Future<void> insertExpense(Map<String, dynamic> data) async {
     final branchId = await _getBranchId();
-    if (branchId == null) return [];
+    if (branchId == null) return;
     await _db.from('expenses').insert({...data, 'branch_id': branchId});
   }
 
@@ -270,7 +270,7 @@ class SupabaseDB {
 
   Future<void> upsertRetailProduct(Map<String, dynamic> data) async {
     final branchId = await _getBranchId();
-    if (branchId == null) return [];
+    if (branchId == null) return;
     await _db.from('retail_products')
         .upsert({...data, 'branch_id': branchId});
   }
@@ -313,7 +313,7 @@ class SupabaseDB {
 
   Future<void> insertTable(Map<String, dynamic> data) async {
     final branchId = await _getBranchId();
-    if (branchId == null) return [];
+    if (branchId == null) return;
     await _db.from('restaurant_tables')
         .insert({...data, 'branch_id': branchId});
   }
@@ -327,7 +327,7 @@ class SupabaseDB {
   }) async {
     try {
       final branchId = await _getBranchId();
-      if (branchId == null) return [];
+      if (branchId == null) return {'summary': {}, 'top_menus': []};
 
       final orders = await _db.from('orders')
           .select('total, payment_method, created_at')

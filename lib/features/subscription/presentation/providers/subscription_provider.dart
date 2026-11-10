@@ -1,3 +1,6 @@
+import 'dart:convert';
+import '../../../../core/services/startup_policy.dart';
+import '../../../../core/services/service_health.dart';
 import '../../../../core/utils/app_constants.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
@@ -14,6 +17,12 @@ class SubscriptionProvider extends ChangeNotifier {
   int _offlineTrxCount = 0;
   double _offlineDebt = 0;
   StreamSubscription? _stream;
+  Future<void>? _initializing;
+  bool _verified = false;
+  String _owner = '';
+  bool get verificationReady => _verified;
+  String get verificationMessage => _verified ? 'Menggunakan data subscription terverifikasi.'
+      : 'Subscription belum dapat diverifikasi. Periksa koneksi lalu coba lagi.';
 
   SubscriptionModel? get subscription => _subscription;
   bool get loading => _loading;
@@ -21,7 +30,7 @@ class SubscriptionProvider extends ChangeNotifier {
   int get offlineTrxCount => _offlineTrxCount;
   double get offlineDebt => _offlineDebt;
 
-  bool get canTransactBasic => _subscription?.isActive ?? true;
+  bool get canTransactBasic => _verified && (_subscription?.isActive ?? false);
   bool get isWarning => _subscription?.isWarning ?? false;
   bool get isLocked =>
       _subscription?.isEmpty == true || _subscription?.isLocked == true;
@@ -43,39 +52,47 @@ class SubscriptionProvider extends ChangeNotifier {
   /// Cost per trx dari DB (bukan hardcode)
   double get costPerTrx => _subscription?.costPerTransaction ?? 300;
 
-  Future<void> init() async {
+  Future<void> init() => _initializing ??= _initialize().whenComplete(() => _initializing = null);
+  Future<void> _initialize() async {
     _loading = true;
     notifyListeners();
-
+    final prefs = await SharedPreferences.getInstance();
+    final uid = prefs.getString(AppConstants.keyUid) ?? '';
+    final owner = prefs.getString(AppConstants.keyOwnerId) ?? '';
+    if (_owner != owner) { _subscription = null; _verified = false; }
+    _owner = owner;
+    final key = 'startup_subscription_' + owner;
     try {
-      _isOnline = await OfflineGraceManager.instance.isOnline();
-      _subscription = await SubscriptionService.instance.getMySubscription();
-
-      if (_isOnline) {
-        final actualOwnerId = _subscription?.branchId ?? '';
-        final prefs = await SharedPreferences.getInstance();
-        final savedOwnerId = prefs.getString("sb_owner_id") ?? "";
-        final ownerIdToSync = actualOwnerId.isNotEmpty ? actualOwnerId : savedOwnerId;
-        if (ownerIdToSync.isNotEmpty) {
-          await OfflineGraceManager.instance.syncBalanceFromFirebase(ownerIdToSync);
-          await _trySyncOfflineDebt();
-        }
+      final sub = await SubscriptionService.instance.getMySubscription().timeout(const Duration(seconds: 12));
+      if (prefs.getString(AppConstants.keyUid) != uid || prefs.getString(AppConstants.keyOwnerId) != owner) return;
+      _subscription = sub;
+      _verified = sub != null && sub.branchId == owner;
+      _isOnline = true;
+      if (_verified) {
+        await prefs.setString(key, jsonEncode({'verified_at': DateTime.now().toUtc().toIso8601String(), 'data': sub!.toMap()}));
+        await OfflineGraceManager.instance.rememberVerifiedSubscription(owner, sub.toMap());
+        ServiceHealth.instance.record('subscription', null);
+      } else {
+        await prefs.remove(key);
+        ServiceHealth.instance.record('subscription', FailureKind.denied);
       }
-
-      await _loadOfflineInfo();
-
-      if (_subscription != null) {
-        if (_subscription!.isEmpty) {
-          NotificationService.instance.notifyBalanceEmpty();
-        } else if (_subscription!.isWarning) {
-          NotificationService.instance.notifyBalanceLow(
-              _subscription!.balance, _subscription!.remainingTransactions);
-        }
-      }
-
-      _loading = false;
-      notifyListeners();
     } catch (e) {
+      _isOnline = false;
+      _verified = false;
+      final kind = failureKind(e);
+      final raw = (kind == FailureKind.denied || kind == FailureKind.invalidSession) ? null : prefs.getString(key);
+      if (raw != null && prefs.getString(AppConstants.keyOwnerId) == owner && prefs.getString(AppConstants.keyUid) == uid) {
+        try {
+          final saved = jsonDecode(raw) as Map;
+          final sub = SubscriptionModel.fromMap(Map<String, dynamic>.from(saved['data'] as Map));
+          if (sub.branchId == owner && validCacheAge(DateTime.tryParse(saved['verified_at'].toString()), DateTime.now().toUtc())) {
+            _subscription = sub; _verified = true;
+          }
+        } catch (_) {}
+      }
+      ServiceHealth.instance.record('subscription', failureKind(e));
+    } finally {
+      await _loadOfflineInfo();
       _loading = false;
       notifyListeners();
     }
@@ -146,32 +163,10 @@ class SubscriptionProvider extends ChangeNotifier {
   }
 
   Future<bool> checkBalanceOnline() async {
-    try {
-      final isOnline = await OfflineGraceManager.instance.isOnline();
-      _isOnline = isOnline;
-      if (!isOnline) {
-        notifyListeners();
-        return true;
-      }
-      _subscription = await SubscriptionService.instance.getMySubscription();
-      notifyListeners();
-
-      // Kalau subscription tidak ditemukan → fail-open (jangan blokir kasir)
-      if (_subscription == null) {
-        debugPrint('💰 [checkBalanceOnline] subscription NULL → allow (fail-open)');
-        return true;
-      }
-
-      // Kalau plan aktif → selalu boleh transaksi
-      if (_subscription!.isPlanActive) return true;
-
-      final bal = _subscription!.balance;
-      debugPrint('💰 [checkBalanceOnline] bal=$bal minimum=$minimumBalance');
-      return bal >= minimumBalance;
-    } catch (e) {
-      debugPrint('💰 [checkBalanceOnline] error=$e → allow (fail-open)');
-      return true;
-    }
+    await init();
+    if (!_verified || _subscription == null || _subscription!.isLocked) return false;
+    if (!_isOnline) return (await OfflineGraceManager.instance.canTransactOffline()).allowed;
+    return _subscription!.isPlanActive || _subscription!.balance >= minimumBalance;
   }
 
   Future<SyncResult> syncOfflineDebt() async {

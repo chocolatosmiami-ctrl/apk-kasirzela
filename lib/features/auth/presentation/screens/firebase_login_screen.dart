@@ -1,3 +1,5 @@
+import '../../../../core/services/staff_login_service.dart';
+import '../../../../core/services/login_route.dart';
 import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,7 +7,6 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_config.dart';
-import '../../../../core/database/database_helper.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/app_constants.dart';
 import '../providers/auth_provider.dart';
@@ -15,7 +16,8 @@ import 'set_pin_screen.dart';
 import '../../../home/presentation/screens/home_screen.dart';
 
 class FirebaseLoginScreen extends StatefulWidget {
-  const FirebaseLoginScreen({super.key});
+  final String initialEmail;
+  const FirebaseLoginScreen({super.key, this.initialEmail = ''});
   @override
   State<FirebaseLoginScreen> createState() => _FirebaseLoginScreenState();
 }
@@ -24,6 +26,12 @@ enum _LoginMode { none, owner, staff, register }
 
 class _FirebaseLoginScreenState extends State<FirebaseLoginScreen> {
   _LoginMode _mode = _LoginMode.none;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialEmail.isNotEmpty) _mode = _LoginMode.staff;
+  }
 
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppTheme.surfaceLight,
@@ -37,6 +45,7 @@ class _FirebaseLoginScreenState extends State<FirebaseLoginScreen> {
           : _FormView(
               key: ValueKey(_mode),
               mode: _mode,
+              initialEmail: widget.initialEmail,
               onBack: () => setState(() => _mode = _LoginMode.none),
             ),
     ),
@@ -169,8 +178,10 @@ class _RoleCard extends StatelessWidget {
 // ── Form View — background PUTIH, teks HITAM ──────────────
 class _FormView extends StatefulWidget {
   final _LoginMode mode;
+  final String initialEmail;
   final VoidCallback onBack;
-  const _FormView({super.key, required this.mode, required this.onBack});
+  const _FormView({super.key, required this.mode, required this.onBack,
+    this.initialEmail = ''});
   @override
   State<_FormView> createState() => _FormViewState();
 }
@@ -183,6 +194,12 @@ class _FormViewState extends State<_FormView> {
   bool _showPass = false;
   bool _loading = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailCtrl.text = widget.initialEmail;
+  }
 
   @override
   void dispose() {
@@ -198,8 +215,7 @@ class _FormViewState extends State<_FormView> {
   bool get _isRegister => widget.mode == _LoginMode.register;
 
   String get _title {
-    if (_isOwner) return 'Login Owner';
-    if (_isStaff) return 'Login Staff / Kasir';
+    if (_isOwner || _isStaff) return 'Masuk ke Kasir Zela';
     if (_isRegister) return 'Daftar Owner Baru';
     return '';
   }
@@ -207,6 +223,7 @@ class _FormViewState extends State<_FormView> {
   Color get _accent => AppTheme.primary;
 
   Future<void> _submit() async {
+    if (_loading) return;
     FocusScope.of(context).unfocus();
     final email = _emailCtrl.text.trim().toLowerCase();
     final pass = _passCtrl.text;
@@ -246,12 +263,20 @@ class _FormViewState extends State<_FormView> {
       _error = null;
     });
     try {
-      if (_isRegister)
+      if (_isRegister) {
         await _doRegister(email, pass);
-      else if (_isStaff)
-        await _doStaffLogin(email, pass);
-      else
-        await _doOwnerLogin(email, pass);
+      } else {
+        // Selecting the Owner tile must not send a legacy cashier directly to
+        // Auth, where an account that has not yet migrated cannot exist.
+        final profile = email == SupabaseConfig.superAdminEmail
+            ? null : await StaffLoginService.findProfile(email);
+        if (!mounted) return;
+        if (usesStaffLogin(profile?['role']?.toString())) {
+          await _doStaffLogin(email, pass, knownProfile: profile);
+        } else {
+          await _doOwnerLogin(email, pass);
+        }
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -303,29 +328,18 @@ class _FormViewState extends State<_FormView> {
   }
 
   // ── Staff Login — email + password saja, PIN dikecek terpisah ──
-  Future<void> _doStaffLogin(String email, String pass) async {
+  Future<void> _doStaffLogin(String email, String pass,
+      {Map<String, dynamic>? knownProfile}) async {
     try {
       debugPrint('🔐 [StaffLogin] START email=$email');
-      final result = await SupabaseConfig.client.rpc(
-        'get_staff_by_email',
-        params: {'p_email': email.trim().toLowerCase()},
-      );
-      debugPrint(
-        '🔐 [StaffLogin] RPC result type: ${result.runtimeType}, value: $result',
-      );
+      final result = knownProfile ?? await StaffLoginService.findProfile(email);
+      debugPrint('🔐 [StaffLogin] Profile response received');
 
       if (!mounted) return;
 
-      Map<String, dynamic>? profile;
-      if (result is Map<String, dynamic>) {
-        profile = result;
-      } else if (result is List && result.isNotEmpty) {
-        profile = result.first as Map<String, dynamic>;
-      } else {
-        profile = null;
-      }
+      final profile = result;
 
-      debugPrint('🔐 [StaffLogin] profile: $profile');
+      debugPrint('🔐 [StaffLogin] Profile response parsed');
       if (profile == null) {
         debugPrint(
           '🔐 [StaffLogin] ❌ Profile NULL - email not found in users table',
@@ -361,63 +375,12 @@ class _FormViewState extends State<_FormView> {
         return;
       }
 
-      // Step 2: Verifikasi password
-      final storedPass = profile['password']?.toString() ?? '';
-      debugPrint(
-        '🔐 [StaffLogin] role=${profile["role"]}, hasPassword=${storedPass.isNotEmpty}, hasAuthId=${profile["auth_id"] != null}',
-      );
-
-      bool authSuccess = false;
-      String authId = profile['auth_id']?.toString() ?? '';
-
-      if (authId.isEmpty) {
-        if (storedPass.isEmpty) {
-          setState(() {
-            _loading = false;
-            _error = 'Akun belum siap. Minta owner untuk reset password Anda.';
-          });
-          return;
-        }
-        final inputHash = DatabaseHelper.hashPin(pass);
-        if (storedPass != inputHash) {
-          setState(() {
-            _loading = false;
-            _error = 'Password salah';
-          });
-          return;
-        }
-        authSuccess = true;
-      } else {
-        try {
-          final authRes = await SupabaseConfig.client.auth.signInWithPassword(
-            email: email,
-            password: pass,
-          );
-          if (authRes.user != null) {
-            authId = authRes.user!.id;
-            authSuccess = true;
-          }
-        } catch (e) {
-          final inputHash = DatabaseHelper.hashPin(pass);
-          if (storedPass.isNotEmpty && storedPass == inputHash) {
-            authSuccess = true;
-          } else {
-            setState(() {
-              _loading = false;
-              _error = 'Email atau password salah';
-            });
-            return;
-          }
-        }
-      }
-
-      if (!authSuccess) {
-        setState(() {
-          _loading = false;
-          _error = 'Email atau password salah';
-        });
-        return;
-      }
+      // A cached password hash is not a Supabase session. The server verifies
+      // legacy credentials and links the real Auth account before returning JWTs.
+      final linkedId = profile['auth_id']?.toString() ?? '';
+      final authId = await StaffLoginService.signIn(email, pass,
+          legacy: linkedId.isEmpty);
+      if (!mounted) return;
 
       // Step 3: Simpan session ke SharedPreferences
       debugPrint(
@@ -456,7 +419,7 @@ class _FormViewState extends State<_FormView> {
         branchName = 'Semua Cabang';
       }
 
-      final authUid = profile['auth_id']?.toString() ?? authId;
+      final authUid = authId; // Always use the UID from the real Auth session.
       final usersId = profile['id']?.toString() ?? '';
 
       debugPrint('🔵 [LOGIN-SAVE] authUid(auth_id)=$authUid');
@@ -590,11 +553,9 @@ class _FormViewState extends State<_FormView> {
           ),
           const SizedBox(height: 10),
           Text(
-            _isStaff
-                ? 'Gunakan email dan password yang diberikan owner.'
-                : _isRegister
+            _isRegister
                 ? 'Buat akun untuk mulai mengelola usaha Anda.'
-                : 'Masuk untuk melanjutkan operasional usaha.',
+                : 'Gunakan email dan password Anda. Akun owner, manajer, atau kasir dikenali otomatis.',
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 15,

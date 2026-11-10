@@ -1,9 +1,12 @@
+import '../../../../core/services/pin_secret.dart';
+import '../../../../core/services/read_work.dart';
 import '../../../../core/utils/app_constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../data/models/order_models.dart';
 import '../../../../core/database/database_helper.dart';
+import '../../../../core/database/order_queries.dart';
 
 class OrdersProvider extends ChangeNotifier {
   List<OrderModel> _orders = [];
@@ -22,17 +25,26 @@ class OrdersProvider extends ChangeNotifier {
   DateTime get filterTo => _filterTo;
   String get filterStatus => _filterStatus;
 
+  final _historyReads = ReadFlights<void>();
+  String _requestedHistory = '';
   // ── Riwayat ──────────────────────────────────────────────
   Future<void> loadOrders({DateTime? from, DateTime? to, String? status}) async {
-    _isLoading = true;
-    notifyListeners();
-
     if (from != null) _filterFrom = from;
     if (to != null) _filterTo = to;
     if (status != null) _filterStatus = status;
-
-    final fromStr = _filterFrom.toIso8601String().substring(0, 10);
-    final toDate = _filterTo.add(const Duration(days: 1));
+    final start = _filterFrom, end = _filterTo;
+    final filterStatus = _filterStatus;
+    final prefs = await SharedPreferences.getInstance();
+    final scope = '${prefs.getString(AppConstants.keyUid)}:${prefs.getString(AppConstants.keyBranchId)}';
+    final key = '$scope:range:$start:$end:$filterStatus';
+    _requestedHistory = key;
+    return _historyReads.run(key, () => _loadOrders(start,end,filterStatus,key,scope));
+  }
+  Future<void> _loadOrders(DateTime start, DateTime end, String filterStatus, String key, String scope) async {
+    _isLoading = true;
+    notifyListeners();
+    final fromStr = start.toIso8601String().substring(0, 10);
+    final toDate = end.add(const Duration(days: 1));
     final toStr = toDate.toIso8601String().substring(0, 10);
 
     final localOrders = <OrderModel>[];
@@ -43,16 +55,17 @@ class OrdersProvider extends ChangeNotifier {
       final sqlPrefs = await SharedPreferences.getInstance();
       final sqlUserId = sqlPrefs.getString(AppConstants.keyUid) ?? '';
 
-      String whereClause = "DATE(o.created_at) >= ? AND DATE(o.created_at) < ?";
+      String whereClause = "($orderWibDateSql) >= ? AND ($orderWibDateSql) < ?";
       List<dynamic> args = [fromStr, toStr];
-      if (_filterStatus != 'all') {
+      if (filterStatus != 'all') {
         whereClause += " AND o.status = ?";
-        args.add(_filterStatus);
+        args.add(filterStatus);
       }
       // Filter by cashier_id (per user, bukan per cabang)
       if (sqlUserId.isNotEmpty) {
-        whereClause += " AND o.cashier_id = ?";
-        args.add(sqlUserId);
+        whereClause += " AND (o.cashier_id = ? OR EXISTS "
+            "(SELECT 1 FROM order_sync_outbox q WHERE q.order_id = o.id AND q.account_id = ?))";
+        args.addAll([sqlUserId, sqlUserId]);
       }
       final results = await DatabaseHelper.instance.rawQuery('''
         SELECT o.*, u.name as cashier_name
@@ -63,9 +76,10 @@ class OrdersProvider extends ChangeNotifier {
         LIMIT 500
       ''', args);
 
+      final itemRows = await _loadItemBatches(results);
       for (final row in results) {
         try {
-          final items = await _loadOrderItems(row['id'] as int);
+          final items = itemRows[row['id']] ?? <OrderItemModel>[];
           localOrders.add(OrderModel.fromMap(row, items: items.cast<OrderItemModel>()));
         } catch (_) {}
       }
@@ -83,8 +97,8 @@ class OrdersProvider extends ChangeNotifier {
           .gte('created_at', fromStr)
           .lte('created_at', toStr);
 
-      if (_filterStatus != 'all') {
-        query = query.eq('status', _filterStatus);
+      if (filterStatus != 'all') {
+        query = query.eq('status', filterStatus);
       }
       // Note: 'all' includes both 'paid' and 'completed' orders
 
@@ -149,6 +163,7 @@ class OrdersProvider extends ChangeNotifier {
       final key = o.orderNumber.isNotEmpty ? o.orderNumber : 'sb_${o.id ?? sbOrders.indexOf(o)}';
       merged.putIfAbsent(key, () => o);
     }
+    if (!await _historyCurrent(key, scope)) return;
     _orders = merged.values.toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
@@ -158,6 +173,13 @@ class OrdersProvider extends ChangeNotifier {
 
   // Load ALL history - SQLite + Supabase
   Future<void> loadAllOrders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final scope = '${prefs.getString(AppConstants.keyUid)}:${prefs.getString(AppConstants.keyBranchId)}';
+    final key = '$scope:all';
+    _requestedHistory = key;
+    return _historyReads.run(key, () => _loadAllOrders(key,scope));
+  }
+  Future<void> _loadAllOrders(String key, String scope) async {
     _isLoading = true;
     notifyListeners();
 
@@ -175,10 +197,11 @@ class OrdersProvider extends ChangeNotifier {
           SELECT o.*, u.name as cashier_name
           FROM orders o
           LEFT JOIN users u ON o.cashier_id = u.auth_id
-          WHERE o.cashier_id = ?
+          WHERE o.cashier_id = ? OR EXISTS
+            (SELECT 1 FROM order_sync_outbox q WHERE q.order_id = o.id AND q.account_id = ?)
           ORDER BY o.created_at DESC
           LIMIT 200
-        ''', [allUserId]);
+        ''', [allUserId, allUserId]);
       } else {
         results = await DatabaseHelper.instance.rawQuery('''
           SELECT o.*, u.name as cashier_name
@@ -188,10 +211,11 @@ class OrdersProvider extends ChangeNotifier {
           LIMIT 200
         ''');
       }
+      final itemRows = await _loadItemBatches(results);
       for (final row in results) {
         try {
           final id = row['id'];
-          final rawLocalItems = id != null ? await _loadOrderItems(id as int) : <OrderItemModel>[];
+          final rawLocalItems = itemRows[id] ?? <OrderItemModel>[];
           final localItems = rawLocalItems.cast<OrderItemModel>();
           localOrders.add(OrderModel.fromMap(row, items: localItems));
         } catch (rowErr) {}
@@ -279,11 +303,17 @@ class OrdersProvider extends ChangeNotifier {
     for (final o in sbOrders) {
       merged.putIfAbsent(o.orderNumber, () => o);
     }
+    if (!await _historyCurrent(key, scope)) return;
     _orders = merged.values.toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  Future<bool> _historyCurrent(String key, String scope) async {
+    final prefs = await SharedPreferences.getInstance();
+    return key == _requestedHistory && scope == '${prefs.getString(AppConstants.keyUid)}:${prefs.getString(AppConstants.keyBranchId)}';
   }
 
   // ── Pesanan Aktif ─────────────────────────────────────────
@@ -298,25 +328,26 @@ class OrdersProvider extends ChangeNotifier {
       ''');
 
       _activeOrders = [];
+      final itemRows = await _loadItemBatches(results);
       for (final row in results) {
-        final items = await _loadOrderItems(row['id'] as int);
+        final items = itemRows[row['id']] ?? <OrderItemModel>[];
         _activeOrders.add(OrderModel.fromMap(row, items: items));
       }
       notifyListeners();
     } catch (e) {}
   }
 
-  Future<List<OrderItemModel>> _loadOrderItems(int orderId) async {
+  Future<Map<int, List<OrderItemModel>>> _loadItemBatches(List<Map<String,dynamic>> orders) async {
     try {
-      final itemResults = await DatabaseHelper.instance.query(
-        'order_items',
-        where: 'order_id = ?',
-        whereArgs: [orderId],
-      );
-      return itemResults.map((e) => OrderItemModel.fromMap(e)).toList();
-    } catch (_) {
-      return [];
-    }
+      final rows = await readOrderItemBatches(orders.map((o) => o['id']).whereType<int>(),
+          (sql,args) => DatabaseHelper.instance.rawQuery(sql,args));
+      final parsed = <int,List<OrderItemModel>>{};
+      for (final entry in rows.entries) {
+        try { parsed[entry.key] = entry.value.map(OrderItemModel.fromMap).toList(); }
+        catch (_) { parsed[entry.key] = []; }
+      }
+      return parsed;
+    } catch (_) { return {}; }
   }
 
   // ── Update Status ─────────────────────────────────────────
@@ -337,15 +368,16 @@ class OrdersProvider extends ChangeNotifier {
 
   Future<bool> cancelOrder(int orderId, String reason, String adminPin) async {
     try {
-      final pinHash = DatabaseHelper.hashPin(adminPin);
-      // BUG 19 FIX: Izinkan juga role manajer dan owner untuk cancel pesanan,
-      // sesuai hierarki role yang didefinisikan di AppUserProfile.
-      final admins = await DatabaseHelper.instance.query(
-        'users',
-        where: 'pin_hash = ? AND role IN (?, ?, ?) AND is_active = 1',
-        whereArgs: [pinHash, 'admin', 'manajer', 'owner'],
-      );
-      if (admins.isEmpty) return false;
+      final admins = await DatabaseHelper.instance.query('users',
+        where: 'role IN (?, ?, ?) AND is_active = 1',
+        whereArgs: ['admin', 'manajer', 'owner']);
+      var approved = false;
+      for (final admin in admins) {
+        if (await PinSecret.verify(adminPin, admin['pin_hash']?.toString() ?? '')) {
+          approved = true; break;
+        }
+      }
+      if (!approved) return false;
 
       await DatabaseHelper.instance.update(
         'orders',
@@ -367,14 +399,16 @@ class OrdersProvider extends ChangeNotifier {
 
   Future<bool> voidOrder(int orderId, String adminPin) async {
     try {
-      final pinHash = DatabaseHelper.hashPin(adminPin);
-      // BUG 19 FIX: Izinkan juga role manajer dan owner
-      final admins = await DatabaseHelper.instance.query(
-        'users',
-        where: 'pin_hash = ? AND role IN (?, ?, ?) AND is_active = 1',
-        whereArgs: [pinHash, 'admin', 'manajer', 'owner'],
-      );
-      if (admins.isEmpty) return false;
+      final admins = await DatabaseHelper.instance.query('users',
+        where: 'role IN (?, ?, ?) AND is_active = 1',
+        whereArgs: ['admin', 'manajer', 'owner']);
+      var approved = false;
+      for (final admin in admins) {
+        if (await PinSecret.verify(adminPin, admin['pin_hash']?.toString() ?? '')) {
+          approved = true; break;
+        }
+      }
+      if (!approved) return false;
 
       await DatabaseHelper.instance.update(
         'orders',
@@ -504,7 +538,7 @@ class OrdersProvider extends ChangeNotifier {
       SELECT oi.name, SUM(oi.qty) as total_qty, SUM(oi.subtotal) as total_revenue
       FROM order_items oi
       JOIN orders o ON oi.order_id = o.id
-      WHERE o.status IN ('paid', 'completed') AND DATE(o.created_at) >= ? AND DATE(o.created_at) < ?
+      WHERE o.status IN ('paid', 'completed') AND ($orderWibDateSql) >= ? AND ($orderWibDateSql) < ?
       GROUP BY oi.name
       ORDER BY total_qty DESC
       LIMIT ?

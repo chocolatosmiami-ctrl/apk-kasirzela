@@ -5,15 +5,17 @@ import 'package:path/path.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'dart:math';
+import 'local_read_indexes.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._internal();
   static Database? _database;
+  static Future<Database>? _opening;
 
   DatabaseHelper._internal();
 
   Future<Database> get database async {
-    _database ??= await _initDatabase();
+    _database ??= await (_opening ??= _initDatabase().whenComplete(() => _opening = null));
     return _database!;
   }
 
@@ -22,7 +24,7 @@ class DatabaseHelper {
     final path = join(dbPath, 'pos_rumah_makan.db');
     final db = await openDatabase(
       path,
-      version: 30,
+      version: 32,
       onCreate: _createTables,
       onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
@@ -42,6 +44,9 @@ class DatabaseHelper {
             )
           ''');
         } catch (e) {}
+        for (final sql in localReadIndexes) {
+          try { await db.execute(sql); } catch (_) { /* Older local schema: continue safely. */ }
+        }
       },
     );
     // DEBUG: cek versi DB dan kolom order_items
@@ -52,6 +57,10 @@ class DatabaseHelper {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 32) {
+      await db.execute('ALTER TABLE tables ADD COLUMN server_id INTEGER');
+    }
+    if (oldVersion < 31) await _createOrderOutbox(db);
     // v21: SAFE migration - TIDAK PERNAH DROP shifts
     if (oldVersion < 21) {
       try { await db.execute("ALTER TABLE shifts ADD COLUMN branch_id TEXT"); } catch (_) {}
@@ -140,6 +149,7 @@ class DatabaseHelper {
 
 
   Future<void> _createTables(Database db, int version) async {
+    await _createOrderOutbox(db);
     // Users
     await db.execute('''
       CREATE TABLE users (
@@ -348,6 +358,7 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS tables (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        server_id INTEGER,
         name TEXT NOT NULL,
         zone TEXT NOT NULL DEFAULT 'Dalam',
         capacity INTEGER NOT NULL DEFAULT 4,
@@ -605,6 +616,24 @@ class DatabaseHelper {
   }
 
   // CRUD helpers
+  static Future<void> _createOrderOutbox(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS order_sync_outbox (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id INTEGER NOT NULL UNIQUE,
+        account_id TEXT NOT NULL,
+        branch_id TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        state TEXT NOT NULL DEFAULT 'pending',
+        attempts INTEGER NOT NULL DEFAULT 0,
+        last_error TEXT,
+        acknowledged_at TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS order_sync_pending ON order_sync_outbox(state, account_id, id)');
+  }
+
   Future<int> insert(String table, Map<String, dynamic> data) async {
     final db = await database;
     return await db.insert(table, data, conflictAlgorithm: ConflictAlgorithm.replace);

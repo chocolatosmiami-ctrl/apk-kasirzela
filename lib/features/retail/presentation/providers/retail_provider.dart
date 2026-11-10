@@ -1,3 +1,4 @@
+import '../../../../core/services/read_work.dart';
 import '../../../../core/utils/app_constants.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../core/config/supabase_config.dart';
@@ -31,7 +32,20 @@ class RetailProvider extends ChangeNotifier {
   }
 
   // ── Load products ─────────────────────────────────────
+  final _productReads = ReadFlights<void>();
   Future<void> loadProducts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = '${prefs.getString(AppConstants.keyUid)}:${prefs.getString(AppConstants.keyBranchId)}';
+    return _productReads.run(key, () async {
+      try { await _loadProducts(); }
+      finally {
+        if (key == '${prefs.getString(AppConstants.keyUid)}:${prefs.getString(AppConstants.keyBranchId)}') {
+          _loading = false; notifyListeners();
+        }
+      }
+    });
+  }
+  Future<void> _loadProducts() async {
     debugPrint('📊 [RETAIL] <void> loadProducts called');
     _loading = true;
     notifyListeners();
@@ -51,11 +65,14 @@ class RetailProvider extends ChangeNotifier {
         if (supaResult != null && supaResult is List && supaResult.isNotEmpty) {
           debugPrint('📊 [RETAIL] Supabase products: ${supaResult.length}');
           // Upsert produk dari Supabase ke SQLite lokal
+          if (prods.getString(AppConstants.keyUid) != userId || prods.getString(AppConstants.keyBranchId) != branchId) return;
+          await DatabaseHelper.instance.runTransaction((txn) async {
+            final local = await txn.query('retail_products', columns: ['id','sku'], where: 'branch_id = ?', whereArgs: [branchId]);
+            final bySku = <String,int>{};
+            for (final row in local) { if (row['sku'] != null) bySku.putIfAbsent(row['sku'].toString(), () => row['id'] as int); }
           for (final row in supaResult) {
-            final existing = await DatabaseHelper.instance.rawQuery(
-              'SELECT id FROM retail_products WHERE sku = ? AND branch_id = ?',
-              [row['sku']?.toString() ?? '', branchId],
-            );
+            final sku = row['sku']?.toString() ?? '';
+            final localId = bySku[sku];
             final data = {
               'name': row['name'],
               'sku': row['sku'],
@@ -72,14 +89,15 @@ class RetailProvider extends ChangeNotifier {
               'created_by': row['created_by']?.toString() ?? userId,
               'created_at': row['created_at']?.toString() ?? DateTime.now().toIso8601String(),
             };
-            if (existing.isEmpty) {
-              await DatabaseHelper.instance.insert('retail_products', data);
+            if (localId == null) {
+              final insertedId = await txn.insert('retail_products', data);
+              if (row['sku'] != null) bySku[sku] = insertedId;
             } else {
-              await DatabaseHelper.instance.update(
-                'retail_products', data, 'id = ?', [existing.first['id']],
-              );
+              await txn.update('retail_products', data, where: 'id = ?', whereArgs: [localId]);
+              if (row['sku'] == null) bySku.remove(sku);
             }
           }
+          });
           debugPrint('📊 [RETAIL] ✅ Supabase sync ke SQLite selesai');
         }
       } catch (e) {
@@ -101,10 +119,10 @@ class RetailProvider extends ChangeNotifier {
         orderBy: 'name ASC',
       );
     }
+    if (prods.getString(AppConstants.keyUid) != userId || prods.getString(AppConstants.keyBranchId) != branchId) return;
     _products = results.map((r) => RetailProduct.fromMap(r)).toList();
     _applyFilter();
-    _loading = false;
-    notifyListeners();
+    // Completion notification is owned by the coalesced read wrapper.
   }
 
   void search(String q) {

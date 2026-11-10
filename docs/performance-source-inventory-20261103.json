@@ -1,0 +1,1264 @@
+[
+  {
+    "file": "lib/core/config/supabase_config.dart",
+    "lines": 60,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/database/database_helper.dart",
+    "lines": 732,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/database/local_read_indexes.dart",
+    "lines": 8,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/database/order_queries.dart",
+    "lines": 9,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/approval_service.dart",
+    "lines": 79,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      43,
+      52,
+      66
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/auto_report_service.dart",
+    "lines": 236,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/checkout_diagnostic.dart",
+    "lines": 113,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/checkout_gate.dart",
+    "lines": 18,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/firebase_auth_service.dart",
+    "lines": 5,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/login_route.dart",
+    "lines": 16,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/midtrans_service.dart",
+    "lines": 19,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/notification_service.dart",
+    "lines": 84,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      25,
+      75
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/offline_grace_manager.dart",
+    "lines": 669,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      61,
+      71,
+      102,
+      115,
+      304,
+      356,
+      416
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/offline_order_sync_service.dart",
+    "lines": 285,
+    "timer_lines": [
+      37
+    ],
+    "read_or_write_endpoint_lines": [
+      18,
+      21,
+      182,
+      246
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/order_outbox.dart",
+    "lines": 61,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/order_sync_host.dart",
+    "lines": 147,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 1,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/core/services/permission_sync_service.dart",
+    "lines": 125,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      30,
+      60,
+      68,
+      96
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/read_work.dart",
+    "lines": 122,
+    "timer_lines": [
+      76
+    ],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/receipt_sync_state.dart",
+    "lines": 20,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/recipe_stock.dart",
+    "lines": 31,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/resilient_http_client.dart",
+    "lines": 142,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/service_health.dart",
+    "lines": 64,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/sqlite_sync_service.dart",
+    "lines": 232,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      72,
+      128,
+      163
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/staff_login_service.dart",
+    "lines": 48,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      6,
+      9,
+      11
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/startup_policy.dart",
+    "lines": 81,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/supabase_auth_service.dart",
+    "lines": 541,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      73,
+      100,
+      143,
+      193,
+      244,
+      252,
+      259,
+      299,
+      322,
+      361,
+      458
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/supabase_db.dart",
+    "lines": 432,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      36,
+      51,
+      63,
+      76,
+      93,
+      94,
+      111,
+      112,
+      126,
+      130,
+      140,
+      159,
+      174,
+      184,
+      188,
+      208,
+      230,
+      231,
+      245,
+      249,
+      259,
+      260,
+      274,
+      279,
+      290,
+      291,
+      305,
+      317,
+      332,
+      354,
+      364,
+      398,
+      413,
+      426
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/sync_service.dart",
+    "lines": 138,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      66,
+      89,
+      97,
+      107,
+      114
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/services/whatsapp_report_service.dart",
+    "lines": 365,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/theme/app_theme.dart",
+    "lines": 710,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/theme/minimal_ui.dart",
+    "lines": 245,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 4
+  },
+  {
+    "file": "lib/core/theme/startup_recovery_view.dart",
+    "lines": 55,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/core/theme/visible_clock.dart",
+    "lines": 59,
+    "timer_lines": [
+      39
+    ],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 1,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/utils/app_constants.dart",
+    "lines": 42,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/core/utils/app_utils.dart",
+    "lines": 121,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/auth/data/models/user_model.dart",
+    "lines": 68,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/auth/presentation/providers/auth_provider.dart",
+    "lines": 264,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      88,
+      125,
+      193,
+      204,
+      222,
+      242,
+      255
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/auth/presentation/screens/firebase_login_screen.dart",
+    "lines": 774,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      400
+    ],
+    "controller_declarations": 5,
+    "dispose_calls": 5,
+    "widget_builds": 4
+  },
+  {
+    "file": "lib/features/auth/presentation/screens/login_screen.dart",
+    "lines": 514,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 4,
+    "dispose_calls": 3,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/auth/presentation/screens/owner_dashboard_screen.dart",
+    "lines": 913,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 5,
+    "dispose_calls": 1,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/auth/presentation/screens/pin_verify_screen.dart",
+    "lines": 848,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      150,
+      526
+    ],
+    "controller_declarations": 3,
+    "dispose_calls": 2,
+    "widget_builds": 2
+  },
+  {
+    "file": "lib/features/auth/presentation/screens/set_pin_screen.dart",
+    "lines": 517,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      186
+    ],
+    "controller_declarations": 1,
+    "dispose_calls": 0,
+    "widget_builds": 2
+  },
+  {
+    "file": "lib/features/auth/presentation/screens/splash_screen.dart",
+    "lines": 55,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 2,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/cashier/data/services/printer_service.dart",
+    "lines": 636,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      215
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/cashier/presentation/providers/cashier_provider.dart",
+    "lines": 943,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      265,
+      275,
+      300,
+      357,
+      372,
+      435,
+      443,
+      599,
+      731,
+      743,
+      904
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/cashier/presentation/screens/cashier_screen.dart",
+    "lines": 2034,
+    "timer_lines": [
+      120
+    ],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 4,
+    "dispose_calls": 2,
+    "widget_builds": 7
+  },
+  {
+    "file": "lib/features/cashier/presentation/screens/checkout_screen.dart",
+    "lines": 1206,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      53,
+      386
+    ],
+    "controller_declarations": 2,
+    "dispose_calls": 3,
+    "widget_builds": 2
+  },
+  {
+    "file": "lib/features/cashier/presentation/screens/receipt_screen.dart",
+    "lines": 1108,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 1,
+    "dispose_calls": 0,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/cashier/presentation/widgets/checkout_failure_dialog.dart",
+    "lines": 66,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/cashier/presentation/widgets/receipt_sync_status.dart",
+    "lines": 71,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 1,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/expenses/data/models/expense_model.dart",
+    "lines": 52,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/expenses/presentation/providers/expenses_provider.dart",
+    "lines": 110,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/expenses/presentation/screens/expenses_screen.dart",
+    "lines": 511,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 2,
+    "dispose_calls": 1,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/home/presentation/screens/ai_chat_screen.dart",
+    "lines": 688,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 4,
+    "dispose_calls": 5,
+    "widget_builds": 3
+  },
+  {
+    "file": "lib/features/home/presentation/screens/home_dashboard_screen.dart",
+    "lines": 490,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 4
+  },
+  {
+    "file": "lib/features/home/presentation/screens/home_screen.dart",
+    "lines": 1675,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      114,
+      126
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 1,
+    "widget_builds": 4
+  },
+  {
+    "file": "lib/features/inventory/data/models/ingredient_model.dart",
+    "lines": 102,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/inventory/data/stock_availability_service.dart",
+    "lines": 257,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      124,
+      156,
+      159
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/inventory/presentation/providers/inventory_provider.dart",
+    "lines": 380,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      91,
+      113,
+      124,
+      141,
+      193,
+      200,
+      205,
+      243,
+      250,
+      255,
+      288
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/inventory/presentation/screens/inventory_screen.dart",
+    "lines": 1066,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      107,
+      120,
+      140,
+      153,
+      162,
+      855,
+      894
+    ],
+    "controller_declarations": 3,
+    "dispose_calls": 2,
+    "widget_builds": 2
+  },
+  {
+    "file": "lib/features/inventory/presentation/screens/stock_transfer_screen.dart",
+    "lines": 710,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      98,
+      103,
+      106,
+      110,
+      161,
+      523,
+      527
+    ],
+    "controller_declarations": 2,
+    "dispose_calls": 5,
+    "widget_builds": 3
+  },
+  {
+    "file": "lib/features/menu/data/models/menu_models.dart",
+    "lines": 145,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/menu/presentation/providers/menu_provider.dart",
+    "lines": 790,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      189,
+      289,
+      367,
+      376,
+      387,
+      416,
+      440,
+      463,
+      537,
+      697,
+      705
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/menu/presentation/screens/category_management_screen.dart",
+    "lines": 242,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 1,
+    "dispose_calls": 0,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/menu/presentation/screens/menu_item_form_screen.dart",
+    "lines": 657,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 5,
+    "dispose_calls": 5,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/menu/presentation/screens/menu_screen.dart",
+    "lines": 641,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      319
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 3
+  },
+  {
+    "file": "lib/features/orders/data/models/order_models.dart",
+    "lines": 187,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/orders/presentation/providers/orders_provider.dart",
+    "lines": 543,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      94,
+      232,
+      243,
+      249,
+      485
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/orders/presentation/screens/orders_screen.dart",
+    "lines": 860,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 2,
+    "dispose_calls": 2,
+    "widget_builds": 5
+  },
+  {
+    "file": "lib/features/reports/data/services/pdf_service.dart",
+    "lines": 377,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      25
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/reports/presentation/providers/reports_provider.dart",
+    "lines": 208,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/reports/presentation/screens/admin_report_screen.dart",
+    "lines": 1357,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      65,
+      70,
+      91,
+      97,
+      899
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 2,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/reports/presentation/screens/reports_screen.dart",
+    "lines": 832,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 3
+  },
+  {
+    "file": "lib/features/retail/data/models/retail_models.dart",
+    "lines": 222,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/retail/presentation/providers/retail_provider.dart",
+    "lines": 636,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      61,
+      233,
+      361,
+      497,
+      524,
+      577
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/retail/presentation/screens/retail_cashier_screen.dart",
+    "lines": 1058,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 5,
+    "dispose_calls": 4,
+    "widget_builds": 3
+  },
+  {
+    "file": "lib/features/retail/presentation/screens/retail_checkout_screen.dart",
+    "lines": 748,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 1,
+    "dispose_calls": 2,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/retail/presentation/screens/retail_product_form_screen.dart",
+    "lines": 728,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 8,
+    "dispose_calls": 9,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/retail/presentation/screens/retail_product_list_screen.dart",
+    "lines": 395,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 1,
+    "dispose_calls": 0,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/settings/data/models/branch_model.dart",
+    "lines": 57,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/settings/data/models/preset_model.dart",
+    "lines": 60,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/settings/data/models/printer_station_model.dart",
+    "lines": 92,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/settings/presentation/providers/printer_station_provider.dart",
+    "lines": 144,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      39,
+      60,
+      78,
+      86,
+      91,
+      109
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/settings/presentation/providers/settings_provider.dart",
+    "lines": 371,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      166,
+      183,
+      189,
+      200,
+      259
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/approval_screen.dart",
+    "lines": 270,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 2
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/branch_management_screen.dart",
+    "lines": 595,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 3,
+    "dispose_calls": 0,
+    "widget_builds": 2
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/preset_management_screen.dart",
+    "lines": 740,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      102,
+      314
+    ],
+    "controller_declarations": 1,
+    "dispose_calls": 0,
+    "widget_builds": 2
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/printer_settings_screen.dart",
+    "lines": 764,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 2,
+    "widget_builds": 2
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/printer_station_screen.dart",
+    "lines": 710,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      330
+    ],
+    "controller_declarations": 2,
+    "dispose_calls": 0,
+    "widget_builds": 2
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/role_permissions_screen.dart",
+    "lines": 1109,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      190,
+      376,
+      398
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 2,
+    "widget_builds": 2
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/settings_screen.dart",
+    "lines": 1150,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 5,
+    "dispose_calls": 0,
+    "widget_builds": 8
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/sqlite_sync_screen.dart",
+    "lines": 289,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/user_management_screen.dart",
+    "lines": 283,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 2,
+    "dispose_calls": 1,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/wa_report_settings_screen.dart",
+    "lines": 275,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 2,
+    "dispose_calls": 3,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/shift/data/models/shift_model.dart",
+    "lines": 127,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/shift/presentation/providers/shift_provider.dart",
+    "lines": 452,
+    "timer_lines": [
+      32
+    ],
+    "read_or_write_endpoint_lines": [
+      142,
+      178,
+      351,
+      443
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 1,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/shift/presentation/screens/shift_screen.dart",
+    "lines": 1269,
+    "timer_lines": [
+      674,
+      693
+    ],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 5,
+    "dispose_calls": 2,
+    "widget_builds": 8
+  },
+  {
+    "file": "lib/features/subscription/data/models/subscription_model.dart",
+    "lines": 190,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/subscription/data/services/subscription_service.dart",
+    "lines": 320,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      30,
+      39,
+      43,
+      54,
+      58,
+      100,
+      114,
+      152,
+      170,
+      174,
+      205,
+      212,
+      227,
+      231,
+      259,
+      260,
+      274,
+      286,
+      298,
+      309,
+      312
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/subscription/presentation/providers/subscription_provider.dart",
+    "lines": 208,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      87
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 1,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/subscription/presentation/screens/admin_subscription_screen.dart",
+    "lines": 263,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 2
+  },
+  {
+    "file": "lib/features/subscription/presentation/screens/locked_screen.dart",
+    "lines": 183,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/subscription/presentation/screens/midtrans_payment_screen.dart",
+    "lines": 40,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/subscription/presentation/screens/subscription_screen.dart",
+    "lines": 476,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/subscription/presentation/screens/super_admin_screen.dart",
+    "lines": 609,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 2,
+    "widget_builds": 3
+  },
+  {
+    "file": "lib/features/table_management/data/models/table_model.dart",
+    "lines": 110,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/table_management/presentation/providers/table_provider.dart",
+    "lines": 263,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [
+      56,
+      60,
+      130,
+      136,
+      181,
+      210,
+      218,
+      226,
+      247,
+      251
+    ],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 0
+  },
+  {
+    "file": "lib/features/table_management/presentation/screens/table_editor_dialog.dart",
+    "lines": 84,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 3,
+    "dispose_calls": 4,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/features/table_management/presentation/screens/table_management_screen.dart",
+    "lines": 595,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 1,
+    "dispose_calls": 0,
+    "widget_builds": 2
+  },
+  {
+    "file": "lib/features/table_management/presentation/screens/table_order_summary_screen.dart",
+    "lines": 252,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 0,
+    "widget_builds": 1
+  },
+  {
+    "file": "lib/main.dart",
+    "lines": 190,
+    "timer_lines": [],
+    "read_or_write_endpoint_lines": [],
+    "controller_declarations": 0,
+    "dispose_calls": 2,
+    "widget_builds": 3
+  }
+]

@@ -1,3 +1,4 @@
+import '../../../../core/services/read_work.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -53,6 +54,7 @@ class InventoryProvider extends ChangeNotifier {
   String _ownerId = '';
   String get ownerId => _ownerId; // untuk debug
   String _branchId = '';
+  String _inventoryScope = '';
   String _userName = '';
 
   /// Getter sync — hanya dipakai untuk kompatibilitas lama.
@@ -60,31 +62,46 @@ class InventoryProvider extends ChangeNotifier {
   List<int> get unavailableMenuIds => [];
 
   // ── Load: master_bahan_baku + menu_stock hari ini ─────────
+  final _ingredientReads = ReadFlights<void>();
   Future<void> loadIngredients() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = '${prefs.getString(AppConstants.keyUid)}:${prefs.getString(AppConstants.keyBranchId)}';
+    return _ingredientReads.run(key, _loadIngredients);
+  }
+  Future<void> _loadIngredients() async {
     _isLoading = true;
     notifyListeners();
 
+    final prefs = await SharedPreferences.getInstance();
+    final branchId = prefs.getString(AppConstants.keyBranchId) ?? '';
+    final uid = prefs.getString(AppConstants.keyUid) ?? '';
+    bool current() => prefs.getString(AppConstants.keyUid) == uid && prefs.getString(AppConstants.keyBranchId) == branchId;
+    final scope = '$uid:$branchId';
+    if (_inventoryScope != scope) { _items = []; _ownerId = ''; }
+    _inventoryScope = scope;
+    _branchId = branchId;
+    var ownerId = _ownerId;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      _branchId = prefs.getString(AppConstants.keyBranchId) ?? '';
       _userName = prefs.getString(AppConstants.keyKasirName) ?? 'Kasir';
 
       // Ambil owner_id dari branches
-      if (_branchId.isNotEmpty) {
+      if (branchId.isNotEmpty) {
         try {
           final branchRes = await _db
               .from('branches')
               .select('owner_id')
-              .eq('id', _branchId)
+              .eq('id', branchId)
               .single();
-          _ownerId = branchRes['owner_id']?.toString() ?? '';
+          ownerId = branchRes['owner_id']?.toString() ?? '';
           debugPrint('✅ Inventory owner_id: $_ownerId branch: $_branchId');
         } catch (e) {
           debugPrint('❌ get owner_id: $e');
         }
       }
 
-      if (_ownerId.isEmpty) {
+      if (!current()) return;
+      if (ownerId.isEmpty) {
+        _ownerId = '';
         _items = [];
         _isLoading = false;
         notifyListeners();
@@ -95,7 +112,7 @@ class InventoryProvider extends ChangeNotifier {
       final bbRes = await _db
           .from('master_bahan_baku')
           .select('id, name, satuan_resep, harga_beli')
-          .eq('owner_id', _ownerId)
+          .eq('owner_id', ownerId)
           .eq('is_active', true)
           .order('name');
 
@@ -106,7 +123,7 @@ class InventoryProvider extends ChangeNotifier {
         final msRes = await _db
             .from('menu_stock')
             .select('menu_name, stock_sisa')
-            .eq('branch_id', _branchId)
+            .eq('branch_id', branchId)
             .eq('stock_date', today);
         for (final ms in (msRes as List)) {
           final key = (ms['menu_name'] as String).toLowerCase().trim();
@@ -123,13 +140,15 @@ class InventoryProvider extends ChangeNotifier {
         final gsRes = await _db
             .from('gudang_stok')
             .select('bahan_baku_id, stok_sisa')
-            .eq('owner_id', _ownerId);
+            .eq('owner_id', ownerId);
         for (final gs in (gsRes as List)) {
           gudangMap[gs['bahan_baku_id'].toString()] =
               (gs['stok_sisa'] as num?)?.toDouble() ?? 0;
         }
       } catch (_) {}
 
+      if (prefs.getString(AppConstants.keyUid) != uid || prefs.getString(AppConstants.keyBranchId) != branchId) return;
+      _ownerId = ownerId;
       _items = (bbRes as List).map((bb) {
         final namaKey = (bb['name'] as String).toLowerCase().trim();
         // Prioritas: menu_stock hari ini → gudang_stok → 0
@@ -137,7 +156,7 @@ class InventoryProvider extends ChangeNotifier {
             gudangMap[bb['id'].toString()] ?? 0;
         return BahanBakuModel(
           id: bb['id'].toString(),
-          ownerId: _ownerId,
+          ownerId: ownerId,
           name: bb['name'].toString(),
           satuan: bb['satuan_resep']?.toString() ?? 'pcs',
           satuanBeli: 'pcs',
@@ -150,11 +169,10 @@ class InventoryProvider extends ChangeNotifier {
           '${_items.where((i) => i.stokSisa > 0).length} sudah diset');
     } catch (e) {
       debugPrint('❌ loadIngredients: $e');
-      _items = [];
+      // Preserve the last loaded list during a temporary read failure.
+    } finally {
+      if (current()) { _isLoading = false; notifyListeners(); }
     }
-
-    _isLoading = false;
-    notifyListeners();
   }
 
   // ── Tambah stok → update gudang_stok ────────────────────

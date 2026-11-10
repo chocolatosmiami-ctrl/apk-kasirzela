@@ -1,8 +1,10 @@
+import '../../../../core/services/checkout_gate.dart';
+import '../../../../core/services/checkout_diagnostic.dart';
 import '../../../../core/utils/app_constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/config/supabase_config.dart';
-import '../../../../core/services/sync_service.dart';
+import '../../../../core/services/offline_order_sync_service.dart';
 
 import '../../../menu/data/models/menu_models.dart';
 import '../../../orders/data/models/order_models.dart';
@@ -11,9 +13,43 @@ import '../../../../core/utils/app_utils.dart';
 import '../../../inventory/data/stock_availability_service.dart';
 
 class CashierProvider extends ChangeNotifier {
+  CheckoutDiagnostic? _lastCheckoutDiagnostic;
+  CheckoutDiagnostic? get lastCheckoutDiagnostic => _lastCheckoutDiagnostic;
+
+  Future<void> _captureCheckoutDiagnostic(Object error, String stage,
+      {bool receiptSaved = false, String? orderNumber}) async {
+    String summary;
+    try {
+      final db = DatabaseHelper.instance;
+      final version = await db.rawQuery('PRAGMA user_version');
+      final parts = <String>['version=' + version.first.values.first.toString()];
+      final prefs = await SharedPreferences.getInstance();
+      parts.add('uid_present=' + (prefs.getString(AppConstants.keyUid)?.isNotEmpty ?? false).toString());
+      parts.add('users_id_present=' + (prefs.getString(AppConstants.keyUsersId)?.isNotEmpty ?? false).toString());
+      parts.add('branch_present=' + (prefs.getString(AppConstants.keyBranchId)?.isNotEmpty ?? false).toString());
+      parts.add('auth_session_present=' + (SupabaseConfig.client.auth.currentSession != null).toString());
+      for (final table in ['orders', 'order_items', 'ingredients', 'menu_ingredients', 'order_sync_outbox']) {
+        final cols = await db.rawQuery('PRAGMA table_info(' + table + ')');
+        parts.add(table + ':[' + cols.map((c) => c['name'].toString()).join(',') + ']');
+      }
+      summary = parts.join('; ');
+    } catch (probeError) {
+      summary = 'Tidak dapat dibaca: ' + CheckoutDiagnostic.sanitize(probeError.toString());
+    }
+    _lastCheckoutDiagnostic = CheckoutDiagnostic.fromError(error,
+      stage: stage, receiptSaved: receiptSaved, orderNumber: orderNumber,
+      databaseSummary: summary);
+    debugPrint(_lastCheckoutDiagnostic!.report);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_checkout_diagnostic', _lastCheckoutDiagnostic!.report);
+    } catch (_) { /* Diagnostic persistence must not replace the original error. */ }
+  }
+
   List<CartItem> _cartItems = [];
   String _orderType = 'dine_in';
-  bool _checkoutInProgress = false;
+  final _checkoutGate = CheckoutGate();
+  bool get _checkoutInProgress => _checkoutGate.isBusy;
   bool get checkoutInProgress => _checkoutInProgress;
   String? _tableNumber;
   String? _orderNote;
@@ -355,14 +391,36 @@ class CashierProvider extends ChangeNotifier {
     required String cashierId,
   }) async {
     debugPrint('🌐 [ONLINE] checkoutOnline called platform=$platform');
-    if (_cartItems.isEmpty) return null;
-    if (_checkoutInProgress) return null;
-    _checkoutInProgress = true;
+    if (_cartItems.isEmpty) {
+      _lastCheckoutDiagnostic = CheckoutDiagnostic(code: 'CART_EMPTY', stage: 'cart',
+        detail: 'Keranjang kosong', timestamp: DateTime.now().toUtc().toIso8601String());
+      return null;
+    }
+    final lease = _checkoutGate.tryAcquire();
+    if (lease == null) {
+      _lastCheckoutDiagnostic = CheckoutDiagnostic(code: 'CHECKOUT_BUSY', stage: 'guard',
+        detail: 'Checkout lain masih berjalan', timestamp: DateTime.now().toUtc().toIso8601String());
+      return null;
+    }
+    _lastCheckoutDiagnostic = null;
+    var stage = 'session';
+    var receiptSaved = false;
+    String? savedOrderNumber;
     notifyListeners();
 
     try {
       final prefs = await SharedPreferences.getInstance();
       final branchIdForOrder = prefs.getString(AppConstants.keyBranchId) ?? '';
+      final receiptAccountId = SupabaseConfig.client.auth.currentUser?.id ??
+          prefs.getString(AppConstants.keyUid) ?? '';
+
+      stage = 'ingredient_availability';
+      final availability = await StockAvailabilityService.load(branchIdForOrder);
+      final problem = availability.validateCart(_cartItems
+          .map((c) => MapEntry<String, num>(c.menuItem.name, c.qty)).toList());
+      if (problem != null) {
+        throw MenuStockHabisException(problem.key, detail: problem.value);
+      }
 
       final nowLocal = DateTime.now();
       final offset = nowLocal.timeZoneOffset;
@@ -371,6 +429,7 @@ class CashierProvider extends ChangeNotifier {
       final m = (offset.inMinutes.abs() % 60).toString().padLeft(2, '0');
       final now = '${nowLocal.toIso8601String().substring(0, 23)}$sign$h:$m';
       final orderNumber = AppUtils.generateOrderNumber();
+      savedOrderNumber = orderNumber;
       final paymentMethod = 'online_$platform';
 
       final cartSnapshot = List<CartItem>.from(_cartItems);
@@ -378,11 +437,12 @@ class CashierProvider extends ChangeNotifier {
 
       final todayStr = nowLocal.toIso8601String().substring(0, 10);
       final db = DatabaseHelper.instance;
+      stage = 'daily_sequence';
       int dailySeq = 1;
       try {
         final seqRes = await SupabaseConfig.client.rpc('get_next_daily_seq', params: {
           'p_branch_id': branchIdForOrder,
-        });
+        }).timeout(const Duration(seconds: 4));
         dailySeq = (seqRes as int?) ?? 1;
         debugPrint('🌐 [ONLINE] daily_seq=$dailySeq (dari Supabase)');
       } catch (e) {
@@ -408,7 +468,7 @@ class CashierProvider extends ChangeNotifier {
         'payment_method': paymentMethod,
         'paid_amount': 0.0,
         'change_amount': 0.0,
-        'cashier_id': cashierId,
+        'cashier_id': receiptAccountId,
         'cashier_name': kasirName,
         'note': 'Order Online - ${platformLabel(platform)}',
         'branch_id': branchIdForOrder,
@@ -420,6 +480,7 @@ class CashierProvider extends ChangeNotifier {
       int orderId = 0;
       final List<OrderItemModel> savedItems = [];
 
+      stage = 'local_order';
       await db.runTransaction((txn) async {
         try {
           orderId = await txn.rawInsert('''
@@ -471,12 +532,13 @@ class CashierProvider extends ChangeNotifier {
 
         for (final cartItem in cartSnapshot) {
           final itemSubtotal = cartItem.menuItem.price * cartItem.qty;
+          stage = 'local_items';
           await txn.rawInsert('''
-            INSERT INTO order_items (order_id, menu_item_id, name, price, qty, unit, note, subtotal)
-            VALUES (?,?,?,?,?,?,?,?)
+            INSERT INTO order_items (order_id, menu_item_id, name, price, qty, qty_real, unit, note, subtotal)
+            VALUES (?,?,?,?,?,?,?,?,?)
           ''', [
             orderId, cartItem.menuItem.id, cartItem.menuItem.name,
-            cartItem.menuItem.price, cartItem.qty, cartItem.menuItem.unit,
+            cartItem.menuItem.price, cartItem.qty, cartItem.qty, cartItem.menuItem.unit,
             cartItem.note, itemSubtotal,
           ]);
 
@@ -498,6 +560,7 @@ class CashierProvider extends ChangeNotifier {
                 where: 'id = ?', whereArgs: [cartItem.menuItem.id]);
           }
 
+          stage = 'local_ingredients';
           final userEmail = prefs.getString(AppConstants.keyEmail) ?? '';
           final ingredients = await txn.rawQuery('''
             SELECT mi.ingredient_id, mi.quantity_used, i.current_stock
@@ -519,29 +582,40 @@ class CashierProvider extends ChangeNotifier {
             );
           }
         }
+        stage = 'local_outbox';
+        await OfflineOrderSyncService.enqueue(txn,
+          orderId: orderId,
+          accountId: receiptAccountId,
+          order: orderMap,
+          items: savedItems.map((item) => <String, dynamic>{
+            'item_name': item.name, 'quantity': item.qty,
+            'price': item.price, 'subtotal': item.subtotal, 'unit': item.unit,
+          }).toList(),
+        );
       });
 
+      receiptSaved = true;
+      stage = 'receipt_model';
       final resultMap = Map<String, dynamic>.from(orderMap);
       resultMap['id'] = orderId;
       final result = OrderModel.fromMap(resultMap, items: savedItems);
 
+      stage = 'after_local_save';
       clearCart();
-      _checkoutInProgress = false;
       notifyListeners();
 
-      _syncToSupabase(
-        orderMap: orderMap,
-        savedItems: savedItems,
-        orderId: orderId,
-        branchId: branchIdForOrder,
-      );
+      OfflineOrderSyncService.instance.kick();
 
       return result;
     } catch (e, stackTrace) {
+      await _captureCheckoutDiagnostic(e, stage,
+        receiptSaved: receiptSaved, orderNumber: savedOrderNumber);
       debugPrint('🌐 [ONLINE] ❌ ERROR: $e\n$stackTrace');
-      _checkoutInProgress = false;
       notifyListeners();
       return null;
+    } finally {
+      lease.release();
+      notifyListeners();
     }
   }
 
@@ -577,12 +651,22 @@ class CashierProvider extends ChangeNotifier {
     required double paidAmount,
     required String cashierId,
   }) async {
-    if (_cartItems.isEmpty) return null;
-    if (_checkoutInProgress) {
+    if (_cartItems.isEmpty) {
+      _lastCheckoutDiagnostic = CheckoutDiagnostic(code: 'CART_EMPTY', stage: 'cart',
+        detail: 'Keranjang kosong', timestamp: DateTime.now().toUtc().toIso8601String());
+      return null;
+    }
+    final lease = _checkoutGate.tryAcquire();
+    if (lease == null) {
+      _lastCheckoutDiagnostic = CheckoutDiagnostic(code: 'CHECKOUT_BUSY', stage: 'guard',
+        detail: 'Checkout lain masih berjalan', timestamp: DateTime.now().toUtc().toIso8601String());
       debugPrint('checkout: ⚠️ Checkout sedang berjalan, request diabaikan');
       return null;
     }
-    _checkoutInProgress = true;
+    _lastCheckoutDiagnostic = null;
+    var stage = 'session';
+    var receiptSaved = false;
+    String? savedOrderNumber;
     notifyListeners();
 
     debugPrint('🛒 [CHECKOUT] START ─────────────────────');
@@ -594,16 +678,22 @@ class CashierProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       final branchIdForOrder = prefs.getString(AppConstants.keyBranchId) ?? '';
+      final receiptAccountId = SupabaseConfig.client.auth.currentUser?.id ??
+          prefs.getString(AppConstants.keyUid) ?? '';
 
+      stage = 'local_menu_stock';
       // Re-validasi stok item
       for (final cartItem in _cartItems) {
         if (cartItem.menuItem.hasStock) {
           final rows = await DatabaseHelper.instance.query('menu_items',
               where: 'id = ?', whereArgs: [cartItem.menuItem.id]);
           if (rows.isNotEmpty) {
-            final currentStock = rows.first['stock'] as int? ?? 0;
+            final currentStock = (rows.first['stock'] as num?)?.toDouble() ?? 0;
             if (currentStock < cartItem.qty) {
-              _checkoutInProgress = false;
+              _lastCheckoutDiagnostic = CheckoutDiagnostic(code: 'LOCAL_STOCK_SHORT',
+                stage: stage, detail: 'Sisa lokal ' + currentStock.toString() +
+                  ', kebutuhan ' + cartItem.qty.toString(),
+                timestamp: DateTime.now().toUtc().toIso8601String());
               notifyListeners();
               return null;
             }
@@ -612,14 +702,14 @@ class CashierProvider extends ChangeNotifier {
       }
 
       // Cek stok bahan hari ini + resep (menu_stock_components) dari Supabase.
-      // Fail-open kalau offline: StockAvailabilityService mengembalikan empty.
+      // Saat offline gunakan snapshot hari ini dikurangi penjualan lokal.
       if (branchIdForOrder.isNotEmpty) {
+        stage = 'ingredient_availability';
         final avail = await StockAvailabilityService.load(branchIdForOrder);
         final problem = avail.validateCart(_cartItems
             .map((c) => MapEntry<String, num>(c.menuItem.name, c.qty))
             .toList());
         if (problem != null) {
-          _checkoutInProgress = false;
           notifyListeners();
           throw MenuStockHabisException(problem.key, detail: problem.value);
         }
@@ -632,6 +722,7 @@ class CashierProvider extends ChangeNotifier {
       final m = (offset.inMinutes.abs() % 60).toString().padLeft(2, '0');
       final now = '${nowLocal.toIso8601String().substring(0, 23)}$sign$h:$m';
       final orderNumber = AppUtils.generateOrderNumber();
+      savedOrderNumber = orderNumber;
       final change = paymentMethod == 'cash'
           ? (paidAmount - total).clamp(0.0, double.infinity)
           : 0.0;
@@ -646,11 +737,12 @@ class CashierProvider extends ChangeNotifier {
 
       final todayStr = nowLocal.toIso8601String().substring(0, 10);
       final db = DatabaseHelper.instance;
+      stage = 'daily_sequence';
       int dailySeq = 1;
       try {
         final seqRes = await SupabaseConfig.client.rpc('get_next_daily_seq', params: {
           'p_branch_id': branchIdForOrder,
-        });
+        }).timeout(const Duration(seconds: 4));
         dailySeq = (seqRes as int?) ?? 1;
         debugPrint('🛒 [CHECKOUT] daily_seq=$dailySeq (dari Supabase)');
       } catch (e) {
@@ -680,7 +772,7 @@ class CashierProvider extends ChangeNotifier {
         'payment_method': paymentMethod,
         'paid_amount': paidAmount,
         'change_amount': change,
-        'cashier_id': cashierId,
+        'cashier_id': receiptAccountId,
         'cashier_name': kasirName,
         'note': _orderNote,
         'branch_id': branchIdForOrder,
@@ -692,6 +784,7 @@ class CashierProvider extends ChangeNotifier {
       int orderId = 0;
       final List<OrderItemModel> savedItems = [];
 
+      stage = 'local_order';
       await db.runTransaction((txn) async {
         try {
           orderId = await txn.rawInsert('''
@@ -742,12 +835,13 @@ class CashierProvider extends ChangeNotifier {
 
         for (final cartItem in cartSnapshot) {
           final itemSubtotal = cartItem.menuItem.price * cartItem.qty;
+          stage = 'local_items';
           await txn.rawInsert('''
-            INSERT INTO order_items (order_id, menu_item_id, name, price, qty, unit, note, subtotal)
-            VALUES (?,?,?,?,?,?,?,?)
+            INSERT INTO order_items (order_id, menu_item_id, name, price, qty, qty_real, unit, note, subtotal)
+            VALUES (?,?,?,?,?,?,?,?,?)
           ''', [
             orderId, cartItem.menuItem.id, cartItem.menuItem.name,
-            cartItem.menuItem.price, cartItem.qty, cartItem.menuItem.unit,
+            cartItem.menuItem.price, cartItem.qty, cartItem.qty, cartItem.menuItem.unit,
             cartItem.note, itemSubtotal,
           ]);
 
@@ -769,6 +863,7 @@ class CashierProvider extends ChangeNotifier {
                 where: 'id = ?', whereArgs: [cartItem.menuItem.id]);
           }
 
+          stage = 'local_ingredients';
           final userEmail = prefs.getString(AppConstants.keyEmail) ?? '';
           final ingredients = await txn.rawQuery('''
             SELECT mi.ingredient_id, mi.quantity_used, i.current_stock
@@ -792,161 +887,49 @@ class CashierProvider extends ChangeNotifier {
                 '🥘 [BAHAN] id=$ingId stok: $currentStock → $newIngStock');
           }
         }
+        stage = 'local_outbox';
+        await OfflineOrderSyncService.enqueue(txn,
+          orderId: orderId,
+          accountId: receiptAccountId,
+          order: orderMap,
+          items: savedItems.map((item) => <String, dynamic>{
+            'item_name': item.name, 'quantity': item.qty,
+            'price': item.price, 'subtotal': item.subtotal, 'unit': item.unit,
+          }).toList(),
+        );
       });
 
+      receiptSaved = true;
+      stage = 'receipt_model';
       final resultMap = Map<String, dynamic>.from(orderMap);
       resultMap['id'] = orderId;
       final result = OrderModel.fromMap(resultMap, items: savedItems);
 
+      stage = 'after_local_save';
       clearCart();
-      _checkoutInProgress = false;
       notifyListeners();
 
       debugPrint(
           'checkout: ✅ SQLite OK orderId=$orderId total=${result.total} discount=${result.discountAmount}');
 
-      _syncToSupabase(
-        orderMap: orderMap,
-        savedItems: savedItems,
-        orderId: orderId,
-        branchId: branchIdForOrder,
-      );
+      OfflineOrderSyncService.instance.kick();
 
       return result;
     } on MenuStockHabisException {
       rethrow;
     } catch (e, stackTrace) {
+      await _captureCheckoutDiagnostic(e, stage,
+        receiptSaved: receiptSaved, orderNumber: savedOrderNumber);
       debugPrint('🛒 [CHECKOUT] ❌ ERROR: $e\n$stackTrace');
-      _checkoutInProgress = false;
       notifyListeners();
       return null;
+    } finally {
+      lease.release();
+      notifyListeners();
     }
   }
 
-  // ── Sync ke Supabase ──────────────────────────────────────────────────────
-  Future<void> _syncToSupabase({
-    required Map<String, dynamic> orderMap,
-    required List<OrderItemModel> savedItems,
-    required int orderId,
-    String branchId = '',
-  }) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      String effectiveBranchId = branchId.isNotEmpty
-          ? branchId
-          : prefs.getString(AppConstants.keyBranchId) ?? '';
-      final email = prefs.getString(AppConstants.keyEmail) ?? '';
-      final kasirName = prefs.getString(AppConstants.keyKasirName) ??
-          prefs.getString(AppConstants.keyName) ?? '';
 
-      if (effectiveBranchId.isEmpty && email.isNotEmpty) {
-        try {
-          final staff = await SupabaseConfig.client
-              .rpc('get_staff_by_email', params: {'p_email': email});
-          final profile = staff is Map
-              ? staff
-              : (staff is List && staff.isNotEmpty ? staff.first : null);
-          if (profile != null) {
-            effectiveBranchId = profile['branch_id']?.toString() ?? '';
-            if (effectiveBranchId.isNotEmpty)
-              await prefs.setString(
-                  AppConstants.keyBranchId, effectiveBranchId);
-          }
-        } catch (e) {
-          debugPrint('📊 [FOOD-SYNC] fetch branchId error: $e');
-        }
-      }
-
-      if (effectiveBranchId.isEmpty && email.isEmpty) return;
-
-      final itemsJson = savedItems.map((item) => {
-        'product_id': item.menuItemId?.toString() ?? '',
-        'item_name': item.name,
-        'name': item.name,
-        'quantity': item.qty,
-        'price': item.price,
-        'subtotal': item.subtotal,
-        'unit': item.unit ?? 'porsi',
-      }).toList();
-
-      final rawOrderType = orderMap['order_type']?.toString() ?? 'food';
-      final pOrderType = (rawOrderType == 'retail') ? 'retail' : 'food';
-
-      final result =
-      await SupabaseConfig.client.rpc('insert_order', params: {
-        'p_branch_id': effectiveBranchId,
-        'p_cashier_id': orderMap['cashier_id']?.toString() ?? '',
-        'p_cashier_name': kasirName,
-        'p_order_number': orderMap['order_number'] ?? '',
-        'p_order_type': pOrderType,
-        'p_status': 'paid',
-        'p_subtotal': orderMap['subtotal'] ?? 0,
-        'p_discount': orderMap['discount_amount'] ?? 0,
-        'p_tax': orderMap['tax_amount'] ?? 0,
-        'p_total': orderMap['total'] ?? 0,
-        'p_payment_method': orderMap['payment_method'] ?? 'cash',
-        'p_paid_amount': orderMap['paid_amount'] ?? 0,
-        'p_change_amount': orderMap['change_amount'] ?? 0,
-        'p_notes': orderMap['note'],
-        'p_created_at': orderMap['created_at'],
-        'p_items': itemsJson,
-      });
-
-      // Deduct stok menu
-      if (effectiveBranchId.isNotEmpty) {
-        for (final item in savedItems) {
-          final menuId = item.menuItemId;
-          if (menuId != null && menuId > 0) {
-            try {
-              await SupabaseConfig.client.rpc('deduct_menu_stock', params: {
-                'p_branch_id': effectiveBranchId,
-                'p_menu_item_id': menuId,
-                'p_qty': item.qty,
-                'p_menu_name': item.name,
-              });
-            } catch (e) {
-              debugPrint('📦 [MENU-STOCK] deduct error ${item.name}: $e');
-            }
-          }
-        }
-      }
-
-      final success = result?['success'] as bool? ?? false;
-      if (success) {
-        final sbDailySeq = result?['daily_seq'] as int?;
-        final sbOrderNumber = result?['order_number'] as String?;
-        if (sbDailySeq != null) orderMap['daily_seq'] = sbDailySeq;
-        if (sbOrderNumber != null && sbOrderNumber.isNotEmpty)
-          orderMap['order_number'] = sbOrderNumber;
-
-        try {
-          final ownerIdStr = prefs.getString(AppConstants.keyOwnerId) ?? '';
-          if (ownerIdStr.isNotEmpty) {
-            final itemsSummary =
-            savedItems.map((i) => '${i.name} x${i.qty}').join(', ');
-            await SupabaseConfig.client
-                .rpc('deduct_subscription_balance', params: {
-              'p_owner_id': ownerIdStr,
-              'p_kasir_email': email,
-              'p_kasir_name': kasirName,
-              'p_branch_id': effectiveBranchId,
-              'p_branch_name': prefs.getString(AppConstants.keyBranchName) ?? '',
-              'p_order_number': orderMap['order_number'] ?? '',
-              'p_order_items': itemsSummary,
-              'p_order_total': orderMap['total'] ?? 0,
-            });
-          }
-        } catch (e) {
-          debugPrint('📊 [FOOD-SYNC] deduct saldo error: $e');
-        }
-      } else {
-        debugPrint(
-            '📊 [FOOD-SYNC] ❌ RPC failed: ${result?['error']?.toString() ?? 'unknown'}');
-      }
-    } catch (e) {
-      debugPrint('📊 [FOOD-SYNC] ⚠️ Sync error (order kept in SQLite): $e');
-    }
-  }
 }
 
 class MenuStockHabisException implements Exception {

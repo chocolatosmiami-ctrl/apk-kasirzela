@@ -1,3 +1,5 @@
+import 'service_health.dart';
+import 'startup_policy.dart';
 import '../utils/app_constants.dart';
 import 'dart:io';
 import 'dart:math';
@@ -34,8 +36,8 @@ class OfflineGraceManager {
   Future<bool> isOnline() async {
     try {
       final result = await Connectivity().checkConnectivity();
-      if (result == ConnectivityResult.none) return false;
-      final lookup = await InternetAddress.lookup('supabase.com')
+      if (result.contains(ConnectivityResult.none) || ServiceHealth.instance.connectionFailure) return false;
+      final lookup = await InternetAddress.lookup(Uri.parse(SupabaseConfig.supabaseUrl).host)
           .timeout(const Duration(seconds: 3));
       return lookup.isNotEmpty && lookup.first.rawAddress.isNotEmpty;
     } on SocketException {
@@ -78,19 +80,19 @@ class OfflineGraceManager {
   }
 
   // ── Sync balance dari Supabase ────────────────────────
-  Future<void> syncBalanceFromFirebase(String ownerId) async {
+  Future<bool> syncBalanceFromFirebase(String ownerId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      final resolved = await _resolveOwnerId(ownerId, prefs);
-      if (resolved.isNotEmpty && resolved != ownerId) {
-        ownerId = resolved;
-        await prefs.setString(AppConstants.keyOwnerId, ownerId);
-      }
+      final uid = prefs.getString(AppConstants.keyUid) ?? '';
+      bool current() => prefs.getString(AppConstants.keyUid) == uid &&
+          prefs.getString(AppConstants.keyOwnerId) == ownerId;
+      // Identity comes from the verified profile, never a late read fallback.
+      if (!current()) return false;
 
       if (ownerId.isEmpty) {
         debugPrint('syncBalance: ownerId kosong, skip');
-        return;
+        return false;
       }
 
       // Ambil balance + cost_per_trx + plan_type sekaligus dari tabel langsung
@@ -103,29 +105,9 @@ class OfflineGraceManager {
             .maybeSingle();
 
         if (subData != null) {
-          final balance    = (subData['balance'] as num?)?.toDouble() ?? 0;
-          final isLocked   = subData['is_locked'] as bool? ?? false;
-          final costPerTrx = (subData['cost_per_trx'] as num?)?.toDouble() ?? _defaultCostPerTrx;
-          final planType   = subData['plan_type'] as String? ?? 'per_trx';
-          final planExpiry = subData['plan_expires_at'] as String?;
-
-          // Cek plan aktif
-          bool planActive = false;
-          if (planType != 'per_trx' && planExpiry != null) {
-            final expiry = DateTime.tryParse(planExpiry);
-            planActive = expiry != null && expiry.isAfter(DateTime.now());
-          }
-
-          await _setSignedDouble(prefs, _keyBalance, balance);
-          await prefs.setBool('cached_is_locked', isLocked);
-          await prefs.setDouble(_keyCostPerTrx, costPerTrx);
-          await prefs.setString('cached_plan_type', planType);
-          await prefs.setBool('cached_plan_active', planActive);
-          await prefs.setString(
-              _keyLastSyncTime, DateTime.now().toUtc().toIso8601String());
-
-          debugPrint('💰 Balance synced: Rp$balance cost=$costPerTrx plan=$planType active=$planActive locked=$isLocked');
-          return;
+          if (!current()) return false;
+          await rememberVerifiedSubscription(ownerId, subData);
+          return true;
         }
       } catch (_) {}
 
@@ -133,10 +115,11 @@ class OfflineGraceManager {
       final result = await _db.rpc('get_subscription_balance',
           params: {'p_owner_id': ownerId});
 
+      if (!current()) return false;
       final found    = result?['found'] as bool? ?? false;
       if (!found) {
         debugPrint('syncBalance: tidak ditemukan untuk owner=$ownerId');
-        return;
+        return false;
       }
 
       final balance  = (result?['balance'] as num?)?.toDouble() ?? 0;
@@ -147,10 +130,33 @@ class OfflineGraceManager {
       await prefs.setString(
           _keyLastSyncTime, DateTime.now().toUtc().toIso8601String());
 
-      debugPrint('💰 Balance synced (fallback RPC): Rp$balance locked=$isLocked');
+      // This fallback lacks plan expiry; do not extend a cached plan.
+      await prefs.setString('cached_subscription_owner', ownerId);
+      return true;
     } catch (e) {
-      debugPrint('syncBalanceFromFirebase error: $e');
+      return false;
     }
+  }
+
+  Future<void> rememberVerifiedSubscription(String ownerId, Map<String, dynamic> data) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (ownerId.isEmpty || prefs.getString(AppConstants.keyOwnerId) != ownerId) return;
+    await _setSignedDouble(prefs, _keyBalance, (data['balance'] as num?)?.toDouble() ?? 0);
+    await prefs.setBool('cached_is_locked', data['is_locked'] == true);
+    await prefs.setDouble(_keyCostPerTrx, (data['cost_per_trx'] as num?)?.toDouble() ?? _defaultCostPerTrx);
+    await prefs.setString('cached_subscription_owner', ownerId);
+    await prefs.setString('cached_plan_expires_at', data['plan_expires_at']?.toString() ?? '');
+    final expiry = DateTime.tryParse(data['plan_expires_at']?.toString() ?? '');
+    await prefs.setBool('cached_plan_active', data['plan_type'] != 'per_trx' && expiry != null && expiry.isAfter(DateTime.now()));
+    await prefs.setString(_keyLastSyncTime, DateTime.now().toUtc().toIso8601String());
+    if (!prefs.containsKey(_keyOfflineTrx) && !prefs.containsKey(_keyOfflineDebt)) {
+      await _setSignedInt(prefs, _keyOfflineTrx, 0);
+      await _setSignedDouble(prefs, _keyOfflineDebt, 0);
+    }
+  }
+  bool _cachedPlanActive(SharedPreferences prefs) {
+    final expires = DateTime.tryParse(prefs.getString('cached_plan_expires_at') ?? '');
+    return prefs.getBool('cached_plan_active') == true && expires != null && expires.isAfter(DateTime.now());
   }
 
   // ── Status offline ────────────────────────────────────
@@ -195,22 +201,22 @@ class OfflineGraceManager {
     debugPrint('💰 [canTransact] online=$online');
 
     if (online) {
-      await _resetOfflineCounter();
       final prefs    = await SharedPreferences.getInstance();
       final ownerId  = prefs.getString(AppConstants.keyOwnerId) ?? '';
       debugPrint('💰 [canTransact] ownerId=$ownerId');
 
-      await syncBalanceFromFirebase(ownerId);
+      final refreshed = await syncBalanceFromFirebase(ownerId);
+      if (!refreshed) return canTransactOffline();
 
       final balance     = _getSignedDouble(prefs, _keyBalance, tamperFallback: 0.0);
       final isLocked    = prefs.getBool('cached_is_locked') ?? false;
-      final planActive  = prefs.getBool('cached_plan_active') ?? false;
+      final planActive  = _cachedPlanActive(prefs);
       final costPerTrx  = prefs.getDouble(_keyCostPerTrx) ?? _defaultCostPerTrx;
 
       debugPrint('💰 [canTransact] balance=$balance locked=$isLocked planActive=$planActive cost=$costPerTrx');
 
       // Kalau plan aktif (monthly/yearly) → selalu boleh transaksi
-      if (planActive) {
+      if (planActive && !isLocked) {
         return TransactionPermission.allowed(isOnline: true);
       }
 
@@ -223,7 +229,17 @@ class OfflineGraceManager {
       return TransactionPermission.allowed(isOnline: true);
     }
 
-    // Offline: cek grace period
+    return canTransactOffline();
+  }
+
+  Future<TransactionPermission> canTransactOffline() async {
+    final cachePrefs = await SharedPreferences.getInstance();
+    final owner = cachePrefs.getString(AppConstants.keyOwnerId) ?? '';
+    if (owner.isEmpty || cachePrefs.getString('cached_subscription_owner') != owner ||
+        !validCacheAge(DateTime.tryParse(cachePrefs.getString(_keyLastSyncTime) ?? ''), DateTime.now().toUtc())) {
+      return TransactionPermission.denied(reason: 'Subscription perlu diverifikasi online sebelum bertransaksi.', isOnline: false);
+    }
+    // Existing HMAC, locked flag, transaction and time grace limits still apply.
     final status = await getOfflineStatus();
 
     if (status.isLockedByServer) {
@@ -234,7 +250,7 @@ class OfflineGraceManager {
     if (status.cachedBalance <= 0) {
       // Cek plan aktif dari cache
       final prefs      = await SharedPreferences.getInstance();
-      final planActive = prefs.getBool('cached_plan_active') ?? false;
+      final planActive = _cachedPlanActive(prefs);
       if (!planActive) {
         return TransactionPermission.denied(
             reason: 'Saldo habis.', isOnline: false);

@@ -1,7 +1,12 @@
+import '../../../../core/theme/visible_clock.dart';
+import '../../../../core/services/auto_report_service.dart';
+import '../../../settings/presentation/providers/settings_provider.dart';
+import '../../../../core/services/startup_policy.dart';
+import '../../../../core/services/service_health.dart';
+import '../../../../core/theme/startup_recovery_view.dart';
 import '../../../../core/theme/minimal_ui.dart';
 import 'dart:async';
 import '../../../../core/utils/app_constants.dart';
-import '../../../../core/services/auto_report_service.dart';
 import 'package:flutter/material.dart';
 import '../../../orders/presentation/providers/orders_provider.dart';
 import '../../../orders/presentation/screens/orders_screen.dart';
@@ -9,7 +14,6 @@ import '../../../../core/config/supabase_config.dart';
 import '../../../menu/presentation/providers/menu_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../cashier/presentation/screens/cashier_screen.dart';
 import '../../../retail/presentation/screens/retail_cashier_screen.dart';
@@ -57,6 +61,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<Widget> _screens = [];
   List<_NavItem> _navItems = [];
   bool _loaded = false;
+  String? _startupError;
+  Future<void>? _navBuild;
+  final Set<int> _visited = {0};
+  int _navEpoch = 0;
   int _branchKey = 0; // increment untuk force rebuild screens saat cabang ganti
   // true = side menu, false = bottom nav
   bool _useSideMenu = false;
@@ -70,23 +78,31 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     globalNavIndex.addListener(_onGlobalNavChange);
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadMenuPref();
-      // BUG 54 FIX: Auto PDF dipindah ke HomeScreen agar hanya berjalan setelah login.
-      _checkAutoPdfAfterLogin();
+      unawaited(supplemental('menu_preference', _loadMenuPref));
+      // Optional daily reports do not block navigation and are never replayed by recovery reads.
+      unawaited(_runScheduledReports());
       // Cek manajer multi-cabang → tampilkan dialog pilih cabang
-      _checkMultiBranchManager();
+      unawaited(supplemental('branch_picker', _checkMultiBranchManager));
     });
     _buildNav();
+    ServiceHealth.instance.pageRefresh = _refreshOptional;
   }
 
   /// Dialog pilih cabang untuk manajer multi-cabang (branch_id null)
+  bool _branchPickerBusy = false;
   Future<void> _checkMultiBranchManager({bool force = false}) async {
+    if (_branchPickerBusy) return;
+    _branchPickerBusy = true;
+    try { await _pickBranch(force: force); } finally { _branchPickerBusy = false; }
+  }
+  Future<void> _pickBranch({required bool force}) async {
+    final uid = context.read<AuthProvider>().currentUser?.authId;
     final prefs = await SharedPreferences.getInstance();
     final isMultiBranch = prefs.getBool('is_multi_branch_manager') ?? false;
     final role = prefs.getString(AppConstants.keyRole) ?? '';
     final branchId = prefs.getString(AppConstants.keyBranchId) ?? '';
 
-    if (!force && role != 'manajer') return;
+    if (!force && (role != 'manajer' || !isMultiBranch || branchId.isNotEmpty || (prefs.getString(AppConstants.keyBranchName) ?? '').isNotEmpty)) return;
     if (!mounted) return;
 
     // Fetch daftar cabang dari Supabase
@@ -99,9 +115,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           .select('id, name, mode')
           .eq('owner_id', ownerId)
           .eq('is_active', true)
-          .order('name');
+          .order('name').timeout(const Duration(seconds: 8));
 
-      if (!mounted) return;
+      if (!mounted || context.read<AuthProvider>().currentUser?.authId != uid || ownerId != prefs.getString(AppConstants.keyOwnerId)) return;
       if (branches == null || (branches as List).isEmpty) return;
 
       // Tambahkan opsi "Semua Cabang"
@@ -188,6 +204,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
                     // Rebuild nav dengan cabang baru
                     _branchKey++;
+                    _visited..clear()..add(0);
+                    _selectedIndex = 0;
                     if (mounted) {
                       setState(() {}); // force rebuild AppBar banner
                       await _buildNav();
@@ -199,24 +217,36 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
         ),
       );
-    } catch (e) {}
+    } catch (e) { ServiceHealth.trace('branch_picker',1,0,failureKind(e)); }
   }
 
-  Future<void> _checkAutoPdfAfterLogin() async {
-    final shouldPdf = await SchedulerService.shouldRunAutoPdf();
-    if (shouldPdf && mounted) {
-      await SchedulerService.runAutoPdf(context);
-    }
-    if (!mounted) return;
-    final shouldWa = await SchedulerService.shouldRunAutoWa();
-    if (shouldWa && mounted) {
-      await SchedulerService.runAutoWa(context);
-    }
+  final _reports = SingleFlight();
+  String _reportAttemptDate = '';
+  Future<void> _runScheduledReports() => _reports.run(() async {
+    if (!mounted || DateTime.now().hour < 22 || ServiceHealth.instance.cachedProfile) return;
+    final profile = context.read<AuthProvider>().currentUser;
+    if (profile == null || !const {'owner', 'superadmin'}.contains(profile.role)) return;
+    final today = DateTime.now().toIso8601String().substring(0,10);
+    if (_reportAttemptDate == today) return;
+    _reportAttemptDate = today; // At most one automatic attempt per process/day; no write retry.
+    try {
+      final pdf = await SchedulerService.shouldRunAutoPdf().timeout(const Duration(seconds: 3));
+      if (!mounted || context.read<AuthProvider>().currentUser?.authId != profile.authId) return;
+      if (pdf) await SchedulerService.runAutoPdf(context);
+      if (!mounted || context.read<AuthProvider>().currentUser?.authId != profile.authId) return;
+      final wa = await SchedulerService.shouldRunAutoWa().timeout(const Duration(seconds: 12));
+      if (!mounted || context.read<AuthProvider>().currentUser?.authId != profile.authId) return;
+      if (wa) await SchedulerService.runAutoWa(context);
+    } catch (e) { ServiceHealth.trace('scheduled_reports',1,0,failureKind(e)); }
+  });
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(_runScheduledReports());
   }
 
   Future<void> _loadMenuPref() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() => _useSideMenu = prefs.getBool('use_side_menu') ?? false);
+    if (mounted) setState(() => _useSideMenu = prefs.getBool('use_side_menu') ?? false);
   }
 
   Future<void> _saveMenuPref(bool val) async {
@@ -224,33 +254,33 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     await prefs.setBool('use_side_menu', val);
   }
 
-  Future<void> _buildNav() async {
+  Future<void> _buildNav() => _navBuild ??= _buildNavAttempt().whenComplete(() => _navBuild = null);
+  Future<void> _buildNavAttempt() async {
+    final ticket = ++_navEpoch;
+    try {
+      await _buildNavLocal(ticket).timeout(const Duration(seconds: 10));
+      ServiceHealth.instance.record('home_navigation', null);
+    }
+    catch (e) {
+      _navEpoch++; // The underlying Future may still finish; invalidate its UI result.
+      if (mounted) setState(() => _startupError = 'Menu belum dapat dimuat. Coba lagi; sesi tetap disimpan.');
+      ServiceHealth.log('home_navigation',1,0,failureKind(e));
+    }
+  }
+  Future<void> _buildNavLocal(int ticket, {bool refresh = true}) async {
     final auth = context.read<AuthProvider>();
     final role = auth.currentUser?.role ?? 'kasir';
     final userId = auth.currentUser?.authId;
 
-    // BUG 31 FIX: Tambahkan TTL 5 menit untuk permission sync.
-    // Sebelumnya sync dipanggil setiap _buildNav() → setiap 30 detik dari shift timer.
-    // Sekarang hanya sync jika TTL expired atau belum pernah sync.
-    final ownerId = await PermissionSyncService.instance.getOwnerId();
-    if (ownerId.isNotEmpty) {
-      const permCacheKey = '_perm_sync_last_ms';
-      final prefs = await SharedPreferences.getInstance();
-      final lastSync = prefs.getInt(permCacheKey) ?? 0;
-      final now = DateTime.now().millisecondsSinceEpoch;
-      const ttlMs =
-          30 * 1000; // 30 detik - agar perubahan dari dashboard cepat terbaca
-
-      if (now - lastSync > ttlMs) {
-        await PermissionSyncService.instance.pullAndSyncToLocal(ownerId);
-        await prefs.setInt(permCacheKey, now);
-      } else {}
-    }
-
+    // Build from local permissions first. Remote refresh is independent below.
     // Gunakan role permission dari Supabase (sudah di-pull di atas)
     // Per-user override hanya berlaku kalau ada di tabel owner_role_permissions Supabase
     // Tidak pakai SQLite user_<id> karena bisa stale/lama
-    final rolePerms = await DatabaseHelper.instance.getRolePermissions(role);
+    final permissionPrefs = await SharedPreferences.getInstance();
+    final owner = auth.currentUser?.ownerId ?? '';
+    final cacheMatches = permissionPrefs.getString('_permission_cache_owner') == owner &&
+        validCacheAge(DateTime.tryParse(permissionPrefs.getString('_permission_cache_time') ?? ''), DateTime.now().toUtc());
+    final rolePerms = cacheMatches ? await DatabaseHelper.instance.getRolePermissions(role) : <String>[];
 
     List<String> perms = rolePerms;
 
@@ -328,7 +358,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Admin/manajer bisa lihat semua transaksi
     if (isAdmin ||
         isOwner ||
-        (isManajer && (perms.contains('pesanan') || perms.isEmpty)) ||
+        (isManajer && perms.contains('pesanan')) ||
         (!isManajer && !isAdmin && !isOwner && perms.contains('pesanan'))) {
       screens.add(OrdersScreen(key: ValueKey(_branchKey)));
       items.add(
@@ -345,7 +375,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         (isAdmin ||
             isManajer ||
             isOwner ||
-            (isManajer && (perms.contains('pesanan') || perms.isEmpty)) ||
+            (isManajer && perms.contains('pesanan')) ||
             (!isManajer && perms.contains('pesanan')))) {
       screens.add(const TableManagementScreen());
       items.add(
@@ -506,60 +536,54 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           : null,
     );
 
+    if (!mounted || ticket != _navEpoch) return;
     setState(() {
+      _startupError = null;
+      final selectedLabel = _selectedIndex < _navItems.length ? _navItems[_selectedIndex].label : 'Home';
+      final visitedLabels = _visited.where((i) => i < _navItems.length).map((i) => _navItems[i].label).toSet();
+      _selectedIndex = items.indexWhere((item) => item.label == selectedLabel);
+      if (_selectedIndex < 0) _selectedIndex = 0;
+      _visited..clear()..add(0)..add(_selectedIndex);
+      for (var i = 0; i < items.length; i++) { if (visitedLabels.contains(items[i].label)) _visited.add(i); }
       _screens = screens;
       _navItems = items;
       _loaded = true;
     });
 
-    // Load active shift — pakai keyUid dari SharedPreferences (konsisten dgn PinVerifyScreen)
-    final auth3 = context.read<AuthProvider>();
-    final shiftProv = context.read<ShiftProvider>();
-    if (!shiftProv.hasActiveShift) {
-      final prefsShift = await SharedPreferences.getInstance();
-      final shiftUid =
-          prefsShift.getString(AppConstants.keyUid) ??
-          auth3.currentUser?.authId ??
-          '';
-      // userId kosong tetap dipanggil — ShiftProvider resolve ke users.id / email
-      shiftProv.loadActiveShift(shiftUid);
+    if (refresh) unawaited(_refreshOptional().catchError((Object e) { ServiceHealth.log('home_refresh',1,0,failureKind(e)); }));
+  }
+
+  Future<void>? _optionalJob;
+  Future<void> _refreshOptional() => _optionalJob ??= _readOptional()
+      .then((_) { ServiceHealth.instance.record('home_refresh', null); })
+      .whenComplete(() => _optionalJob = null);
+  Future<void> _readOptional() async {
+    if (!mounted) return;
+    final auth = context.read<AuthProvider>();
+    final sub = context.read<SubscriptionProvider>();
+    final settings = context.read<SettingsProvider>();
+    final shift = context.read<ShiftProvider>();
+    // Each job catches its own failure. No automatic debt deduction/report writes.
+    await Future.wait([
+      supplemental('profile', auth.checkSession),
+      supplemental('subscription', sub.init, log: (s,e) => ServiceHealth.log(s,1,0,e)),
+      supplemental('settings', settings.loadSettings, log: (s,e) => ServiceHealth.log(s,1,0,e)),
+      supplemental('shift', () => shift.loadActiveShift(auth.currentUser?.authId ?? '')),
+    ]);
+    if (!mounted) return;
+    unawaited(supplemental('branch_picker', _checkMultiBranchManager));
+    final owner = await PermissionSyncService.instance.getOwnerId();
+    if (!mounted) return;
+    final updated = await PermissionSyncService.instance.pullAndSyncToLocal(owner);
+    if (updated && mounted) {
+      // Local re-render only; do not recursively schedule another remote refresh.
+      final ticket = ++_navEpoch;
+      await _buildNavLocal(ticket, refresh: false);
     }
-    // Refresh role dari Firebase (pastikan role benar)
-    await auth3.checkSession();
-    // Init subscription
-    final prefs3 = await SharedPreferences.getInstance();
-    final dbgOwnerId = prefs3.getString(AppConstants.keyOwnerId) ?? '';
-    final dbgEmail = prefs3.getString(AppConstants.keyEmail) ?? '';
-    final subProv = context.read<SubscriptionProvider>();
-    await subProv.init();
-
-    // Listen perubahan koneksi → auto sync hutang offline
-    Connectivity().onConnectivityChanged.listen((result) async {
-      if (result != ConnectivityResult.none && mounted) {
-        final syncResult = await subProv.syncOfflineDebt();
-        if (syncResult.success && (syncResult.hasDebt == true) && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                syncResult.isLocked == true
-                    ? '⚠️ Saldo habis setelah sync offline. Lakukan top up!'
-                    : '✅ ${syncResult.trxSynced} transaksi offline berhasil disinkronkan',
-              ),
-              backgroundColor: syncResult.isLocked == true
-                  ? Colors.orange
-                  : Colors.green,
-              duration: const Duration(seconds: 4),
-            ),
-          );
-        }
-      }
-    });
-
-    if (mounted) setState(() {}); // rebuild dengan role terbaru
   }
 
   void _selectIndex(int i) {
-    setState(() => _selectedIndex = i.clamp(0, _screens.length - 1));
+    setState(() { _selectedIndex = i.clamp(0, _screens.length - 1); _visited.add(_selectedIndex); });
     // Reload menu when switching to kasir tab (index 0)
     if (i == 0) {
       context.read<MenuProvider>().loadData();
@@ -584,12 +608,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    if (!_loaded) {
-      return const Scaffold(
-        body: ZelaPage(child: Center(child: CircularProgressIndicator())),
-      );
-    }
+    if (context.watch<AuthProvider>().currentUser == null) return StartupRecoveryView(loading: false,
+      message: 'Sesi perlu diverifikasi kembali. Data tersimpan tetap ada.',
+      retry: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FirebaseLoginScreen())));
+    if (!_loaded) return StartupRecoveryView(loading: _startupError == null,
+      message: _startupError ?? 'Memuat menu lokal…', retry: () { setState(() => _startupError = null); _buildNav(); });
     return _useSideMenu ? _buildSideMenuLayout() : _buildBottomNavLayout();
+  }
+
+  @override
+  void dispose() {
+    _navEpoch++;
+    ServiceHealth.instance.pageRefresh = null;
+    globalNavIndex.removeListener(_onGlobalNavChange);
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   // ─── Side Menu Layout ──────────────────────────────────
@@ -691,7 +724,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       body: ZelaPage(
         child: IndexedStack(
           index: _selectedIndex.clamp(0, _screens.length - 1),
-          children: _screens,
+          children: List.generate(_screens.length, (i) => _visited.contains(i) ? TickerMode(enabled: i == _selectedIndex, child: _screens[i]) : const SizedBox.shrink()),
         ),
       ),
     );
@@ -1098,7 +1131,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       body: ZelaPage(
         child: Stack(
           children: [
-            IndexedStack(index: clampedIdx, children: _screens),
+            IndexedStack(index: clampedIdx, children: List.generate(_screens.length, (i) => _visited.contains(i) ? TickerMode(enabled: i == clampedIdx, child: _screens[i]) : const SizedBox.shrink())),
             Positioned(
               top: MediaQuery.of(context).padding.top + 8,
               right: 12,
@@ -1421,10 +1454,9 @@ class _DailyMotivationCard extends StatefulWidget {
   State<_DailyMotivationCard> createState() => _DailyMotivationCardState();
 }
 
-class _DailyMotivationCardState extends State<_DailyMotivationCard> {
+class _DailyMotivationCardState extends State<_DailyMotivationCard> with VisibleClock<_DailyMotivationCard> {
   late String _time;
   late String _date;
-  late Timer _timer;
 
   static const List<String> _quotes = [
     '🤲 Bekerja dengan jujur adalah ibadah terbaik.',
@@ -1481,14 +1513,10 @@ class _DailyMotivationCardState extends State<_DailyMotivationCard> {
   void initState() {
     super.initState();
     _updateTime();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateTime());
   }
 
   @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
+  void onVisibleClockTick() => _updateTime();
 
   @override
   Widget build(BuildContext context) {

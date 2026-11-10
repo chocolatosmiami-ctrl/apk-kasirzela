@@ -77,7 +77,8 @@ class _SqliteSyncScreenState extends State<SqliteSyncScreen> {
                 child: const Text(
                   'Fitur ini akan mengupload semua transaksi lama yang tersimpan '
                   'di HP ke Supabase, sehingga bisa muncul di laporan owner.\n\n'
-                  '• Transaksi yang sudah ada di Supabase akan dilewati (skip)\n'
+                  '• Makanan dikirim bersama pemotongan stok, tanpa duplikasi\n'
+                  '• Order lama yang sudah ada perlu pemeriksaan stok oleh admin\n'
                   '• Proses berjalan di latar belakang, jangan tutup layar\n'
                   '• Butuh koneksi internet',
                   style: TextStyle(fontSize: 14, color: Colors.teal),
@@ -173,7 +174,7 @@ class _SqliteSyncScreenState extends State<SqliteSyncScreen> {
                         if (_result!.hasError) ...[
                           const SizedBox(height: 6),
                           Text(
-                            _result!.error!,
+                            _result!.error ?? 'Sebagian transaksi/stok masih tertunda. Periksa notifikasi sinkronisasi.',
                             style: const TextStyle(
                               fontSize: 14,
                               color: Colors.red,

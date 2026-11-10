@@ -1,4 +1,5 @@
 import '../../../../core/theme/minimal_ui.dart';
+import '../widgets/receipt_sync_status.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
@@ -139,7 +140,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         title: Text(
-          _isOnlineOrder ? 'Order $_platformName' : 'Transaksi Berhasil',
+          _isOnlineOrder ? 'Order $_platformName' : 'Struk Transaksi',
           style: TextStyle(
             fontWeight: FontWeight.w700,
             color: _isOnlineOrder ? Colors.white : const Color(0xFF172B2A),
@@ -159,6 +160,8 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
           children: [
             // ── Banner sukses ─────────────────────────────────
             _isOnlineOrder ? _buildOnlineBanner() : _buildNormalBanner(order),
+            if (order.id != null && order.orderType != 'retail')
+              ReceiptSyncStatus(orderId: order.id!, orderNumber: order.orderNumber),
 
             // Struk
             Expanded(
@@ -456,7 +459,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                         const SizedBox(height: 8),
                         Text(
                           _isOnlineOrder
-                              ? '🛵 Stok bahan baku sudah terpotong!'
+                              ? 'Status pemotongan stok ada pada informasi sinkronisasi.'
                               : '🙏 Terima kasih!',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
@@ -631,7 +634,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text(
-              'Stok bahan baku sudah terpotong otomatis',
+              'Order tersimpan di HP. Periksa status sinkronisasi di bawah.',
               style: TextStyle(color: Colors.white, fontSize: 14),
             ),
           ),
@@ -651,7 +654,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
           const Icon(Icons.check_circle_outline, color: Colors.white, size: 60),
           const SizedBox(height: 8),
           const Text(
-            'Transaksi Berhasil!',
+            'Tersimpan di HP',
             style: TextStyle(
               color: Colors.white,
               fontSize: 20,

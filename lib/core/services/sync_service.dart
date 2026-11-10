@@ -1,3 +1,4 @@
+import 'read_work.dart';
 import '../utils/app_constants.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -13,7 +14,7 @@ class SyncService {
   Future<bool> hasInternet() async {
     try {
       final result = await Connectivity().checkConnectivity();
-      if (result == ConnectivityResult.none) return false;
+      if (result.contains(ConnectivityResult.none)) return false;
       final lookup = await InternetAddress.lookup(
         'supabase.com',
       ).timeout(const Duration(seconds: 3));
@@ -41,8 +42,13 @@ class SyncService {
     return _fetchBranchReport(from, to);
   }
 
-  Future<List<Map<String, dynamic>>> _fetchBranchReport(
-      DateTime from, DateTime to) async {
+  final _reportReads = ReadFlights<List<Map<String,dynamic>>>();
+  Future<List<Map<String, dynamic>>> _fetchBranchReport(DateTime from, DateTime to) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = '${prefs.getString(AppConstants.keyUid)}:${prefs.getString(AppConstants.keyEmail)}:${prefs.getString(AppConstants.keyOwnerId)}:${from.toIso8601String().substring(0,10)}:${to.toIso8601String().substring(0,10)}';
+    return _reportReads.run(key, () => _readBranchReport(from,to));
+  }
+  Future<List<Map<String, dynamic>>> _readBranchReport(DateTime from, DateTime to) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final email = prefs.getString(AppConstants.keyEmail) ?? '';
@@ -69,9 +75,7 @@ class SyncService {
 
       final List<dynamic> summaryList = summaryRaw is List ? summaryRaw : [];
 
-      final List<Map<String, dynamic>> result = [];
-
-      for (final row in summaryList) {
+      return await mapReadsBounded<dynamic, Map<String,dynamic>>(summaryList, (row) async {
         final branchId   = row['branch_id']?.toString() ?? '';
         final branchName = row['branch_name']?.toString() ?? '';
         final totalRevenue = (row['total_revenue'] as num?)?.toDouble() ?? 0;
@@ -113,7 +117,7 @@ class SyncService {
           } catch (e) {}
         }
 
-        result.add({
+        return {
           'branch_id':       branchId,
           'branch_name':     branchName,
           'total_revenue':   totalRevenue,
@@ -125,10 +129,8 @@ class SyncService {
           'transfer_amount': (row['transfer_amount'] as num?)?.toDouble() ?? 0.0,
           'top_menus':       topMenus,
           'per_kasir':       kasirList,
-        });
-      }
-
-      return result;
+        };
+      });
     } catch (e) {
       return [];
     }

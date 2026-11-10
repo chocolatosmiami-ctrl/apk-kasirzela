@@ -51,7 +51,10 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final name = context.watch<AuthProvider>().currentUser?.name ?? 'Kasir';
+    final user = context.watch<AuthProvider>().currentUser;
+    final name = user?.name ?? 'Kasir';
+    final canSeeShiftSummary = const {'owner', 'superadmin', 'admin', 'manajer'}
+        .contains(user?.role.trim().toLowerCase());
     final shift = context.watch<ShiftProvider>().activeShift;
     final sub = context.watch<SubscriptionProvider>();
     final ingredients = context.watch<InventoryProvider>().ingredients;
@@ -173,45 +176,47 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            LayoutBuilder(
-                              builder: (context, size) {
-                                final width = size.maxWidth >= 420
-                                    ? (size.maxWidth - 12) / 2
-                                    : size.maxWidth;
-                                return Wrap(
-                                  spacing: 12,
-                                  runSpacing: 12,
-                                  children: [
-                                    SizedBox(
-                                      width: width,
-                                      child: _Metric(
-                                        label: 'Penjualan shift',
-                                        value: shift == null
-                                            ? '—'
-                                            : AppUtils.formatCurrency(
-                                                shift.totalSales,
-                                              ),
-                                        note: 'Sesuai ringkasan shift aktif',
-                                        icon: Icons.payments_outlined,
+                            if (canSeeShiftSummary) ...[
+                              const SizedBox(height: 12),
+                              LayoutBuilder(
+                                builder: (context, size) {
+                                  final width = size.maxWidth >= 420
+                                      ? (size.maxWidth - 12) / 2
+                                      : size.maxWidth;
+                                  return Wrap(
+                                    spacing: 12,
+                                    runSpacing: 12,
+                                    children: [
+                                      SizedBox(
+                                        width: width,
+                                        child: _Metric(
+                                          label: 'Penjualan shift',
+                                          value: shift == null
+                                              ? '—'
+                                              : AppUtils.formatCurrency(
+                                                  shift.totalSales,
+                                                ),
+                                          note: 'Sesuai ringkasan shift aktif',
+                                          icon: Icons.payments_outlined,
+                                        ),
                                       ),
-                                    ),
-                                    SizedBox(
-                                      width: width,
-                                      child: _Metric(
-                                        label: 'Transaksi shift',
-                                        value: shift == null
-                                            ? '—'
-                                            : '${shift.totalTransactions}',
-                                        note:
-                                            'Transaksi yang tercatat di shift',
-                                        icon: Icons.receipt_long_outlined,
+                                      SizedBox(
+                                        width: width,
+                                        child: _Metric(
+                                          label: 'Transaksi shift',
+                                          value: shift == null
+                                              ? '—'
+                                              : '${shift.totalTransactions}',
+                                          note:
+                                              'Transaksi yang tercatat di shift',
+                                          icon: Icons.receipt_long_outlined,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
                             const SizedBox(height: 28),
                             const Text(
                               'Akses cepat',

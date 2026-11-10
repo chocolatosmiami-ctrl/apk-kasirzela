@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/resilient_http_client.dart';
+import '../services/service_health.dart';
 
 class SupabaseConfig {
   static const String supabaseUrl = 'https://lckgsgojysyvtoubcteu.supabase.co';
@@ -39,12 +41,20 @@ class SupabaseConfig {
   // JANGAN tambahkan service_role key kembali ke sini.
 
   static bool get isConfigured => true;
+  static Future<void>? _initialization;
 
-  static Future<void> initialize() async {
+  static Future<void> initialize() => _initialization ??= _initialize();
+  static Future<void> _initialize() async {
+    try {
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabaseAnonKey,
+      httpClient: ResilientHttpClient(diagnostic: ServiceHealth.log),
+      debug: false,
     );
-    debugPrint('✅ [SupabaseConfig] Initialized: $supabaseUrl');
+    } catch (_) {
+      _initialization = null;
+      rethrow;
+    }
   }
 }

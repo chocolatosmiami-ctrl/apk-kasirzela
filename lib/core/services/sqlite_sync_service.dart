@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/supabase_config.dart';
 import '../database/database_helper.dart';
+import 'offline_order_sync_service.dart';
 
 /// Service untuk sync data lama dari SQLite lokal ke Supabase
 class SqliteSyncService {
@@ -50,6 +51,12 @@ class SqliteSyncService {
     int success = 0, failed = 0, skipped = 0;
 
     try {
+      await OfflineOrderSyncService.instance.importLegacyFoodOrders();
+      final food = await OfflineOrderSyncService.instance.flush();
+      success += food.sent;
+      failed += OfflineOrderSyncService.instance.pendingCount;
+      onProgress?.call(success + failed, success + failed,
+          'Makanan: $success terkirim, $failed menunggu. ${OfflineOrderSyncService.instance.lastError ?? ''}');
       final prefs      = await SharedPreferences.getInstance();
       final branchId    = prefs.getString(AppConstants.keyBranchId) ?? '';
       final kasirName   = prefs.getString(AppConstants.keyKasirName) ??
@@ -91,10 +98,11 @@ class SqliteSyncService {
                ) as items_raw
         FROM orders o
         LEFT JOIN order_items oi ON oi.order_id = o.id
-        WHERE o.status = 'paid'
+        WHERE o.status = 'paid' AND o.order_type = 'retail'
+          AND o.branch_id = ? AND o.cashier_id = ?
         GROUP BY o.id
         ORDER BY o.created_at ASC
-      ''');
+      ''', [resolvedBranchId, cashierId]);
 
       final total   = orders.length;
       final synced  = await _getSyncedOrderNumbers();
@@ -220,5 +228,5 @@ class SyncSummary {
   });
 
   int get total => success + failed + skipped;
-  bool get hasError => error != null;
+  bool get hasError => error != null || failed > 0;
 }

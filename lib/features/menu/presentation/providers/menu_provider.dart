@@ -1,3 +1,4 @@
+import '../../../../core/services/read_work.dart';
 import '../../../../core/utils/app_constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -56,7 +57,14 @@ class MenuProvider extends ChangeNotifier {
     return item.hasStock;
   }
 
+  final _catalogReads = ReadFlights<void>();
+  final _remoteReads = ReadFlights<void>();
   Future<void> loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = '${prefs.getString(AppConstants.keyUid)}:${prefs.getString(AppConstants.keyBranchId)}';
+    return _catalogReads.run(key, _loadData);
+  }
+  Future<void> _loadData() async {
     debugPrint('📊 [MENU] <void> loadData called — isReordering=$_isReordering');
     if (_isReordering) {
       debugPrint('📊 [MENU] loadData BLOCKED — sedang reorder');
@@ -71,11 +79,10 @@ class MenuProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    await loadCategories();
-    await loadMenuItems();
-
-    _isLoading = false;
-    notifyListeners();
+    try {
+      await loadCategories();
+      await loadMenuItems();
+    } finally { _isLoading = false; notifyListeners(); }
   }
 
   Future<void> loadCategories() async {
@@ -132,7 +139,7 @@ class MenuProvider extends ChangeNotifier {
       // Selalu sync dari Supabase di background untuk dapat update terbaru
       // (menu baru, edit harga, hapus menu dari owner)
       if (branchId.isNotEmpty) {
-        _syncFromSupabase(branchId); // tidak await agar tidak block UI
+        _syncFromSupabase(branchId).catchError((Object e) { debugPrint('Menu refresh failed: ${e.runtimeType}'); }); // Does not block local display.
       }
     } catch (e) {
       debugPrint('📊 [MENU] loadMenuItems error: $e - trying without branch filter');
@@ -159,6 +166,10 @@ class MenuProvider extends ChangeNotifier {
 
   // Sync menu dari Supabase ke SQLite lokal
   Future<void> _syncFromSupabase(String branchId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return _remoteReads.run('${prefs.getString(AppConstants.keyUid)}:$branchId', () => _syncMenuBranch(branchId));
+  }
+  Future<void> _syncMenuBranch(String branchId) async {
     // Jangan sync kalau sedang/baru reorder — bisa timpa urutan baru
     if (_isReordering) {
       debugPrint('📊 [MENU] Sync blocked — sedang reorder');
@@ -190,56 +201,52 @@ class MenuProvider extends ChangeNotifier {
         return;
       }
 
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getString(AppConstants.keyBranchId) != branchId || _isReordering) return;
       final cats = await DatabaseHelper.instance.query('categories');
       int defaultCatId = cats.isNotEmpty ? cats.first['id'] as int : 1;
-
-      // Ambil nama menu yang ada di Supabase
-      final supabaseNames = items.map((i) => i['name']?.toString() ?? '').toSet();
 
       // Simpan sort_order lokal sebelum update
       final localOrders = <String, int>{};
       final existing = await DatabaseHelper.instance.rawQuery(
           'SELECT name, sort_order FROM menu_items WHERE branch_id = ?', [branchId]);
+      final existingNames = <String>{};
       for (final r in existing) {
+        existingNames.add(r['name']?.toString() ?? '');
         localOrders[r['name']?.toString() ?? ''] = (r['sort_order'] as int? ?? 999);
       }
 
-      // FIX: Hapus HANYA menu yang ada di Supabase (bukan semua menu lokal)
-      // Menu lokal yang baru ditambah tapi belum di-upload → TIDAK dihapus
-      if (supabaseNames.isNotEmpty) {
-        final placeholders = supabaseNames.map((_) => '?').join(',');
-        await DatabaseHelper.instance.rawUpdate(
-            'DELETE FROM menu_items WHERE branch_id = ? AND name IN ($placeholders)',
-            [branchId, ...supabaseNames]);
-      }
+      // Update in place: deleting/reinserting changes local IDs, drops recipe
+      // links via CASCADE, and loses images/stock while a cart still uses them.
 
       // Insert dengan sort_order dari lokal (jika ada), fallback ke Supabase
-      for (int i = 0; i < items.length; i++) {
-        final item = items[i];
-        final isActive = (item['is_available'] as bool? ?? true) ? 1 : 0;
-        final name = item['name']?.toString() ?? '';
-        // Prioritas: sort_order lokal → sort_order Supabase → index
-        final sortOrder = localOrders.containsKey(name)
-            ? localOrders[name]!
-            : (item['sort_order'] as num?)?.toInt() ?? i;
-        try {
-          await DatabaseHelper.instance.rawInsert(
-              'INSERT OR REPLACE INTO menu_items '
-                  '(category_id, branch_id, name, description, price, '
-                  'is_active, has_stock, stock, sort_order, created_at) '
-                  'VALUES (?,?,?,?,?,?,?,?,?,?)',
-              [
-                defaultCatId, branchId,
-                item['name'], item['description'] ?? '',
-                (item['price'] as num?)?.toDouble() ?? 0,
-                isActive, 0, 0, sortOrder,
-                item['created_at'] ?? DateTime.now().toIso8601String(),
-              ]
-          );
-        } catch (e) {
-          debugPrint('📊 [MENU] insert error: $e');
+      await DatabaseHelper.instance.runTransaction((txn) async {
+        for (var i = 0; i < items.length; i++) {
+          final item = items[i];
+          final name = item['name']?.toString() ?? '';
+          final remoteImage = item['image_path']?.toString().trim() ?? '';
+          try {
+          final values = <String, Object?>{
+            'name': name, 'description': item['description'] ?? '',
+            'price': (item['price'] as num?)?.toDouble() ?? 0,
+            'is_active': (item['is_available'] as bool? ?? true) ? 1 : 0,
+            'sort_order': localOrders[name] ?? (item['sort_order'] as num?)?.toInt() ?? i,
+            if (remoteImage.isNotEmpty) 'image_path': remoteImage,
+          };
+            if (existingNames.contains(name)) {
+              await txn.update('menu_items', values,
+                where: 'branch_id = ? AND name = ?', whereArgs: [branchId, name]);
+            } else {
+              await txn.insert('menu_items', {
+                ...values, 'category_id': defaultCatId, 'branch_id': branchId,
+                'has_stock': 0, 'stock': 0,
+                'created_at': item['created_at'] ?? DateTime.now().toIso8601String(),
+              });
+              existingNames.add(name);
+            }
+          } catch (_) { /* Keep other valid rows, as before. */ }
         }
-      }
+      });
 
       // Reload dengan sort_order yang benar
       final results = await DatabaseHelper.instance.rawQuery('''
@@ -250,7 +257,7 @@ class MenuProvider extends ChangeNotifier {
         ORDER BY c.sort_order ASC, m.sort_order ASC, m.name ASC
       ''', [branchId]);
 
-      if (_isReordering) {
+      if (_isReordering || prefs.getString(AppConstants.keyBranchId) != branchId) {
         debugPrint('📊 [MENU] Sync BLOCKED — isReordering=true');
         return;
       }

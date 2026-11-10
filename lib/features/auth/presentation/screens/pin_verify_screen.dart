@@ -1,3 +1,7 @@
+import 'dart:async';
+import '../../../../core/theme/startup_recovery_view.dart';
+import '../../../../core/services/service_health.dart';
+import '../../../../core/services/startup_policy.dart';
 import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +17,7 @@ import 'firebase_login_screen.dart';
 import 'set_pin_screen.dart';
 import '../../../../core/services/supabase_auth_service.dart';
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/services/login_route.dart';
 
 /// Layar verifikasi PIN — muncul SETELAH login Firebase berhasil
 /// Sebagai lapisan keamanan kedua
@@ -33,6 +38,8 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
   bool _isError = false;
   bool _isLoading = false;
   bool _checkingPin = true;
+  bool _pinCheckFailed = false;
+  bool _pinCheckRunning = false;
   String _errorMsg = '';
   // BUG 24 FIX: Counter dipindah ke SharedPreferences agar tidak reset saat screen dispose.
   // Rotate screen / minimize app / navigate back tidak bisa lagi mereset counter.
@@ -54,7 +61,6 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🖥️ [PIN_VERIFY] initState');
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final isLocked = await _loadAttempts();
       // Jika sedang dalam lockout, jangan tampilkan PIN screen
@@ -115,8 +121,11 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
 
   // Cek apakah user sudah punya PIN sebelum tampilkan layar PIN
   Future<void> _checkHasPin() async {
+    if (_pinCheckRunning) return;
+    _pinCheckRunning = true;
+    if (mounted) setState(() { _checkingPin = true; _pinCheckFailed = false; });
     try {
-      final fbSession = await SupabaseAuthService.instance.getSession();
+      final fbSession = context.read<AuthProvider>().currentUser ?? await SupabaseAuthService.instance.getSession();
       if (fbSession == null) {
         if (!mounted) return;
         Navigator.of(context).pushAndRemoveUntil(
@@ -126,15 +135,26 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
         return;
       }
 
+      if (requiresFirstOnlineLogin(fbSession.authId)) {
+        if (!mounted) return;
+        Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(
+          builder: (_) => FirebaseLoginScreen(initialEmail: fbSession.email),
+        ), (_) => false);
+        return;
+      }
+
       // Cek PIN via RPC SECURITY DEFINER (tidak butuh service key)
-      bool hasPin = false;
-      try {
+      bool hasPin = fbSession.pin?.isNotEmpty == true;
+      bool pinStateKnown = fbSession.pin != null;
+      if (!hasPin) try {
         final rpcRes = await SupabaseConfig.client.rpc(
           'get_user_pin_hash',
           params: {'p_auth_id': fbSession.authId, 'p_email': fbSession.email},
-        );
+        ).timeout(const Duration(seconds: 6));
 
+        if (!mounted) return;
         if (rpcRes != null && rpcRes is Map) {
+          pinStateKnown = true;
           final pinHash = rpcRes['pin_hash']?.toString() ?? '';
           hasPin =
               pinHash.trim().isNotEmpty &&
@@ -145,9 +165,7 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
             await _syncPinToLocal(fbSession, pinHash);
           }
         }
-        debugPrint('🖥️ [PIN_VERIFY] RPC pin check: hasPin=$hasPin');
       } catch (e) {
-        debugPrint('🖥️ [PIN_VERIFY] Supabase error: $e');
       }
 
       // Fallback: check SQLite local
@@ -163,7 +181,6 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
           hasPin =
               localPin.isNotEmpty ||
               (localHash.isNotEmpty && localHash != DatabaseHelper.hashPin(''));
-          debugPrint('🖥️ [PIN_VERIFY] SQLite fallback: hasPin=$hasPin');
         }
       }
 
@@ -171,12 +188,12 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
       if (!hasPin) {
         final prefs = await SharedPreferences.getInstance();
         final savedPin = prefs.getString('sb_pin_hash') ?? '';
-        hasPin = savedPin.isNotEmpty;
-        debugPrint('🖥️ [PIN_VERIFY] SharedPrefs fallback: hasPin=$hasPin');
+        hasPin = savedPin.isNotEmpty && prefs.getString('sb_pin_email') == fbSession.email;
       }
 
       if (!mounted) return;
 
+      if (!hasPin && !pinStateKnown) throw StateError('PIN state unavailable');
       if (!hasPin) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -191,11 +208,12 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
       }
 
       // PIN ada → tampilkan numpad
+      ServiceHealth.instance.record('pin_check', null);
       setState(() => _checkingPin = false);
     } catch (e) {
-      debugPrint('🖥️ [PIN_VERIFY] _checkHasPin error: $e');
-      if (mounted) setState(() => _checkingPin = false);
-    }
+      ServiceHealth.log('pin_check',1,0,failureKind(e));
+      if (mounted) setState(() { _checkingPin = false; _pinCheckFailed = true; });
+    } finally { _pinCheckRunning = false; }
   }
 
   // Sync PIN + role dari Firestore ke SQLite lokal
@@ -233,7 +251,6 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
         );
       }
     } catch (e) {
-      debugPrint('syncPinToLocal error: $e');
     }
   }
 
@@ -252,7 +269,20 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
     }
   }
 
+  bool _confirming = false;
   Future<void> _confirmPin() async {
+    if (_confirming) return;
+    _confirming = true;
+    try { await _confirmPinOnce(); ServiceHealth.instance.record('pin_verify', null); }
+    catch (e) {
+      ServiceHealth.log('pin_verify',1,0,failureKind(e));
+      if (mounted) setState(() { _isError = true; _errorMsg = 'Verifikasi belum selesai. Coba lagi.'; });
+    } finally {
+      _confirming = false;
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+  Future<void> _confirmPinOnce() async {
     if (_pin.length < 4) {
       setState(() {
         _isError = true;
@@ -274,17 +304,14 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
     }
 
     // Verify PIN
-    debugPrint('=== PIN VERIFY ===');
-    debugPrint(
-      'currentUser: ${auth.currentUser?.name} / ${auth.currentUser?.authId}',
-    );
-    debugPrint('email: ${auth.currentUser?.email}');
-    final ok = await auth.verifyPin(_pin);
-    debugPrint('PIN verify result: $ok');
+    bool ok;
+    try { ok = await auth.verifyPin(_pin); }
+    catch (_) {
+      if (mounted) setState(() { _isLoading = false; _isError = true; _errorMsg = 'Verifikasi belum selesai. Coba lagi.'; });
+      return;
+    }
 
     if (!mounted) return;
-    setState(() => _isLoading = false);
-
     if (ok) {
       // Cek shift - pakai keyUid (users.id) bukan authId
       final shiftProv = context.read<ShiftProvider>();
@@ -293,8 +320,11 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
           prefs.getString(AppConstants.keyUid) ??
           auth.currentUser?.authId ??
           '';
-      debugPrint('🔵 [PIN-VERIFY] loadActiveShift userId=$shiftUserId');
-      await shiftProv.loadActiveShift(shiftUserId);
+      try { await shiftProv.loadActiveShift(shiftUserId).timeout(const Duration(seconds: 8)); }
+      catch (_) {
+        if (mounted) setState(() { _isError = true; _errorMsg = 'Shift belum dapat dimuat. Coba lagi.'; });
+        return;
+      }
 
       if (!mounted) return;
 
@@ -352,6 +382,8 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
   }
 
   Widget build(BuildContext context) {
+    if (_pinCheckFailed) return StartupRecoveryView(loading: false,
+      message: 'Status PIN belum dapat diverifikasi. Sesi tetap disimpan.', retry: _checkHasPin);
     if (_checkingPin)
       return const Scaffold(
         backgroundColor: AppTheme.surfaceLight,
@@ -784,7 +816,6 @@ class _OpenShiftDialogState extends State<_OpenShiftDialog> {
                         prefs3.getString(AppConstants.keyUid) ??
                         auth.currentUser?.authId ??
                         '';
-                    debugPrint('🔵 [PIN-VERIFY] openShift userId=$openUserId');
                     // Simpan nama kasir ke SharedPreferences
                     final kasirNameToSave = _nameCtrl.text.trim().isNotEmpty
                         ? _nameCtrl.text.trim()

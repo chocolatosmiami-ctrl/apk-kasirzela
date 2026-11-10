@@ -1,3 +1,4 @@
+import '../../../../core/theme/visible_clock.dart';
 import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -694,44 +695,23 @@ class _LiveTimer extends StatefulWidget {
   State<_LiveTimer> createState() => _LiveTimerState();
 }
 
-class _LiveTimerState extends State<_LiveTimer> {
-  late final Stream<String> _stream;
-
+class _LiveTimerState extends State<_LiveTimer> with VisibleClock<_LiveTimer> {
+  String _elapsed = '00:00:00';
   @override
-  void initState() {
-    super.initState();
-    debugPrint('🖥️ [SHIFT] initState');
-    _stream = Stream.periodic(const Duration(seconds: 1), (_) {
-      final diff = DateTime.now().difference(DateTime.parse(widget.openedAt));
-      final h = diff.inHours.toString().padLeft(2, '0');
-      final m = (diff.inMinutes % 60).toString().padLeft(2, '0');
-      final s = (diff.inSeconds % 60).toString().padLeft(2, '0');
-      return '$h:$m:$s';
-    });
+  void onVisibleClockTick() {
+    final opened = DateTime.tryParse(widget.openedAt);
+    final diff = opened == null ? Duration.zero : DateTime.now().difference(opened);
+    final h = diff.inHours.toString().padLeft(2, '0');
+    final m = (diff.inMinutes % 60).toString().padLeft(2, '0');
+    final s = (diff.inSeconds % 60).toString().padLeft(2, '0');
+    setState(() => _elapsed = '$h:$m:$s');
   }
-
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<String>(
-      stream: _stream,
-      builder: (_, snap) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.green[50],
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          snap.data ?? '00:00:00',
-          style: TextStyle(
-            fontFamily: 'monospace',
-            color: Colors.green[700],
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+    decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(8)),
+    child: Text(_elapsed, style: TextStyle(fontFamily: 'monospace', color: Colors.green[700], fontSize: 14, fontWeight: FontWeight.bold)),
+  );
 }
 
 class _StatBox extends StatelessWidget {

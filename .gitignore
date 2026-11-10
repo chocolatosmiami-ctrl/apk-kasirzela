@@ -1,0 +1,13 @@
+node_modules/
+.dart_tool/
+build/
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+key.properties
+security-baseline*.json
+security-grants-baseline*.json
+security-backup*/
+*.log

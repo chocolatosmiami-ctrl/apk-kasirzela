@@ -1,5 +1,7 @@
+import '../widgets/checkout_failure_dialog.dart';
 import '../../../../core/theme/minimal_ui.dart';
 import 'dart:async';
+import '../../../../core/services/offline_order_sync_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../inventory/data/stock_availability_service.dart';
@@ -35,23 +37,33 @@ class CashierScreen extends StatefulWidget {
   State<CashierScreen> createState() => _CashierScreenState();
 }
 
-class _CashierScreenState extends State<CashierScreen> {
+class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserver {
   Future<AppUserProfile?>? _profileFuture;
   String _searchQuery = '';
   int? _selectedCategoryId;
   final _searchCtrl = TextEditingController();
-  StockAvailability _avail = StockAvailability.empty;
+  StockAvailability _avail = const StockAvailability(
+    enforced: true, stock: {}, comps: {}, unavailableReason: 'Memuat stok…');
+  bool _refreshingStock = false;
   Timer? _availTimer;
+  bool _visible = false;
+  bool _foreground = true;
+  bool _pollingEnabled = false;
+  int _seenStockRevision = 0;
   bool _balanceChecked = false;
   bool _balanceSufficient = true;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _foreground = WidgetsBinding.instance.lifecycleState == null || WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    _seenStockRevision = OfflineOrderSyncService.instance.stockRevision;
+    OfflineOrderSyncService.instance.addListener(_onOrderSync);
     debugPrint(
       '🖥️ [CASHIER] initState tableId=${widget.tableId} tableName=${widget.tableName}',
     );
-    _profileFuture = SupabaseAuthService.instance.getSession();
+    _profileFuture = Future.value(context.read<AuthProvider>().currentUser);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await context.read<MenuProvider>().loadData();
       _loadSettings();
@@ -74,28 +86,59 @@ class _CashierScreenState extends State<CashierScreen> {
 
       _refreshIngredientAvailability();
       _checkBalance();
-      // Refresh stok tiap 60 detik — stok bisa berubah dari device lain / dashboard
-      _availTimer = Timer.periodic(
-        const Duration(seconds: 60),
-        (_) => _refreshIngredientAvailability(),
-      );
     });
   }
 
   @override
   void dispose() {
+    OfflineOrderSyncService.instance.removeListener(_onOrderSync);
     _availTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _searchCtrl.dispose();
     super.dispose();
   }
 
   /// Ambil stok bahan hari ini + resep (menu_stock_components) dari Supabase.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _visible = TickerMode.of(context) && (ModalRoute.of(context)?.isCurrent ?? true);
+    _updatePolling();
+  }
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _foreground = state == AppLifecycleState.resumed;
+    _updatePolling();
+  }
+  void _updatePolling() {
+    final enabled = _visible && _foreground;
+    if (enabled == _pollingEnabled) return;
+    _pollingEnabled = enabled;
+    _availTimer?.cancel(); _availTimer = null;
+    if (!enabled) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _refreshIngredientAvailability(); });
+    _availTimer = Timer.periodic(const Duration(seconds: 60), (_) => _refreshIngredientAvailability());
+  }
+  void _onOrderSync() {
+    final revision = OfflineOrderSyncService.instance.stockRevision;
+    if (revision == _seenStockRevision) return; // Idle outbox scans do not change stock.
+    _seenStockRevision = revision;
+    if (_pollingEnabled) _refreshIngredientAvailability();
+  }
+
   Future<void> _refreshIngredientAvailability() async {
-    if (!mounted) return;
-    final prefs = await SharedPreferences.getInstance();
-    final branchId = prefs.getString(AppConstants.keyBranchId) ?? '';
-    final avail = await StockAvailabilityService.load(branchId);
-    if (mounted) setState(() => _avail = avail);
+    if (!mounted || !_pollingEnabled || _refreshingStock) return;
+    _refreshingStock = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final branchId = prefs.getString(AppConstants.keyBranchId) ?? '';
+      final avail = await StockAvailabilityService.load(branchId);
+      if (mounted && branchId == prefs.getString(AppConstants.keyBranchId)) {
+        setState(() => _avail = avail);
+      }
+    } finally {
+      _refreshingStock = false;
+    }
   }
 
   Future<void> _checkBalance() async {
@@ -521,14 +564,7 @@ class _CashierScreenState extends State<CashierScreen> {
         MaterialPageRoute(builder: (_) => ReceiptScreen(order: order!)),
       );
     } else {
-      debugPrint('🌐 [ONLINE-UI] ❌ order null, tampilkan error snackbar');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❌ Gagal menyimpan order online. Coba lagi!'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
-      );
+      await showCheckoutFailureDialog(context, cashier.lastCheckoutDiagnostic);
     }
   }
 
@@ -1604,9 +1640,7 @@ class _MenuCard extends StatelessWidget {
               .where((c) => c.menuItem.id == item.id)
               .firstOrNull;
           final reason = availability.reasonFor(item.name);
-          final remaining = availability.enforced
-              ? availability.stock[StockAvailability.keyOf(item.name)]
-              : null;
+          final remaining = availability.portionsFor(item.name);
           final unavailable = !item.isAvailable || reason != null;
           final selected = cartItem != null;
           return Container(
@@ -1630,14 +1664,13 @@ class _MenuCard extends StatelessWidget {
                     children: [
                       Opacity(
                         opacity: unavailable ? 0.45 : 1,
-                        child: item.imagePath != null
-                            ? Image.asset(
-                                item.imagePath!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) =>
-                                    _placeholderImage(),
-                              )
-                            : _placeholderImage(),
+                        child: item.imagePath == null || item.imagePath!.isEmpty
+                            ? _placeholderImage()
+                            : item.imagePath!.startsWith('https://') || item.imagePath!.startsWith('http://')
+                              ? Image.network(item.imagePath!, fit: BoxFit.cover, cacheWidth: 640,
+                                  errorBuilder: (_, __, ___) => _placeholderImage())
+                              : Image.asset(item.imagePath!, fit: BoxFit.cover, cacheWidth: 640,
+                                  errorBuilder: (_, __, ___) => _placeholderImage()),
                       ),
                       if (unavailable || remaining != null)
                         Positioned(

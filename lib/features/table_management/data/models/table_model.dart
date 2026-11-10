@@ -31,6 +31,7 @@ extension TableStatusExt on TableStatus {
 
 class TableModel {
   final int? id;
+  final int? serverId;
   final String name;       // "Meja 1", "VIP 1", "Teras A"
   final String zone;       // "Dalam", "Luar", "VIP"
   final int capacity;      // jumlah kursi
@@ -44,6 +45,7 @@ class TableModel {
 
   const TableModel({
     this.id,
+    this.serverId,
     required this.name,
     this.zone = 'Dalam',
     this.capacity = 4,
@@ -61,7 +63,8 @@ class TableModel {
   bool get needsBill => status == TableStatus.bill;
 
   factory TableModel.fromMap(Map<String, dynamic> map) => TableModel(
-    id: map['id'] as int?,
+    id: (map['id'] as num?)?.toInt(),
+    serverId: (map['server_id'] as num?)?.toInt(),
     name: map['name'] as String? ?? '',
     zone: map['zone'] as String? ?? 'Dalam',
     capacity: map['capacity'] as int? ?? 4,
@@ -76,6 +79,7 @@ class TableModel {
 
   Map<String, dynamic> toMap() => {
     if (id != null) 'id': id,
+    if (serverId != null) 'server_id': serverId,
     'name': name,
     'zone': zone,
     'capacity': capacity,
@@ -94,7 +98,7 @@ class TableModel {
     String? customerName,
     String? occupiedAt,
   }) => TableModel(
-    id: id, name: name, zone: zone, capacity: capacity,
+    id: id, serverId: serverId, name: name, zone: zone, capacity: capacity,
     status: status ?? this.status,
     activeOrderId: activeOrderId ?? this.activeOrderId,
     customerName: customerName ?? this.customerName,

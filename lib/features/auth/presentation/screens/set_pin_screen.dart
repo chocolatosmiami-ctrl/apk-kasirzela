@@ -1,3 +1,4 @@
+import '../../../../core/services/pin_secret.dart';
 import '../../../../core/theme/minimal_ui.dart';
 import '../../../../core/utils/app_constants.dart';
 import 'package:flutter/material.dart';
@@ -44,7 +45,7 @@ class _SetPinScreenState extends State<SetPinScreen> {
           _confirmPin += d;
           _isError = false;
         });
-        if (_confirmPin.length >= 4) _checkConfirm();
+        if (_confirmPin.length == 6) _checkConfirm();
       }
     } else {
       if (_pin.length < 6) {
@@ -71,10 +72,10 @@ class _SetPinScreenState extends State<SetPinScreen> {
   }
 
   void _nextStep() {
-    if (_pin.length < 4) {
+    if (_pin.length < 6) {
       setState(() {
         _isError = true;
-        _errorMsg = 'PIN minimal 4 digit';
+        _errorMsg = 'PIN baru harus 6 digit';
       });
       return;
     }
@@ -123,7 +124,7 @@ class _SetPinScreenState extends State<SetPinScreen> {
   }
 
   void _checkConfirm() {
-    if (_confirmPin.length < 4) return;
+    if (_confirmPin.length < 6) return;
     if (_confirmPin == _pin) {
       _savePin();
     } else if (_confirmPin.length == _pin.length) {
@@ -138,11 +139,11 @@ class _SetPinScreenState extends State<SetPinScreen> {
   Future<void> _savePin() async {
     setState(() => _isLoading = true);
 
-    if (_pin.length < 4 || _pin.length > 6) {
+    if (_pin.length != 6) {
       setState(() {
         _isLoading = false;
         _isError = true;
-        _errorMsg = 'PIN 4-6 digit';
+        _errorMsg = 'PIN baru harus 6 digit';
       });
       return;
     }
@@ -151,9 +152,6 @@ class _SetPinScreenState extends State<SetPinScreen> {
       debugPrint('📌 [SetPin] ════ START saving PIN ════');
       final prefs = await SharedPreferences.getInstance();
 
-      // Debug: semua keys
-      final allKeys = prefs.getKeys();
-      debugPrint('📌 [SetPin] SharedPrefs keys: $allKeys');
       final email = widget.userEmail.isNotEmpty
           ? widget.userEmail
           : (prefs.getString(AppConstants.keyEmail) ?? '');
@@ -163,12 +161,9 @@ class _SetPinScreenState extends State<SetPinScreen> {
       final role = widget.userRole.isNotEmpty
           ? widget.userRole
           : (prefs.getString(AppConstants.keyRole) ?? 'kasir');
-      final authId = prefs.getString(AppConstants.keyUid) ?? '';
+      final authId = SupabaseConfig.client.auth.currentUser?.id ?? '';
 
-      debugPrint(
-        '📌 [SetPin] email=$email, name=$name, role=$role, authId=$authId',
-      );
-      if (email.isEmpty) {
+      if (email.isEmpty || authId.isEmpty) {
         debugPrint('📌 [SetPin] ❌ Email empty - session invalid');
         setState(() {
           _isLoading = false;
@@ -178,24 +173,20 @@ class _SetPinScreenState extends State<SetPinScreen> {
         return;
       }
 
-      debugPrint('📌 [SetPin] email=$email, role=$role, authId=$authId');
       // 1. Update PIN di Supabase via RPC (kirim HASH, bukan plaintext)
       debugPrint('📌 [SetPin] Calling set_user_pin RPC...');
-      final pinHash = DatabaseHelper.hashPin(_pin);
-      try {
-        await SupabaseConfig.client.rpc(
-          'set_user_pin',
-          params: {
-            'p_email': email.toLowerCase(),
-            'p_pin_hash': pinHash, // kirim hash, bukan PIN asli
-          },
-        );
-        debugPrint('📌 [SetPin] ✅ RPC set_user_pin success');
-      } catch (rpcErr) {
-        debugPrint('📌 [SetPin] ⚠️ RPC failed: $rpcErr (will use local only)');
+      final pinHash = await PinSecret.create(_pin);
+      final result = await SupabaseConfig.client.rpc('set_user_pin', params: {
+        'p_email': email.toLowerCase(), 'p_pin_hash': pinHash,
+      }).timeout(const Duration(seconds: 8));
+      if (result is! Map || result['success'] != true) {
+        throw StateError('PIN belum tersimpan di server. Coba lagi.');
       }
+      if (SupabaseConfig.client.auth.currentUser?.id != authId) throw StateError('Akun telah berubah');
+      await SupabaseAuthService.instance.recordAcceptedPin(authId, pinHash);
       // Simpan HASH ke SharedPrefs (BUKAN PIN plaintext)
       await prefs.setString('sb_pin_hash', pinHash);
+      await prefs.setString('sb_pin_email', email);
       debugPrint('📌 [SetPin] ✅ PIN hash saved to SharedPrefs');
       // 2. Simpan hash ke SQLite lokal
       final db = DatabaseHelper.instance;
@@ -289,7 +280,7 @@ class _SetPinScreenState extends State<SetPinScreen> {
       name: widget.userName,
       subtitle: _step2
           ? 'Masukkan PIN yang sama sekali lagi.'
-          : 'Gunakan 4–6 digit untuk mengamankan akun Anda.',
+          : 'Gunakan 6 digit untuk mengamankan akun Anda.',
       pin: _currentPin,
       error: _isError ? _errorMsg : '',
       busy: _isLoading,
@@ -304,7 +295,7 @@ class _SetPinScreenState extends State<SetPinScreen> {
           _deleteDigit();
         }
       },
-      onSubmit: _currentPin.length < 4
+      onSubmit: _currentPin.length < 6
           ? null
           : _step2
           ? _checkConfirm

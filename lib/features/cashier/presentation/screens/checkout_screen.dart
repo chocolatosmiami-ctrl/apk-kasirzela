@@ -1,3 +1,5 @@
+import '../widgets/checkout_failure_dialog.dart';
+import '../../../../core/services/checkout_diagnostic.dart';
 import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import '../../../orders/presentation/providers/orders_provider.dart';
@@ -79,6 +81,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   Future<void> _processPayment() async {
     if (_isProcessing) return;
+    // Lock before the first await (balance/grace checks also perform network IO).
+    setState(() => _isProcessing = true);
+    try {
+      await _processPaymentOnce();
+    } catch (e) {
+      if (mounted) {
+        await showCheckoutFailureDialog(context,
+          CheckoutDiagnostic.fromError(e, stage: 'payment_precheck'));
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<void> _processPaymentOnce() async {
 
     // ── Cek saldo minimum (online guard) ───────────────
     final subProv = context.read<SubscriptionProvider>();
@@ -90,11 +107,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         context: context,
         barrierDismissible: false,
         builder: (_) => AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
               Icon(Icons.account_balance_wallet_outlined, color: Colors.red),
               SizedBox(width: 8),
-              Text('Saldo Tidak Cukup'),
+              Text(subProv.verificationReady ? 'Saldo Tidak Cukup' : 'Verifikasi Subscription'),
             ],
           ),
           content: Column(
@@ -102,12 +119,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Saldo Anda Rp ${subProv.balance.toInt()} kurang dari batas minimum Rp 5.000.',
+                subProv.verificationReady
+                    ? 'Transaksi belum diizinkan oleh subscription/saldo atau batas offline.'
+                    : subProv.verificationMessage,
                 style: const TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Isi saldo melalui website dashboard untuk melanjutkan.',
+              Text(
+                subProv.verificationReady ? 'Periksa subscription melalui dashboard.' : 'Periksa koneksi, lalu coba lagi. Pesanan belum dikirim.',
                 style: TextStyle(color: Colors.grey, fontSize: 14),
               ),
             ],
@@ -120,7 +139,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 size: 16,
               ),
               label: const Text(
-                'Isi Saldo Sekarang',
+                'Kembali ke Kasir',
                 style: TextStyle(color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red[700]),
@@ -227,6 +246,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
 
     setState(() => _isProcessing = true);
+    OrderModel? savedReceipt;
 
     try {
       final cashier = context.read<CashierProvider>();
@@ -239,6 +259,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         paidAmount: paidAmount,
         cashierId: cashierId,
       );
+      savedReceipt = order;
 
       if (!mounted) return;
       setState(() => _isProcessing = false);
@@ -273,7 +294,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           MaterialPageRoute(builder: (_) => ReceiptScreen(order: order)),
         );
       } else {
-        _showSnack('Gagal menyimpan. Coba lagi!', isError: true);
+        await showCheckoutFailureDialog(context, cashier.lastCheckoutDiagnostic);
       }
     } on MenuStockHabisException catch (e) {
       // Stok menu hari ini habis — tampilkan dialog khusus
@@ -344,7 +365,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isProcessing = false);
-      _showSnack('Error: $e', isError: true);
+      await showCheckoutFailureDialog(context, CheckoutDiagnostic.fromError(e,
+        stage: savedReceipt == null ? 'payment_screen' : 'after_local_save',
+        receiptSaved: savedReceipt != null, orderNumber: savedReceipt?.orderNumber));
     }
   }
 

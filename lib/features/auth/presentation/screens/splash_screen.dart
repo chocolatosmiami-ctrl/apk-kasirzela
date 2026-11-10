@@ -1,11 +1,10 @@
-import '../../../../core/theme/minimal_ui.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/services/supabase_auth_service.dart';
-import '../../../../core/config/supabase_config.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../settings/presentation/providers/settings_provider.dart';
-import '../../../home/presentation/screens/home_screen.dart';
+import '../providers/auth_provider.dart';
+import '../../../../core/services/startup_policy.dart';
+import '../../../../core/services/service_health.dart';
+import '../../../../core/theme/startup_recovery_view.dart';
 import 'pin_verify_screen.dart';
 import 'firebase_login_screen.dart';
 
@@ -14,108 +13,43 @@ class SplashScreen extends StatefulWidget {
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
-
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnim;
-  late Animation<double> _scaleAnim;
-
+class _SplashScreenState extends State<SplashScreen> {
+  final _epoch = AttemptEpoch();
+  bool _loading = true;
+  String _message = 'Memeriksa sesi tersimpan…';
+  bool _running = false;
   @override
   void initState() {
     super.initState();
-    debugPrint('🖥️ [SPLASH] initState');
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    );
-    _fadeAnim = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
-    _scaleAnim = Tween<double>(
-      begin: 0.7,
-      end: 1,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
-    _controller.forward();
-    Future.delayed(const Duration(seconds: 2), _checkAuth);
+    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _checkAuth(); });
   }
-
   Future<void> _checkAuth() async {
-    if (!mounted) return;
-
-    // Load settings
-    context.read<SettingsProvider>().loadSettings();
-
-    // Guard: kalau Supabase belum init (dart-define tidak di-set), langsung ke login
-    if (!SupabaseConfig.isInitialized) {
-      debugPrint('⚠️ [Splash] Supabase belum init, redirect ke login');
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const FirebaseLoginScreen()),
-        );
-      }
-      return;
-    }
-
-    // Cek session
-    AppUserProfile? fbSession;
+    if (_running) return;
+    _running = true;
+    final ticket = _epoch.begin();
+    final watch = Stopwatch()..start();
+    setState(() { _loading = true; _message = 'Memeriksa sesi tersimpan…'; });
     try {
-      fbSession = await SupabaseAuthService.instance.getSession();
+      final auth = context.read<AuthProvider>();
+      await auth.checkSession().timeout(const Duration(seconds: 10));
+      if (!mounted || !_epoch.current(ticket)) return;
+      ServiceHealth.log('splash', ticket, watch.elapsedMilliseconds, null);
+      final profile = auth.currentUser;
+      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => profile == null
+          ? const FirebaseLoginScreen()
+          : PinVerifyScreen(userName: profile.name, userRole: profile.role)));
     } catch (e) {
-      debugPrint('⚠️ [Splash] getSession error: $e');
-      fbSession = null;
-    }
-
-    if (!mounted) return;
-
-    if (fbSession != null) {
-      // Sudah login → minta PIN dulu
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => PinVerifyScreen(
-            userName: fbSession!.name,
-            userRole: fbSession.role,
-          ),
-        ),
-      );
-    } else {
-      // Belum login → ke halaman Login
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const FirebaseLoginScreen()),
-      );
-    }
+      ServiceHealth.log('splash', ticket, watch.elapsedMilliseconds, failureKind(e));
+      if (mounted && _epoch.current(ticket)) setState(() {
+        _loading = false;
+        _message = 'Layanan belum dapat dihubungi dan profil tersimpan belum dapat diverifikasi. '
+          'Sesi tetap disimpan. Periksa jaringan lalu coba lagi.';
+      });
+    } finally { _running = false; }
   }
-
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: AppTheme.surfaceLight,
-    body: Center(
-      child: FadeTransition(
-        opacity: _fadeAnim,
-        child: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ZelaBrand(),
-            SizedBox(height: 12),
-            Text(
-              'Operasional usaha lebih rapi.',
-              style: TextStyle(color: AppTheme.textSecondary, fontSize: 15),
-            ),
-            SizedBox(height: 32),
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
+  void dispose() { _epoch.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) => StartupRecoveryView(
+    loading: _loading, message: _message, retry: _checkAuth);
 }

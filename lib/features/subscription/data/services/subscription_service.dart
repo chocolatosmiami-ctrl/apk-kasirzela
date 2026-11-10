@@ -24,8 +24,6 @@ class SubscriptionService {
       final authId = prefs.getString(AppConstants.keyUid) ?? '';
       final branchId = prefs.getString(AppConstants.keyBranchId) ?? '';
 
-      debugPrint('💰 [SubService] getMySubscription: ownerId=$ownerId role=$role authId=$authId branchId=$branchId');
-
       // ── 1. Coba lookup langsung pakai owner_id dari SharedPreferences ──
       var res = ownerId.isNotEmpty
           ? await _db
@@ -34,8 +32,6 @@ class SubscriptionService {
               .eq('owner_id', ownerId)
               .maybeSingle()
           : null;
-
-      debugPrint('💰 [SubService] lookup #1 (ownerId=$ownerId): ${res != null ? 'FOUND' : 'NULL'}');
 
       // ── 2. Fallback: cari lewat owners table (hanya owner/superadmin) ──
       if (res == null && authId.isNotEmpty &&
@@ -48,8 +44,7 @@ class SubscriptionService {
               .select().eq('owner_id', realOwnerId).maybeSingle();
           if (res != null) {
             ownerId = realOwnerId;
-            await prefs.setString(AppConstants.keyOwnerId, realOwnerId);
-            debugPrint('💰 [SubService] lookup #2 (owners): FOUND, saved ownerId=$realOwnerId');
+            // A read must not rewrite account identity after a UI timeout.
           }
         }
       }
@@ -59,24 +54,19 @@ class SubscriptionService {
         final branch = await _db.from('branches')
             .select('owner_id').eq('id', branchId).maybeSingle();
         final realOwnerId = branch?['owner_id'] as String? ?? '';
-        debugPrint('💰 [SubService] lookup #3 (branchId=$branchId): branch owner=$realOwnerId');
         if (realOwnerId.isNotEmpty) {
           res = await _db.from('subscriptions')
               .select().eq('owner_id', realOwnerId).maybeSingle();
           if (res != null) {
             ownerId = realOwnerId;
-            await prefs.setString(AppConstants.keyOwnerId, realOwnerId);
-            debugPrint('💰 [SubService] lookup #3: FOUND, saved ownerId=$realOwnerId');
+            // A read must not rewrite account identity after a UI timeout.
           }
         }
       }
 
       if (res == null) {
-        debugPrint('💰 [SubService] ❌ subscription NOT FOUND after all lookups');
         return null;
       }
-
-      debugPrint('💰 [SubService] ✅ subscription FOUND: balance=${res['balance']} plan=${res['plan_type']} expires=${res['plan_expires_at']}');
 
       // Map semua field termasuk plan & cost_per_trx dari DB
       return SubscriptionModel.fromMap({
@@ -94,8 +84,7 @@ class SubscriptionService {
         'plan_price': res['plan_price'],
       });
     } catch (e) {
-      debugPrint('💰 [SubService] ❌ getMySubscription ERROR: $e');
-      return null;
+      rethrow;
     }
   }
 

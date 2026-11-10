@@ -1,0 +1,12 @@
+{
+  "name": "kasirzela-backend-regression-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Isolated backend regression tests; this repository supplies Flutter source overlays, not a Node app.",
+  "scripts": {
+    "test": "node test/security_hardening.test.mjs && node test/ai_chat_proxy.test.mjs && node test/midtrans_webhook.test.mjs && node test/staff_maintenance.test.mjs && node test/legacy_staff_login.test.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.3.14"
+  }
+}

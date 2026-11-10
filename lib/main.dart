@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'core/services/startup_policy.dart';
+import 'core/services/service_health.dart';
+import 'core/theme/startup_recovery_view.dart';
 import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,7 +12,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/supabase_config.dart';
 import 'core/database/database_helper.dart';
 import 'core/theme/app_theme.dart';
-import 'core/services/auto_report_service.dart';
+
+import 'core/services/order_sync_host.dart';
 import 'core/utils/app_constants.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 import 'features/menu/presentation/providers/menu_provider.dart';
@@ -23,14 +28,34 @@ import 'features/subscription/presentation/providers/subscription_provider.dart'
 import 'features/retail/presentation/providers/retail_provider.dart';
 import 'features/table_management/presentation/providers/table_provider.dart';
 import 'features/auth/presentation/screens/splash_screen.dart';
+import 'features/auth/presentation/screens/firebase_login_screen.dart';
+
+final _rootNavigator = GlobalKey<NavigatorState>();
+bool _openingServerLogin = false;
+
+Future<void> _openServerLogin() async {
+  if (_openingServerLogin) return;
+  _openingServerLogin = true;
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    // Keep the local receipts and original account IDs. Reauthentication does
+    // not clear data or log out the cached cashier before credentials succeed.
+    await _rootNavigator.currentState?.push(MaterialPageRoute(
+      builder: (_) => FirebaseLoginScreen(
+        initialEmail: prefs.getString(AppConstants.keyEmail) ?? ''),
+    ));
+  } finally {
+    _openingServerLogin = false;
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   FlutterError.onError = (FlutterErrorDetails details) {
-    debugPrint('❌ FLUTTER ERROR: ${details.exception}');
-    debugPrint('Stack: ${details.stack}');
-    FlutterError.presentError(details);
+    ServiceHealth.trace('flutter', 1, 0, failureKind(details.exception));
+
+    // Diagnostic output deliberately omits raw exception/stack/widget data.
   };
 
   // BUG 4 FIX: Wire up PlatformDispatcher untuk menangkap uncaught async errors.
@@ -39,36 +64,69 @@ void main() async {
     return true; // true = error sudah ditangani, jangan re-throw
   };
 
-  await initializeDateFormatting('id_ID', null);
+  // Render before touching SQLite, settings, Auth recovery or the network.
+  runApp(const _BootstrapApp());
+}
 
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.landscapeLeft,
-    DeviceOrientation.landscapeRight,
-  ]);
-
-  // Init SQLite lokal
-  await DatabaseHelper.instance.database;
-
-  // Init Supabase
-  try {
-    await SupabaseConfig.initialize();
-    debugPrint('Supabase initialized');
-  } catch (e) {
-    debugPrint('Supabase init error: $e');
+class _BootstrapApp extends StatefulWidget {
+  const _BootstrapApp();
+  @override
+  State<_BootstrapApp> createState() => _BootstrapAppState();
+}
+class _BootstrapAppState extends State<_BootstrapApp> {
+  final _epoch = AttemptEpoch();
+  bool _loading = false;
+  String _message = 'Menyiapkan aplikasi…';
+  SettingsProvider? _settings;
+  @override
+  void initState() { super.initState(); _start(); }
+  Future<void> _start() async {
+    if (_loading) return;
+    final ticket = _epoch.begin();
+    setState(() { _loading = true; _message = 'Menyiapkan data lokal…'; });
+    var stage = 'local_database';
+    final watch = Stopwatch()..start();
+    try {
+      await DatabaseHelper.instance.database.timeout(const Duration(seconds: 8));
+      ServiceHealth.instance.record(stage, null);
+      stage = 'locale';
+      await initializeDateFormatting('id_ID', null).timeout(const Duration(seconds: 3));
+      ServiceHealth.instance.record(stage, null);
+      stage = 'client_initialize';
+      if (mounted && _epoch.current(ticket)) setState(() => _message = 'Memulihkan koneksi dan sesi…');
+      await SupabaseConfig.initialize().timeout(const Duration(seconds: 10));
+      ServiceHealth.instance.record(stage, null);
+      stage = 'local_settings';
+      final settings = SettingsProvider();
+      await settings.loadSettings(localOnly: true).timeout(const Duration(seconds: 3));
+      if (!mounted || !_epoch.current(ticket)) return;
+      ServiceHealth.instance.record(stage, null);
+      ServiceHealth.log('bootstrap', ticket, watch.elapsedMilliseconds, null);
+      setState(() { _settings = settings; _loading = false; });
+      // Optional platform operation: never holds the first usable screen.
+      unawaited(supplemental('orientation', () => SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp, DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight])));
+    } catch (e) {
+      ServiceHealth.log(stage, ticket, watch.elapsedMilliseconds, failureKind(e));
+      if (mounted && _epoch.current(ticket)) setState(() {
+        _loading = false;
+        _message = 'Belum dapat menyiapkan aplikasi. Periksa koneksi atau penyimpanan HP, lalu coba lagi.';
+      });
+    }
   }
-
-  // Load settings (dark mode dll) sebelum render UI
-  final settingsProvider = SettingsProvider();
-  await settingsProvider.loadSettings();
-
-  runApp(POSApp(settingsProvider: settingsProvider));
+  @override
+  void dispose() { _epoch.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) => _settings != null
+      ? POSApp(settingsProvider: _settings!)
+      : MaterialApp(debugShowCheckedModeBanner: false, theme: AppTheme.lightTheme,
+          home: StartupRecoveryView(loading: _loading, message: _message, retry: _start));
 }
 
 // Global error handler
 void _handleError(Object error, StackTrace stack) {
-  debugPrint('❌ GLOBAL ERROR: $error');
-  debugPrint('Stack: $stack');
+  ServiceHealth.trace('async', 1, 0, failureKind(error));
+
 }
 
 class POSApp extends StatelessWidget {
@@ -94,8 +152,21 @@ class POSApp extends StatelessWidget {
       ],
       child: Consumer<SettingsProvider>(
         builder: (_, settings, __) => MaterialApp(
+          navigatorKey: _rootNavigator,
           title: 'POS KASIR ZL',
           debugShowCheckedModeBanner: false,
+          builder: (appContext, child) => OrderSyncHost(onLogin: _openServerLogin,
+            onActivity: (active) => appContext.read<ShiftProvider>().setForeground(active),
+            onRefresh: () async {
+              final pageRefresh = ServiceHealth.instance.pageRefresh;
+              if (pageRefresh != null) { await pageRefresh(); return; }
+              await Future.wait([
+                supplemental('profile', () => appContext.read<AuthProvider>().checkSession()),
+                supplemental('subscription', () => appContext.read<SubscriptionProvider>().init()),
+                supplemental('settings', () => appContext.read<SettingsProvider>().loadSettings()),
+              ]);
+            },
+            child: child ?? const SizedBox.shrink()),
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: settings.isDarkMode ? ThemeMode.dark : ThemeMode.light,
@@ -112,57 +183,8 @@ class _AutoPdfWrapper extends StatefulWidget {
   State<_AutoPdfWrapper> createState() => _AutoPdfWrapperState();
 }
 
-class _AutoPdfWrapperState extends State<_AutoPdfWrapper>
-    with WidgetsBindingObserver {
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    // BUG 54 FIX: Tidak langsung cek auto PDF saat launch.
-    // Auto PDF check sekarang dipanggil HANYA dari HomeScreen.initState()
-    // setelah login berhasil dan sesi terverifikasi.
-    // Listener lifecycle tetap aktif untuk resume dari background.
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      // Hanya jalankan jika sudah ada sesi aktif
-      _checkAutoPdfIfLoggedIn();
-    }
-  }
-
-  Future<void> _checkAutoPdfIfLoggedIn() async {
-    // Cek apakah ada sesi aktif sebelum trigger auto PDF/WA
-    final prefs = await SharedPreferences.getInstance();
-    final role = prefs.getString(AppConstants.keyRole) ?? '';
-    if (role.isEmpty) return; // belum login, skip
-
-    await _checkAutoPdf();
-  }
-
-  Future<void> _checkAutoPdf() async {
-    // Cek auto PDF
-    final shouldPdf = await SchedulerService.shouldRunAutoPdf();
-    if (shouldPdf && mounted) {
-      await SchedulerService.runAutoPdf(context);
-    }
-
-    // Cek auto WA laporan semua cabang (owner only, jam 22:00)
-    if (!mounted) return;
-    final shouldWa = await SchedulerService.shouldRunAutoWa();
-    if (shouldWa && mounted) {
-      await SchedulerService.runAutoWa(context);
-    }
-  }
-
+// Daily report scheduling belongs to authenticated Home, independently of startup.
+class _AutoPdfWrapperState extends State<_AutoPdfWrapper> {
   @override
   Widget build(BuildContext context) => const SplashScreen();
 }

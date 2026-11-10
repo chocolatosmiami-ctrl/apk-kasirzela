@@ -8,6 +8,7 @@ import '../../data/models/table_model.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../cashier/presentation/screens/cashier_screen.dart';
 import 'table_order_summary_screen.dart';
+import 'table_editor_dialog.dart';
 
 class TableManagementScreen extends StatefulWidget {
   const TableManagementScreen({super.key});
@@ -23,7 +24,6 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final prov = context.read<TableProvider>();
-      await prov.seedDefaultTables();
       await prov.loadTables();
       if (mounted) setState(() => _loading = false);
     });
@@ -42,17 +42,19 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
   Widget build(BuildContext context) {
     final prov = context.watch<TableProvider>();
     final auth = context.watch<AuthProvider>();
+    final canManageTables = const {'kasir', 'owner', 'manajer', 'admin', 'superadmin'}
+        .contains(auth.currentUser?.role.trim().toLowerCase());
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Manajemen Meja'),
         actions: [
-          if (auth.isAdmin)
-            IconButton(
-              icon: const Icon(Icons.add_circle_outline),
-              onPressed: _showAddTableDialog,
-              tooltip: 'Tambah Meja',
+          if (canManageTables)
+            TextButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Tambah'),
+              onPressed: () => _showTableEditor(),
             ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -65,6 +67,10 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
+                  if (prov.lastError != null)
+                    Padding(padding: const EdgeInsets.all(12),
+                      child: Text(prov.lastError!, style: const TextStyle(
+                        color: Color(0xFF845500), fontSize: 12))),
                   // ── Summary bar ───────────────────────────────────
                   Container(
                     color: Colors.white,
@@ -168,7 +174,9 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                             itemBuilder: (_, i) => _TableCard(
                               table: prov.tables[i],
                               onTap: () => _onTableTap(prov.tables[i]),
-                              onLongPress: auth.isAdmin
+                              onEdit: canManageTables
+                                  ? () => _showTableEditor(table: prov.tables[i]) : null,
+                              onLongPress: canManageTables
                                   ? () => _showTableOptions(prov.tables[i])
                                   : null,
                             ),
@@ -435,126 +443,31 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     );
   }
 
-  void _showAddTableDialog() {
-    final nameCtrl = TextEditingController();
-    String zone = 'Dalam';
-    int capacity = 4;
-    final zones = ['Dalam', 'Luar', 'VIP', 'Lantai 2'];
-
-    showDialog(
-      context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (ctx, setS) => AlertDialog(
-          title: const Text('Tambah Meja Baru'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameCtrl,
-                autofocus: true,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
-                  labelText: 'Nama Meja *',
-                  hintText: 'Contoh: Meja 9',
-                ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: zone,
-                decoration: const InputDecoration(labelText: 'Area/Zone'),
-                items: zones
-                    .map((z) => DropdownMenuItem(value: z, child: Text(z)))
-                    .toList(),
-                onChanged: (v) => setS(() => zone = v!),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  const Text('Kapasitas:'),
-                  const Spacer(),
-                  IconButton(
-                    tooltip: 'Remove Circle Outline',
-                    onPressed: capacity > 1
-                        ? () => setS(() => capacity--)
-                        : null,
-                    icon: const Icon(Icons.remove_circle_outline),
-                  ),
-                  Text(
-                    '$capacity',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Remove Circle Outline',
-                    onPressed: () => setS(() => capacity++),
-                    icon: const Icon(Icons.add_circle_outline),
-                  ),
-                  const Text('kursi'),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryRed,
-              ),
-              onPressed: () async {
-                if (nameCtrl.text.trim().isEmpty) return;
-                Navigator.pop(context);
-                await context.read<TableProvider>().addTable(
-                  TableModel(
-                    name: nameCtrl.text.trim(),
-                    zone: zone,
-                    capacity: capacity,
-                  ),
-                );
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '${nameCtrl.text.trim()} berhasil ditambahkan',
-                      ),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
-              },
-              child: const Text(
-                'Tambah',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  Future<void> _showTableEditor({TableModel? table}) async {
+    final saved = await showDialog<bool>(context: context, barrierDismissible: false,
+      builder: (_) => TableEditorDialog(table: table));
+    if (mounted && saved == true) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Meja berhasil disimpan ke server.'), backgroundColor: Color(0xFF00796B)));
+    }
   }
 
   void _showTableOptions(TableModel table) {
-    showModalBottomSheet(
-      context: context,
-      builder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.delete, color: Colors.red),
-            title: Text('Hapus ${table.name}'),
-            onTap: () async {
-              Navigator.pop(context);
-              await context.read<TableProvider>().deleteTable(table.id!);
-            },
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
+    showModalBottomSheet(context: context, builder: (sheetContext) => SafeArea(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        ListTile(leading: const Icon(Icons.edit_outlined), title: const Text('Edit meja'),
+          onTap: () { Navigator.pop(sheetContext); _showTableEditor(table: table); }),
+        if (context.read<AuthProvider>().isAdmin && table.isEmpty)
+          ListTile(leading: const Icon(Icons.delete_outline, color: Colors.red),
+            title: Text('Hapus ${table.name}'), onTap: () async {
+              Navigator.pop(sheetContext);
+              final provider = context.read<TableProvider>();
+              final ok = await provider.deleteTable(table.id!);
+              if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(ok ? 'Meja dihapus dari server.' : provider.lastError ?? 'Gagal menghapus meja.')));
+            }),
+      ]),
+    ));
   }
 
   Widget _summaryChip(String label, int count, Color color) => Column(
@@ -577,10 +490,12 @@ class _TableCard extends StatelessWidget {
   final TableModel table;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
+  final VoidCallback? onEdit;
   const _TableCard({
     required this.table,
     required this.onTap,
     this.onLongPress,
+    this.onEdit,
   });
 
   Color get _bgColor {
@@ -626,6 +541,10 @@ class _TableCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (onEdit != null)
+              Align(alignment: Alignment.topRight, child: IconButton(
+                tooltip: 'Edit nama meja', onPressed: onEdit,
+                icon: const Icon(Icons.edit_outlined, size: 18))),
             Icon(
               Icons.table_restaurant_outlined,
               size: 28,

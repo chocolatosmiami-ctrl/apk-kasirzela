@@ -1,3 +1,7 @@
+import '../../../../core/services/read_work.dart';
+import 'dart:convert';
+import '../../../../core/services/service_health.dart';
+import '../../../../core/services/startup_policy.dart';
 import '../../../../core/utils/app_constants.dart';
 import '../../../../core/config/supabase_config.dart';
 import 'package:flutter/foundation.dart';
@@ -11,6 +15,7 @@ class SettingsProvider extends ChangeNotifier {
   Map<String, String> _settings = {};
   bool _loaded = false;
   String _currentEmail = '';
+  int _loadEpoch = 0;
 
   // ── Branch-level overrides (dari kolom branches di Supabase) ──────────────
   String? _branchStrukNama;
@@ -96,10 +101,17 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   // ── Load settings per email ───────────────────────────────────────────────
-  Future<void> loadSettings() async {
+  final _settingsReads = ReadFlights<void>();
+  final _branchReads = ReadFlights<void>();
+  Future<void> loadSettings({bool localOnly = false}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = '${prefs.getString(AppConstants.keyUid)}:${prefs.getString(AppConstants.keyOwnerId)}:${prefs.getString(AppConstants.keyBranchId)}:$localOnly';
+    return _settingsReads.run(key, () => _loadSettings(localOnly: localOnly));
+  }
+  Future<void> _loadSettings({bool localOnly = false}) async {
     final prefs = await SharedPreferences.getInstance();
     _currentEmail = prefs.getString(AppConstants.keyEmail) ?? '';
-    await _loadForEmail(_currentEmail);
+    await _loadForEmail(_currentEmail, localOnly: localOnly);
   }
 
   Future<void> reloadForCurrentUser() async {
@@ -111,7 +123,8 @@ class SettingsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadForEmail(String email) async {
+  Future<void> _loadForEmail(String email, {bool localOnly = false}) async {
+    final ticket = ++_loadEpoch;
     final db = await DatabaseHelper.instance.database;
     List<Map<String, dynamic>> rows;
 
@@ -120,6 +133,7 @@ class SettingsProvider extends ChangeNotifier {
         'SELECT key, value, email FROM settings WHERE email = ? OR email IS NULL OR email = ""',
         [email],
       );
+      if (ticket != _loadEpoch) return;
       final globalMap = <String, String>{};
       final userMap = <String, String>{};
       for (final r in rows) {
@@ -137,10 +151,23 @@ class SettingsProvider extends ChangeNotifier {
       rows = await db.rawQuery(
         'SELECT key, value, email FROM settings WHERE email IS NULL OR email = ""',
       );
+      if (ticket != _loadEpoch) return;
       _settings = {
         for (var r in rows) r['key'] as String: r['value'] as String? ?? ''
       };
     }
+
+    if (ticket != _loadEpoch) return;
+    final cachePrefs = await SharedPreferences.getInstance();
+    final cacheKey = 'startup_settings_' + email + '_' + (cachePrefs.getString(AppConstants.keyOwnerId) ?? '');
+    if (ticket != _loadEpoch) return;
+    final saved = cachePrefs.getString(cacheKey);
+    if (saved != null) {
+      try { _settings.addAll(Map<String, String>.from(jsonDecode(saved) as Map)); } catch (_) {}
+    }
+    _loaded = true;
+    notifyListeners();
+    if (localOnly) return;
 
     // Fetch global settings dari Supabase owners
     try {
@@ -149,8 +176,6 @@ class SettingsProvider extends ChangeNotifier {
       final authId = prefs.getString(AppConstants.keyUid) ?? '';
       final emailPref = prefs.getString(AppConstants.keyEmail) ?? '';
       final role = prefs.getString(AppConstants.keyRole) ?? '';
-      debugPrint(
-          '🔧 [Settings] fetchSupabase ownerId=$ownerId authId=$authId email=$emailPref role=$role');
 
       String resolvedOwnerId = ownerId;
       if (resolvedOwnerId.isNotEmpty) {
@@ -160,8 +185,6 @@ class SettingsProvider extends ChangeNotifier {
             .eq('id', resolvedOwnerId)
             .maybeSingle();
         if (checkOwner == null && emailPref.isNotEmpty) {
-          debugPrint(
-              '🔧 [Settings] ownerId not in owners table, lookup via users email=$emailPref');
           final userRow = await SupabaseConfig.client
               .from('users')
               .select('owner_id')
@@ -169,15 +192,13 @@ class SettingsProvider extends ChangeNotifier {
               .maybeSingle();
           resolvedOwnerId =
               userRow?['owner_id']?.toString() ?? resolvedOwnerId;
-          debugPrint('🔧 [Settings] resolved ownerId=$resolvedOwnerId');
         }
       }
 
       if (resolvedOwnerId.isNotEmpty) {
         final res = await SupabaseConfig.client
             .rpc('get_owner_settings', params: {'p_owner_id': resolvedOwnerId});
-        debugPrint(
-            '🔧 [Settings] owners RPC result: ${res?.toString() ?? 'NULL'}');
+        if (ticket != _loadEpoch || email != _currentEmail) return;
         if (res != null && res is Map) {
           if ((res['business_name'] as String?)?.isNotEmpty == true)
             _settings['store_name'] = res['business_name'] as String;
@@ -199,15 +220,13 @@ class SettingsProvider extends ChangeNotifier {
               : 'false';
           _settings['service_charge_amount'] =
               (res['service_charge_amount'] ?? 1000).toString();
-          debugPrint('✅ [Settings] store_name=${_settings['store_name']}');
-          debugPrint(
-              '✅ [Settings] tax=$taxEnabled taxPct=$taxPercent sc=$serviceChargeEnabled scAmt=$serviceChargeAmount');
         }
       }
-    } catch (e) {
-      debugPrint('⚠️ [Settings] Supabase owners fetch error: $e');
+      ServiceHealth.instance.record('settings', null);
+    } catch (e) { ServiceHealth.log('settings',1,0,failureKind(e));
     }
 
+    if (ticket != _loadEpoch || email != _currentEmail) return;
     // ── Load branch-specific settings (override global) ───────────────────
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -216,9 +235,10 @@ class SettingsProvider extends ChangeNotifier {
         await _loadBranchSettings(branchId);
       }
     } catch (e) {
-      debugPrint('⚠️ [Settings] branch settings load error: $e');
     }
 
+    if (ticket != _loadEpoch || email != _currentEmail) return;
+    await cachePrefs.setString(cacheKey, jsonEncode(_settings));
     _loaded = true;
     notifyListeners();
   }
@@ -230,14 +250,19 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> _loadBranchSettings(String branchId) async {
+    final prefs = await SharedPreferences.getInstance();
+    return _branchReads.run('${prefs.getString(AppConstants.keyUid)}:$branchId', () => _readBranchSettings(branchId));
+  }
+  Future<void> _readBranchSettings(String branchId) async {
+    final epoch = _loadEpoch;
     try {
-      debugPrint('🏪 [Settings] load branch settings branchId=$branchId');
       final res = await SupabaseConfig.client.rpc(
         'get_branch_print_settings_by_id',
         params: {'p_branch_id': branchId},
       );
-      debugPrint('🏪 [Settings] branch RPC result: ${res?.toString() ?? 'NULL'}');
-      if (res == null || res is! Map) return;
+      if (res == null || res is! Map || epoch != _loadEpoch) return;
+      final latestPrefs = await SharedPreferences.getInstance();
+      if (epoch != _loadEpoch || branchId != latestPrefs.getString(AppConstants.keyBranchId)) return;
 
       _branchStrukNama = res['struk_nama'] as String?;
       _branchStrukAlamat = res['struk_alamat'] as String?;
@@ -269,11 +294,7 @@ class SettingsProvider extends ChangeNotifier {
       _branchDiskonNilai = (res['diskon_nilai'] as num?)?.toDouble() ?? 0;
       _branchDiskonDari = _parseDate(res['diskon_berlaku_dari'] as String?);
       _branchDiskonSampai = _parseDate(res['diskon_berlaku_sampai'] as String?);
-
-      debugPrint(
-          '✅ [Settings] branch override: nama=$_branchStrukNama rounding=$_branchRounding diskon=$_branchDiskonEnabled(${_branchDiskonNilai}${_branchDiskonTipe == 'persen' ? '%' : 'Rp'})');
     } catch (e) {
-      debugPrint('⚠️ [Settings] _loadBranchSettings error: $e');
     }
   }
 

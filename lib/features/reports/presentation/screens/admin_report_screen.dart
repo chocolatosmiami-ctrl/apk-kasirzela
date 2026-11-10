@@ -20,6 +20,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
   List<Map<String, dynamic>> _branchData = [];
   List<Map<String, dynamic>> _stockData = []; // stok bahan per cabang
   bool _loading = false;
+  int _reportEpoch = 0;
   bool _hasInternet = false;
   DateTime _selectedDate = DateTime.now();
   DateTime _customDateFrom = DateTime.now().subtract(const Duration(days: 7));
@@ -41,6 +42,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
 
   Future<void> _checkAndLoad() async {
     final internet = await SyncService.instance.hasInternet();
+    if (!mounted) return;
     setState(() => _hasInternet = internet);
     // FIX: selalu load data meskipun internet check gagal
     // hasInternet() bisa timeout/false padahal sebenarnya ada koneksi
@@ -48,6 +50,8 @@ class _AdminReportScreenState extends State<AdminReportScreen>
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
+    final epoch = ++_reportEpoch;
     setState(() => _loading = true);
     debugPrint('🔴 [AdminReport] ===== _loadData called =====');
     debugPrint('🔴 [AdminReport] _selectedPeriod=$_selectedPeriod');
@@ -95,6 +99,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
         );
       }
 
+      if (!mounted || epoch != _reportEpoch) return;
       setState(() => _branchData = data);
       debugPrint('🔴 [AdminReport] data.length=${data.length}');
       for (final d in data) {
@@ -111,7 +116,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
         );
       }
     }
-    setState(() => _loading = false);
+    if (mounted && epoch == _reportEpoch) setState(() => _loading = false);
   }
 
   // Totals across all branches

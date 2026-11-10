@@ -1,3 +1,4 @@
+import '../../../../core/services/pin_secret.dart';
 import '../../../../core/utils/app_constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -27,12 +28,19 @@ class AuthProvider extends ChangeNotifier {
   String get branchMode => _currentUser?.branchMode ?? 'food';
   bool get isRetailMode => branchMode == 'retail';
 
-  Future<void> checkSession() async {
+  Future<void>? _sessionCheck;
+  int _sessionEpoch = 0;
+  Future<void> checkSession() => _sessionCheck ??= _checkSession().whenComplete(() => _sessionCheck = null);
+  Future<void> _checkSession() async {
+    final ticket = ++_sessionEpoch;
     _loading = true;
     notifyListeners();
-    _currentUser = await SupabaseAuthService.instance.getSession();
-    _loading = false;
-    notifyListeners();
+    try {
+      final profile = await SupabaseAuthService.instance.getSession();
+      if (ticket == _sessionEpoch) _currentUser = profile;
+    } finally {
+      if (ticket == _sessionEpoch) { _loading = false; notifyListeners(); }
+    }
   }
 
   // login called
@@ -62,30 +70,38 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    _sessionEpoch++;
     await SupabaseAuthService.instance.logout();
     _currentUser = null;
     notifyListeners();
   }
 
   Future<void> savePin(String pin) async {
-    // Simpan HASH bukan plaintext
-    final pinHash = DatabaseHelper.hashPin(pin);
+    final user = _currentUser;
+    if (user == null || user.email.isEmpty) throw StateError('Login diperlukan');
+    final pinHash = await PinSecret.create(pin);
+    final result = await SupabaseConfig.client.rpc('set_user_pin', params: {
+      'p_email': user.email, 'p_pin_hash': pinHash,
+    }).timeout(const Duration(seconds: 8));
+    if (result is! Map || result['success'] != true) throw StateError('PIN belum tersimpan di server');
+    if (SupabaseConfig.client.auth.currentUser?.id != user.authId) throw StateError('Akun telah berubah');
+    await SupabaseAuthService.instance.recordAcceptedPin(user.authId, pinHash);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('sb_pin_hash', pinHash);
-    // Kirim hash ke Supabase via RPC
-    try {
-      final email = _currentUser?.email ?? '';
-      if (email.isNotEmpty) {
-        await SupabaseConfig.client.rpc('set_user_pin', params: {
-          'p_email': email,
-          'p_pin_hash': pinHash,
-        });
-      }
-    } catch (e) {}
+    await prefs.setString('sb_pin_email', user.email);
+    await DatabaseHelper.instance.update('users', {'pin_hash': pinHash}, 'email = ?', [user.email]);
+    _currentUser = AppUserProfile(authId: user.authId, email: user.email, name: user.name,
+      role: user.role, ownerId: user.ownerId, branchId: user.branchId,
+      branchName: user.branchName, branchMode: user.branchMode, pin: pinHash);
+    notifyListeners();
   }
 
   Future<bool> verifyPin(String pin) async {
     if (pin.isEmpty) return false;
+    final verifiedHash = _currentUser?.pin;
+    if (verifiedHash != null && verifiedHash.isNotEmpty) {
+      return PinSecret.verify(pin, verifiedHash);
+    }
 
     String uid = _currentUser?.authId ?? '';
     String email = _currentUser?.email ?? '';
@@ -115,13 +131,13 @@ class AuthProvider extends ChangeNotifier {
             'p_auth_id': uid.isNotEmpty ? uid : null,
             'p_email': email.isNotEmpty ? email : null,
           },
-        );
+        ).timeout(const Duration(seconds: 6));
 
         if (rpcRes != null && rpcRes is Map) {
           // RPC hanya mengembalikan pin_hash (tidak pernah PIN plaintext)
           final storedHash = rpcRes['pin_hash']?.toString() ?? '';
           if (storedHash.isNotEmpty &&
-              storedHash == DatabaseHelper.hashPin(pin)) {
+              await PinSecret.verify(pin, storedHash)) {
             return true;
           }
         }
@@ -138,7 +154,7 @@ class AuthProvider extends ChangeNotifier {
       if (users.isNotEmpty) {
         // Hanya cek pin_hash — tidak pernah compare plaintext
         final localHash = users.first['pin_hash']?.toString() ?? '';
-        if (localHash.isNotEmpty && localHash == DatabaseHelper.hashPin(pin)) {
+        if (localHash.isNotEmpty && await PinSecret.verify(pin, localHash)) {
           return true;
         }
       }
@@ -149,7 +165,7 @@ class AuthProvider extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       final savedHash = prefs.getString('sb_pin_hash') ?? '';
       // Bandingkan hash(input) dengan hash tersimpan
-      if (savedHash.isNotEmpty && savedHash == DatabaseHelper.hashPin(pin)) {
+      if (prefs.getString('sb_pin_email') == email && savedHash.isNotEmpty && await PinSecret.verify(pin, savedHash)) {
         return true;
       }
     } catch (e) {}
@@ -205,7 +221,7 @@ class AuthProvider extends ChangeNotifier {
       final ownerId = prefs.getString(AppConstants.keyOwnerId) ?? '';
       final branchId = prefs.getString(AppConstants.keyBranchId) ?? '';
       // FIX: simpan pin_hash bukan plaintext
-      final pinHash = pin.isNotEmpty ? DatabaseHelper.hashPin(pin) : null;
+      final pinHash = pin.isNotEmpty ? await PinSecret.create(pin) : null;
       await SupabaseConfig.client.from('users').insert({
         'owner_id': ownerId,
         'branch_id': branchId.isEmpty ? null : branchId,
@@ -225,7 +241,7 @@ class AuthProvider extends ChangeNotifier {
       String role) async {
     try {
       // FIX: simpan pin_hash bukan plaintext
-      final pinHash = pin.isNotEmpty ? DatabaseHelper.hashPin(pin) : null;
+      final pinHash = pin.isNotEmpty ? await PinSecret.create(pin) : null;
       await SupabaseConfig.client.from('users').update({
         'name': name,
         'role': role,
