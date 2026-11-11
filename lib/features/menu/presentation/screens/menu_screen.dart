@@ -30,7 +30,7 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.onAction,
       appBar: AppBar(
         title: const Text('Manajemen Menu'),
         actions: [
@@ -38,7 +38,7 @@ class _MenuScreenState extends State<MenuScreen> {
           IconButton(
             icon: Icon(
               _isReordering ? Icons.check : Icons.sort,
-              color: _isReordering ? Colors.green : Colors.white,
+              color: _isReordering ? AppTheme.primary : AppTheme.onAction,
             ),
             tooltip: _isReordering ? 'Selesai' : 'Atur Urutan',
             onPressed: () => setState(() => _isReordering = !_isReordering),
@@ -63,12 +63,12 @@ class _MenuScreenState extends State<MenuScreen> {
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
+                        backgroundColor: AppTheme.primary,
                       ),
                       onPressed: () => Navigator.pop(context, true),
                       child: const Text(
                         'Download',
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: AppTheme.onAction),
                       ),
                     ),
                   ],
@@ -97,7 +97,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('✅ Menu berhasil didownload dari server'),
-                    backgroundColor: Colors.green,
+                    backgroundColor: AppTheme.primary,
                     duration: Duration(seconds: 3),
                   ),
                 );
@@ -125,12 +125,12 @@ class _MenuScreenState extends State<MenuScreen> {
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
+                        backgroundColor: AppTheme.danger,
                       ),
                       onPressed: () => Navigator.pop(context, true),
                       child: const Text(
                         'Sync',
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: AppTheme.onAction),
                       ),
                     ),
                   ],
@@ -166,8 +166,8 @@ class _MenuScreenState extends State<MenuScreen> {
                       '${result['failed']! > 0 ? ', ${result['failed']} gagal' : ''}',
                     ),
                     backgroundColor: result['failed']! > 0
-                        ? Colors.orange
-                        : Colors.green,
+                        ? AppTheme.warningInk
+                        : AppTheme.primary,
                     duration: const Duration(seconds: 4),
                   ),
                 );
@@ -205,21 +205,21 @@ class _MenuScreenState extends State<MenuScreen> {
               children: [
                 // Search + Filter bar
                 Container(
-                  color: Colors.white,
+                  color: AppTheme.onAction,
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
                   child: TextField(
                     decoration: InputDecoration(
                       hintText: 'Cari menu...',
                       prefixIcon: const Icon(
                         Icons.search,
-                        color: const Color(0xFF00796B),
+                        color: AppTheme.primary,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 10,
                       ),
                       filled: true,
-                      fillColor: const Color(0xFFF7F9F8),
+                      fillColor: AppTheme.surfaceLight,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: BorderSide.none,
@@ -230,7 +230,7 @@ class _MenuScreenState extends State<MenuScreen> {
                 ),
                 // Category filter chips
                 Container(
-                  color: Colors.white,
+                  color: AppTheme.onAction,
                   height: 52,
                   child: ListView(
                     physics: const ClampingScrollPhysics(),
@@ -264,13 +264,13 @@ class _MenuScreenState extends State<MenuScreen> {
                     horizontal: 16,
                     vertical: 8,
                   ),
-                  color: const Color(0xFFF7F9F8),
+                  color: AppTheme.surfaceLight,
                   child: Row(
                     children: [
                       Text(
                         '${items.length} menu',
                         style: const TextStyle(
-                          color: Colors.grey,
+                          color: AppTheme.textSecondary,
                           fontSize: 14,
                         ),
                       ),
@@ -278,14 +278,14 @@ class _MenuScreenState extends State<MenuScreen> {
                       Text(
                         '${items.where((i) => i.isActive).length} aktif',
                         style: const TextStyle(
-                          color: Colors.green,
+                          color: AppTheme.primary,
                           fontSize: 14,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         '${items.where((i) => !i.isActive).length} nonaktif',
-                        style: const TextStyle(color: Colors.red, fontSize: 14),
+                        style: const TextStyle(color: AppTheme.danger, fontSize: 14),
                       ),
                     ],
                   ),
@@ -298,11 +298,11 @@ class _MenuScreenState extends State<MenuScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text('🍽️', style: TextStyle(fontSize: 50)),
+                              Icon(Icons.restaurant_outlined, size: 40, color: AppTheme.textSecondary),
                               SizedBox(height: 12),
                               Text(
                                 'Belum ada menu',
-                                style: TextStyle(color: Colors.grey),
+                                style: TextStyle(color: AppTheme.textSecondary),
                               ),
                             ],
                           ),
@@ -335,13 +335,11 @@ class _MenuScreenState extends State<MenuScreen> {
                                 ),
                                 child: ListTile(
                                   leading: CircleAvatar(
-                                    backgroundColor: const Color(
-                                      0xFF00796B,
-                                    ).withOpacity(0.1),
+                                    backgroundColor: AppTheme.primary.withOpacity(0.1),
                                     child: Text(
                                       '${index + 1}',
                                       style: const TextStyle(
-                                        color: const Color(0xFF00796B),
+                                        color: AppTheme.primary,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
                                       ),
@@ -356,12 +354,12 @@ class _MenuScreenState extends State<MenuScreen> {
                                   subtitle: Text(
                                     AppUtils.formatCurrency(items[index].price),
                                     style: TextStyle(
-                                      color: const Color(0xFF62736F),
+                                      color: AppTheme.textSecondary,
                                     ),
                                   ),
                                   trailing: const Icon(
                                     Icons.drag_handle,
-                                    color: Colors.grey,
+                                    color: AppTheme.textSecondary,
                                   ),
                                 ),
                               ),
@@ -402,11 +400,11 @@ class _MenuScreenState extends State<MenuScreen> {
       ),
       bottomNavigationBar: SafeArea(
         child: Container(
-          color: Colors.white,
+          color: AppTheme.onAction,
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
           child: ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00796B),
+              backgroundColor: AppTheme.primary,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
@@ -417,11 +415,11 @@ class _MenuScreenState extends State<MenuScreen> {
               context,
               MaterialPageRoute(builder: (_) => const MenuItemFormScreen()),
             ).then((_) => context.read<MenuProvider>().loadMenuItems()),
-            icon: const Icon(Icons.add, color: Colors.white, size: 20),
+            icon: const Icon(Icons.add, color: AppTheme.onAction, size: 20),
             label: const Text(
               'Tambah Menu',
               style: TextStyle(
-                color: Colors.white,
+                color: AppTheme.onAction,
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
               ),
@@ -444,7 +442,7 @@ class _MenuScreenState extends State<MenuScreen> {
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
             onPressed: () {
               Navigator.pop(context);
               context.read<MenuProvider>().deleteMenuItem(item.id!);
@@ -476,13 +474,13 @@ class _CategoryChip extends StatelessWidget {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF00796B) : Colors.grey[200],
+          color: isSelected ? AppTheme.primary : AppTheme.borderLight,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.black87,
+            color: isSelected ? AppTheme.onAction : AppTheme.textPrimary,
             fontSize: 14,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
           ),
@@ -515,7 +513,7 @@ class _MenuItemCard extends StatelessWidget {
           width: 54,
           height: 54,
           decoration: BoxDecoration(
-            color: item.isActive ? const Color(0xFFEAF5F1) : Colors.grey[200],
+            color: item.isActive ? AppTheme.primarySurface : AppTheme.borderLight,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Center(
@@ -542,7 +540,7 @@ class _MenuItemCard extends StatelessWidget {
           item.name,
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: item.isActive ? Colors.black87 : Colors.grey,
+            color: item.isActive ? AppTheme.textPrimary : AppTheme.textSecondary,
           ),
         ),
         subtitle: Column(
@@ -551,7 +549,7 @@ class _MenuItemCard extends StatelessWidget {
             Text(
               AppUtils.formatCurrency(item.price),
               style: const TextStyle(
-                color: const Color(0xFF00796B),
+                color: AppTheme.primary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -563,12 +561,12 @@ class _MenuItemCard extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF7F9F8),
+                    color: AppTheme.surfaceLight,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     '${item.categoryIcon ?? ''} ${item.categoryName ?? ''}',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                   ),
                 ),
                 if (item.hasStock) ...[
@@ -579,14 +577,14 @@ class _MenuItemCard extends StatelessWidget {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: item.stock > 0 ? Colors.green[50] : Colors.red[50],
+                      color: item.stock > 0 ? AppTheme.primarySurface : AppTheme.dangerSurface,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       'Stok: ${item.stock}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: item.stock > 0 ? Colors.green[700] : Colors.red,
+                        color: item.stock > 0 ? AppTheme.primary : AppTheme.danger,
                       ),
                     ),
                   ),
@@ -601,7 +599,7 @@ class _MenuItemCard extends StatelessWidget {
             Switch(
               value: item.isActive,
               onChanged: onToggle,
-              activeColor: const Color(0xFF00796B),
+              activeColor: AppTheme.primary,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             PopupMenuButton(
@@ -621,9 +619,9 @@ class _MenuItemCard extends StatelessWidget {
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(Icons.delete, size: 16, color: Colors.red),
+                      Icon(Icons.delete, size: 16, color: AppTheme.danger),
                       SizedBox(width: 8),
-                      Text('Hapus', style: TextStyle(color: Colors.red)),
+                      Text('Hapus', style: TextStyle(color: AppTheme.danger)),
                     ],
                   ),
                 ),

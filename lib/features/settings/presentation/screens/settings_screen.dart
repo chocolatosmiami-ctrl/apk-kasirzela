@@ -47,10 +47,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final settingsProv = context.watch<SettingsProvider>();
     if (!settingsProv.isLoaded) {
       return const Scaffold(
-        backgroundColor: Color(0xFFF7F9F8),
+        backgroundColor: AppTheme.surfaceLight,
         body: ZelaPage(
           child: Center(
-            child: CircularProgressIndicator(color: Color(0xFF00796B)),
+            child: CircularProgressIndicator(color: AppTheme.primary),
           ),
         ),
       );
@@ -60,12 +60,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final role = auth.currentUser?.role ?? 'kasir';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF172B2A),
+        backgroundColor: AppTheme.onAction,
+        foregroundColor: AppTheme.textPrimary,
         elevation: 0,
-        surfaceTintColor: Colors.transparent,
+        surfaceTintColor: AppTheme.transparent,
         title: const Text(
           'Pengaturan',
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
@@ -84,20 +84,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _CurevaSection(
                 icon: Icons.print_outlined,
                 label: 'Auto Print',
-                color: const Color(0xFF00796B),
+                color: AppTheme.primary,
               ),
               _AutoPrintSettings(),
               _CurevaSection(
                 icon: Icons.devices,
                 label: 'Printer',
-                color: Colors.teal,
+                color: AppTheme.primary,
               ),
               _CurevaCard(
                 children: [
                   _CurevaTile(
                     icon: Icons.print,
-                    iconBg: const Color(0xFFEAF5F1),
-                    iconColor: const Color(0xFF00796B),
+                    iconBg: AppTheme.primarySurface,
+                    iconColor: AppTheme.primary,
                     title: 'Pengaturan Printer',
                     subtitle: 'Bluetooth thermal printer',
                     onTap: () => Navigator.push(
@@ -110,8 +110,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const _CurevaDivider(),
                   _CurevaTile(
                     icon: Icons.print_outlined,
-                    iconBg: const Color(0xFFEAF5F1),
-                    iconColor: const Color(0xFF00796B),
+                    iconBg: AppTheme.primarySurface,
+                    iconColor: AppTheme.primary,
                     title: 'Printer Station',
                     subtitle: 'Kelola printer dapur, kasir & checker',
                     onTap: () => Navigator.push(
@@ -129,14 +129,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _CurevaSection(
                 icon: Icons.store_outlined,
                 label: 'Informasi Toko',
-                color: const Color(0xFF00796B),
+                color: AppTheme.primary,
               ),
               _CurevaCard(
                 children: [
                   _CurevaTile(
                     icon: Icons.store,
-                    iconBg: const Color(0xFFEAF5F1),
-                    iconColor: const Color(0xFF00796B),
+                    iconBg: AppTheme.primarySurface,
+                    iconColor: AppTheme.primary,
                     title: 'Nama & Informasi Toko',
                     subtitle: settings.storeName,
                     onTap: () => _showStoreInfoDialog(context, settings),
@@ -144,8 +144,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const _CurevaDivider(),
                   _CurevaTile(
                     icon: Icons.receipt_long,
-                    iconBg: const Color(0xFFEAF5F1),
-                    iconColor: const Color(0xFF00796B),
+                    iconBg: AppTheme.primarySurface,
+                    iconColor: AppTheme.primary,
                     title: 'Pengaturan Struk',
                     subtitle: 'Header, footer, lebar kertas',
                     onTap: () => _showReceiptSettingsDialog(context, settings),
@@ -155,14 +155,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _CurevaSection(
                 icon: Icons.print_outlined,
                 label: 'Printer',
-                color: Colors.teal,
+                color: AppTheme.primary,
               ),
               _CurevaCard(
                 children: [
                   _CurevaTile(
                     icon: Icons.print,
-                    iconBg: const Color(0xFFEAF5F1),
-                    iconColor: const Color(0xFF00796B),
+                    iconBg: AppTheme.primarySurface,
+                    iconColor: AppTheme.primary,
                     title: 'Pengaturan Printer',
                     subtitle: 'Bluetooth thermal printer',
                     onTap: () => Navigator.push(
@@ -175,8 +175,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const _CurevaDivider(),
                   _CurevaTile(
                     icon: Icons.print_outlined,
-                    iconBg: const Color(0xFFEAF5F1),
-                    iconColor: const Color(0xFF00796B),
+                    iconBg: AppTheme.primarySurface,
+                    iconColor: AppTheme.primary,
                     title: 'Printer Station',
                     subtitle: 'Kelola printer dapur, kasir & checker',
                     onTap: () => Navigator.push(
@@ -191,20 +191,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _CurevaSection(
                 icon: Icons.palette_outlined,
                 label: 'Tampilan',
-                color: Colors.teal,
+                color: AppTheme.primary,
               ),
               _CurevaCard(children: [_DarkModeToggle(settings: settings)]),
               _CurevaSection(
                 icon: Icons.inventory_2_outlined,
                 label: 'Stok Bahan',
-                color: Colors.brown,
+                color: AppTheme.warningInk,
               ),
               _CurevaCard(
                 children: [
                   _CurevaTile(
                     icon: Icons.inventory_2,
-                    iconBg: const Color(0xFFEAF5F1),
-                    iconColor: const Color(0xFF00796B),
+                    iconBg: AppTheme.primarySurface,
+                    iconColor: AppTheme.primary,
                     title: 'Manajemen Bahan Makanan',
                     subtitle: 'Tracking stok bahan, link ke menu',
                     onTap: () => Navigator.push(
@@ -219,7 +219,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _CurevaSection(
                 icon: Icons.print_outlined,
                 label: 'Auto Print',
-                color: const Color(0xFF00796B),
+                color: AppTheme.primary,
               ),
               _AutoPrintSettings(),
 
@@ -228,14 +228,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _CurevaSection(
                 icon: Icons.store_outlined,
                 label: 'Informasi Toko',
-                color: const Color(0xFF00796B),
+                color: AppTheme.primary,
               ),
               _CurevaCard(
                 children: [
                   _CurevaTile(
                     icon: Icons.store,
-                    iconBg: const Color(0xFFEAF5F1),
-                    iconColor: const Color(0xFF00796B),
+                    iconBg: AppTheme.primarySurface,
+                    iconColor: AppTheme.primary,
                     title: 'Nama & Informasi Toko',
                     subtitle: settings.storeName,
                     onTap: () => _showStoreInfoDialog(context, settings),
@@ -243,8 +243,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const _CurevaDivider(),
                   _CurevaTile(
                     icon: Icons.receipt_long,
-                    iconBg: const Color(0xFFEAF5F1),
-                    iconColor: const Color(0xFF00796B),
+                    iconBg: AppTheme.primarySurface,
+                    iconColor: AppTheme.primary,
                     title: 'Pengaturan Struk',
                     subtitle: 'Header, footer, lebar kertas',
                     onTap: () => _showReceiptSettingsDialog(context, settings),
@@ -254,14 +254,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _CurevaSection(
                 icon: Icons.print_outlined,
                 label: 'Printer',
-                color: Colors.teal,
+                color: AppTheme.primary,
               ),
               _CurevaCard(
                 children: [
                   _CurevaTile(
                     icon: Icons.print,
-                    iconBg: const Color(0xFFEAF5F1),
-                    iconColor: const Color(0xFF00796B),
+                    iconBg: AppTheme.primarySurface,
+                    iconColor: AppTheme.primary,
                     title: 'Pengaturan Printer',
                     subtitle: 'Bluetooth thermal printer',
                     onTap: () => Navigator.push(
@@ -274,8 +274,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const _CurevaDivider(),
                   _CurevaTile(
                     icon: Icons.print_outlined,
-                    iconBg: const Color(0xFFEAF5F1),
-                    iconColor: const Color(0xFF00796B),
+                    iconBg: AppTheme.primarySurface,
+                    iconColor: AppTheme.primary,
                     title: 'Printer Station',
                     subtitle: 'Kelola printer dapur, kasir & checker',
                     onTap: () => Navigator.push(
@@ -290,20 +290,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _CurevaSection(
                 icon: Icons.palette_outlined,
                 label: 'Tampilan',
-                color: Colors.teal,
+                color: AppTheme.primary,
               ),
               _CurevaCard(children: [_DarkModeToggle(settings: settings)]),
               _CurevaSection(
                 icon: Icons.people_outline,
                 label: 'Pengguna',
-                color: Colors.teal,
+                color: AppTheme.primary,
               ),
               _CurevaCard(
                 children: [
                   _CurevaTile(
                     icon: Icons.admin_panel_settings,
-                    iconBg: const Color(0xFFEAF5F1),
-                    iconColor: const Color(0xFF00796B),
+                    iconBg: AppTheme.primarySurface,
+                    iconColor: AppTheme.primary,
                     title: 'Hak Akses Role',
                     subtitle: 'Atur permission per role & user',
                     onTap: () => Navigator.push(
@@ -318,14 +318,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _CurevaSection(
                 icon: Icons.inventory_2_outlined,
                 label: 'Stok Bahan',
-                color: Colors.brown,
+                color: AppTheme.warningInk,
               ),
               _CurevaCard(
                 children: [
                   _CurevaTile(
                     icon: Icons.inventory_2,
-                    iconBg: const Color(0xFFEAF5F1),
-                    iconColor: const Color(0xFF00796B),
+                    iconBg: AppTheme.primarySurface,
+                    iconColor: AppTheme.primary,
                     title: 'Manajemen Bahan Makanan',
                     subtitle: 'Tracking stok bahan, link ke menu',
                     onTap: () => Navigator.push(
@@ -340,7 +340,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _CurevaSection(
                 icon: Icons.print_outlined,
                 label: 'Auto Print & Laporan',
-                color: const Color(0xFF00796B),
+                color: AppTheme.primary,
               ),
               _AutoPrintSettings(),
             ],
@@ -349,7 +349,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _CurevaSection(
               icon: Icons.info_outline,
               label: 'Tentang Aplikasi',
-              color: Colors.grey,
+              color: AppTheme.textSecondary,
             ),
             _CurevaCard(
               children: [
@@ -361,11 +361,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEAF5F1),
+                          color: AppTheme.primarySurface,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Center(
-                          child: Text('🍽️', style: TextStyle(fontSize: 22)),
+                          child: Icon(Icons.restaurant_outlined, size: 22, color: AppTheme.textSecondary),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -377,13 +377,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 14,
-                              color: Color(0xFF172B2A),
+                              color: AppTheme.textPrimary,
                             ),
                           ),
                           Text(
                             'Versi 1.0.0',
                             style: TextStyle(
-                              color: Color(0xFF62736F),
+                              color: AppTheme.textSecondary,
                               fontSize: 14,
                             ),
                           ),
@@ -396,13 +396,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEAF5F1),
+                          color: AppTheme.primarySurface,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Text(
                           'Stable',
                           style: TextStyle(
-                            color: Color(0xFF00796B),
+                            color: AppTheme.primary,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),
@@ -434,19 +434,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.06),
+                    color: AppTheme.danger.withOpacity(0.06),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                    border: Border.all(color: AppTheme.danger.withOpacity(0.3)),
                   ),
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.logout, color: Colors.red, size: 18),
+                      Icon(Icons.logout, color: AppTheme.danger, size: 18),
                       SizedBox(width: 8),
                       Text(
                         'Keluar / Logout',
                         style: TextStyle(
-                          color: Colors.red,
+                          color: AppTheme.danger,
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
@@ -471,19 +471,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.onAction,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFDEE7E3)),
+        border: Border.all(color: AppTheme.borderLight),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 24,
-            backgroundColor: const Color(0xFFEAF5F1),
+            backgroundColor: AppTheme.primarySurface,
             child: Text(
               name.isEmpty ? '?' : name[0].toUpperCase(),
               style: const TextStyle(
-                color: Color(0xFF00796B),
+                color: AppTheme.primary,
                 fontSize: 22,
                 fontWeight: FontWeight.w600,
               ),
@@ -499,7 +499,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF172B2A),
+                    color: AppTheme.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -507,7 +507,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _roleLabel(user?.role ?? 'kasir'),
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF62736F),
+                    color: AppTheme.textSecondary,
                   ),
                 ),
                 if (branch.isNotEmpty) ...[
@@ -516,7 +516,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     branch,
                     style: const TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF62736F),
+                      color: AppTheme.textSecondary,
                     ),
                   ),
                 ],
@@ -588,7 +588,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00796B),
+              backgroundColor: AppTheme.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -602,7 +602,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (!mounted) return;
               if (context.mounted) Navigator.pop(context);
             },
-            child: const Text('Simpan', style: TextStyle(color: Colors.white)),
+            child: const Text('Simpan', style: TextStyle(color: AppTheme.onAction)),
           ),
         ],
       ),
@@ -652,21 +652,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: width == w
-                                  ? const Color(0xFF00796B)
-                                  : Colors.white,
+                                  ? AppTheme.primary
+                                  : AppTheme.onAction,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                 color: width == w
-                                    ? const Color(0xFF00796B)
-                                    : const Color(0xFFDEE7E3),
+                                    ? AppTheme.primary
+                                    : AppTheme.borderLight,
                               ),
                             ),
                             child: Text(
                               '${w}mm',
                               style: TextStyle(
                                 color: width == w
-                                    ? Colors.white
-                                    : const Color(0xFF62736F),
+                                    ? AppTheme.onAction
+                                    : AppTheme.textSecondary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -701,7 +701,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00796B),
+                backgroundColor: AppTheme.primary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -717,7 +717,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
               child: const Text(
                 'Simpan',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: AppTheme.onAction),
               ),
             ),
           ],
@@ -742,7 +742,7 @@ class _CurevaSection extends StatelessWidget {
     padding: const EdgeInsets.fromLTRB(18, 24, 18, 8),
     child: Row(
       children: [
-        Icon(icon, size: 20, color: const Color(0xFF00796B)),
+        Icon(icon, size: 20, color: AppTheme.primary),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
@@ -750,7 +750,7 @@ class _CurevaSection extends StatelessWidget {
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF172B2A),
+              color: AppTheme.textPrimary,
             ),
           ),
         ),
@@ -769,9 +769,9 @@ class _CurevaCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.onAction,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFDEE7E3)),
+        border: Border.all(color: AppTheme.borderLight),
       ),
       child: Column(children: children),
     );
@@ -785,7 +785,7 @@ class _CurevaDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Padding(
       padding: EdgeInsets.only(left: 58),
-      child: Divider(height: 1, color: Color(0xFFF0F0F0)),
+      child: Divider(height: 1, color: AppTheme.surfaceLight),
     );
   }
 }
@@ -836,7 +836,7 @@ class _CurevaTile extends StatelessWidget {
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
-                      color: Color(0xFF172B2A),
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -844,13 +844,13 @@ class _CurevaTile extends StatelessWidget {
                     subtitle,
                     style: const TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF62736F),
+                      color: AppTheme.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Color(0xFFCCCCCC), size: 20),
+            const Icon(Icons.chevron_right, color: AppTheme.borderLight, size: 20),
           ],
         ),
       ),
@@ -874,13 +874,13 @@ class _DarkModeToggle extends StatelessWidget {
             height: 38,
             decoration: BoxDecoration(
               color: settings.isDarkMode
-                  ? const Color(0xFFEEF2FF)
-                  : const Color(0xFFFFF8E1),
+                  ? AppTheme.informationSurface
+                  : AppTheme.warningSurface,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               settings.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-              color: settings.isDarkMode ? Colors.teal : Colors.orange,
+              color: settings.isDarkMode ? AppTheme.primary : AppTheme.warningInk,
               size: 20,
             ),
           ),
@@ -894,14 +894,14 @@ class _DarkModeToggle extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
-                    color: Color(0xFF172B2A),
+                    color: AppTheme.textPrimary,
                   ),
                 ),
                 Text(
                   settings.isDarkMode ? 'Aktif' : 'Nonaktif',
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF62736F),
+                    color: AppTheme.textSecondary,
                   ),
                 ),
               ],
@@ -909,7 +909,7 @@ class _DarkModeToggle extends StatelessWidget {
           ),
           Switch(
             value: settings.isDarkMode,
-            activeColor: const Color(0xFF00796B),
+            activeColor: AppTheme.primary,
             onChanged: (_) => settings.toggleDarkMode(),
           ),
         ],
@@ -959,7 +959,7 @@ class _AutoPrintSettingsState extends State<_AutoPrintSettings> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(val ? msgOn : msgOff),
-          backgroundColor: val ? const Color(0xFF00796B) : Colors.orange,
+          backgroundColor: val ? AppTheme.primary : AppTheme.warningInk,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -977,7 +977,7 @@ class _AutoPrintSettingsState extends State<_AutoPrintSettings> {
         height: 60,
         child: Center(
           child: CircularProgressIndicator(
-            color: Color(0xFF00796B),
+            color: AppTheme.primary,
             strokeWidth: 2,
           ),
         ),
@@ -988,14 +988,14 @@ class _AutoPrintSettingsState extends State<_AutoPrintSettings> {
       children: [
         _SwitchTile(
           icon: Icons.receipt_long,
-          iconBg: const Color(0xFFEAF5F1),
-          iconColor: const Color(0xFF00796B),
+          iconBg: AppTheme.primarySurface,
+          iconColor: AppTheme.primary,
           title: 'Auto Cetak Struk Customer',
           subtitle: _autoPrintCustomer
               ? 'Otomatis cetak setelah bayar'
               : 'Manual - klik tombol di struk',
           value: _autoPrintCustomer,
-          activeColor: const Color(0xFF00796B),
+          activeColor: AppTheme.primary,
           onChanged: (val) async {
             setState(() => _autoPrintCustomer = val);
             await _toggle(
@@ -1009,14 +1009,14 @@ class _AutoPrintSettingsState extends State<_AutoPrintSettings> {
         const _CurevaDivider(),
         _SwitchTile(
           icon: Icons.soup_kitchen,
-          iconBg: const Color(0xFFEAF5F1),
-          iconColor: const Color(0xFF00796B),
+          iconBg: AppTheme.primarySurface,
+          iconColor: AppTheme.primary,
           title: 'Auto Cetak Nota Dapur',
           subtitle: _autoPrintKitchen
               ? 'Otomatis cetak ke printer dapur'
               : 'Manual - klik tombol di struk',
           value: _autoPrintKitchen,
-          activeColor: const Color(0xFF00796B),
+          activeColor: AppTheme.primary,
           onChanged: (val) async {
             setState(() => _autoPrintKitchen = val);
             await _toggle(
@@ -1030,14 +1030,14 @@ class _AutoPrintSettingsState extends State<_AutoPrintSettings> {
         const _CurevaDivider(),
         _SwitchTile(
           icon: Icons.schedule_send,
-          iconBg: const Color(0xFFEAF5F1),
-          iconColor: const Color(0xFF00796B),
+          iconBg: AppTheme.primarySurface,
+          iconColor: AppTheme.primary,
           title: 'Auto Kirim Laporan PDF',
           subtitle: _autoPdfNight
               ? '⏰ Otomatis share PDF jam 22:00'
               : 'Nonaktif - share manual dari Laporan',
           value: _autoPdfNight,
-          activeColor: const Color(0xFF00796B),
+          activeColor: AppTheme.primary,
           onChanged: (val) async {
             setState(() => _autoPdfNight = val);
             await SchedulerService.setupAutoPdf(val);
@@ -1049,7 +1049,7 @@ class _AutoPrintSettingsState extends State<_AutoPrintSettings> {
                         ? '✅ Laporan PDF otomatis jam 22:00 diaktifkan'
                         : '❌ Laporan PDF otomatis dinonaktifkan',
                   ),
-                  backgroundColor: val ? Colors.teal : Colors.orange,
+                  backgroundColor: val ? AppTheme.primary : AppTheme.warningInk,
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -1063,8 +1063,8 @@ class _AutoPrintSettingsState extends State<_AutoPrintSettings> {
         const _CurevaDivider(),
         _CurevaTile(
           icon: Icons.cloud_upload,
-          iconBg: const Color(0xFFEAF5F1),
-          iconColor: const Color(0xFF00796B),
+          iconBg: AppTheme.primarySurface,
+          iconColor: AppTheme.primary,
           title: 'Sync Data Lokal → Supabase',
           subtitle: 'Upload transaksi lama dari HP ke server',
           onTap: () => Navigator.push(
@@ -1124,7 +1124,7 @@ class _SwitchTile extends StatelessWidget {
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
-                    color: Color(0xFF172B2A),
+                    color: AppTheme.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1132,7 +1132,7 @@ class _SwitchTile extends StatelessWidget {
                   subtitle,
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF62736F),
+                    color: AppTheme.textSecondary,
                   ),
                 ),
               ],
@@ -1140,7 +1140,7 @@ class _SwitchTile extends StatelessWidget {
           ),
           Switch(
             value: value,
-            activeColor: const Color(0xFF00796B),
+            activeColor: AppTheme.primary,
             onChanged: onChanged,
           ),
         ],

@@ -34,22 +34,24 @@ class _FirebaseLoginScreenState extends State<FirebaseLoginScreen> {
   }
 
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: AppTheme.surfaceLight,
-    body: AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
-      child: _mode == _LoginMode.none
-          ? _RolePickerView(
-              key: const ValueKey('picker'),
-              onPick: (m) => setState(() => _mode = m),
-            )
-          : _FormView(
-              key: ValueKey(_mode),
-              mode: _mode,
-              initialEmail: widget.initialEmail,
-              onBack: () => setState(() => _mode = _LoginMode.none),
-            ),
-    ),
-  );
+        backgroundColor: AppTheme.surfaceLight,
+        body: AnimatedSwitcher(
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 150),
+          child: _mode == _LoginMode.none
+              ? _RolePickerView(
+                  key: const ValueKey('picker'),
+                  onPick: (m) => setState(() => _mode = m),
+                )
+              : _FormView(
+                  key: ValueKey(_mode),
+                  mode: _mode,
+                  initialEmail: widget.initialEmail,
+                  onBack: () => setState(() => _mode = _LoginMode.none),
+                ),
+        ),
+      );
 }
 
 // ── Pilih Role ─────────────────────────────────────────────
@@ -58,61 +60,61 @@ class _RolePickerView extends StatelessWidget {
   const _RolePickerView({super.key, required this.onPick});
 
   Widget build(BuildContext context) => ZelaAuthBody(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const ZelaBrand(),
-        const SizedBox(height: 32),
-        const Text(
-          'Selamat datang kembali',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ZelaBrand(),
+            const SizedBox(height: 32),
+            const Text(
+              'Selamat datang kembali',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Pilih akun untuk melanjutkan operasional usaha.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 28),
+            _RoleCard(
+              icon: Icons.storefront_outlined,
+              title: 'Owner / Super Admin',
+              subtitle: 'Kelola usaha dan akun Anda',
+              color: AppTheme.primary,
+              onTap: () => onPick(_LoginMode.owner),
+            ),
+            const SizedBox(height: 12),
+            _RoleCard(
+              icon: Icons.point_of_sale,
+              title: 'Staf / Kasir',
+              subtitle: 'Masuk dengan akun dari owner',
+              color: AppTheme.primary,
+              onTap: () => onPick(_LoginMode.staff),
+            ),
+            const SizedBox(height: 24),
+            TextButton.icon(
+              onPressed: () => onPick(_LoginMode.register),
+              icon: const Icon(Icons.person_add_outlined),
+              label: const Text('Daftar owner baru'),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'POS untuk operasional yang lebih rapi.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
-        const Text(
-          'Pilih akun untuk melanjutkan operasional usaha.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 15,
-            height: 1.5,
-            color: AppTheme.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 28),
-        _RoleCard(
-          icon: Icons.storefront_outlined,
-          title: 'Owner / Super Admin',
-          subtitle: 'Kelola usaha dan akun Anda',
-          color: AppTheme.primary,
-          onTap: () => onPick(_LoginMode.owner),
-        ),
-        const SizedBox(height: 12),
-        _RoleCard(
-          icon: Icons.point_of_sale,
-          title: 'Staf / Kasir',
-          subtitle: 'Masuk dengan akun dari owner',
-          color: AppTheme.primary,
-          onTap: () => onPick(_LoginMode.staff),
-        ),
-        const SizedBox(height: 24),
-        TextButton.icon(
-          onPressed: () => onPick(_LoginMode.register),
-          icon: const Icon(Icons.person_add_outlined),
-          label: const Text('Daftar owner baru'),
-        ),
-        const SizedBox(height: 20),
-        const Text(
-          'POS untuk operasional yang lebih rapi.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
-        ),
-      ],
-    ),
-  );
+      );
 }
 
 class _RoleCard extends StatelessWidget {
@@ -129,50 +131,50 @@ class _RoleCard extends StatelessWidget {
   });
 
   Widget build(BuildContext context) => Material(
-    color: Colors.white,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-      side: const BorderSide(color: AppTheme.borderLight),
-    ),
-    clipBehavior: Clip.antiAlias,
-    child: InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
-          children: [
-            Icon(icon, size: 28, color: AppTheme.primary),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
-          ],
+        color: AppTheme.onAction,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: AppTheme.borderLight),
         ),
-      ),
-    ),
-  );
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Row(
+              children: [
+                Icon(icon, size: 28, color: AppTheme.primary),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+              ],
+            ),
+          ),
+        ),
+      );
 }
 
 // ── Form View — background PUTIH, teks HITAM ──────────────
@@ -180,8 +182,12 @@ class _FormView extends StatefulWidget {
   final _LoginMode mode;
   final String initialEmail;
   final VoidCallback onBack;
-  const _FormView({super.key, required this.mode, required this.onBack,
-    this.initialEmail = ''});
+  const _FormView({
+    super.key,
+    required this.mode,
+    required this.onBack,
+    this.initialEmail = '',
+  });
   @override
   State<_FormView> createState() => _FormViewState();
 }
@@ -269,7 +275,8 @@ class _FormViewState extends State<_FormView> {
         // Selecting the Owner tile must not send a legacy cashier directly to
         // Auth, where an account that has not yet migrated cannot exist.
         final profile = email == SupabaseConfig.superAdminEmail
-            ? null : await StaffLoginService.findProfile(email);
+            ? null
+            : await StaffLoginService.findProfile(email);
         if (!mounted) return;
         if (usesStaffLogin(profile?['role']?.toString())) {
           await _doStaffLogin(email, pass, knownProfile: profile);
@@ -297,7 +304,7 @@ class _FormViewState extends State<_FormView> {
               'Konfigurasi server belum diset. '
               'Hubungi developer untuk setup SUPABASE_URL & SUPABASE_ANON_KEY.',
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.danger,
             duration: Duration(seconds: 5),
           ),
         );
@@ -328,8 +335,11 @@ class _FormViewState extends State<_FormView> {
   }
 
   // ── Staff Login — email + password saja, PIN dikecek terpisah ──
-  Future<void> _doStaffLogin(String email, String pass,
-      {Map<String, dynamic>? knownProfile}) async {
+  Future<void> _doStaffLogin(
+    String email,
+    String pass, {
+    Map<String, dynamic>? knownProfile,
+  }) async {
     try {
       debugPrint('🔐 [StaffLogin] START email=$email');
       final result = knownProfile ?? await StaffLoginService.findProfile(email);
@@ -346,8 +356,7 @@ class _FormViewState extends State<_FormView> {
         );
         setState(() {
           _loading = false;
-          _error =
-              'Akun belum terdaftar di sistem.\n'
+          _error = 'Akun belum terdaftar di sistem.\n'
               'Minta owner tambahkan akun Anda melalui menu:\n'
               '"Cabang Saya → Tambah Staff"';
         });
@@ -378,8 +387,11 @@ class _FormViewState extends State<_FormView> {
       // A cached password hash is not a Supabase session. The server verifies
       // legacy credentials and links the real Auth account before returning JWTs.
       final linkedId = profile['auth_id']?.toString() ?? '';
-      final authId = await StaffLoginService.signIn(email, pass,
-          legacy: linkedId.isEmpty);
+      final authId = await StaffLoginService.signIn(
+        email,
+        pass,
+        legacy: linkedId.isEmpty,
+      );
       if (!mounted) return;
 
       // Step 3: Simpan session ke SharedPreferences
@@ -526,131 +538,136 @@ class _FormViewState extends State<_FormView> {
     );
   }
 
-  Widget build(BuildContext context) => ZelaAuthBody(
-    child: AutofillGroup(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: IconButton(
-              onPressed: _loading ? null : widget.onBack,
-              tooltip: 'Kembali',
-              icon: const Icon(Icons.arrow_back),
-            ),
-          ),
-          const ZelaBrand(),
-          const SizedBox(height: 28),
-          Text(
-            _title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            _isRegister
-                ? 'Buat akun untuk mulai mengelola usaha Anda.'
-                : 'Gunakan email dan password Anda. Akun owner, manajer, atau kasir dikenali otomatis.',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 15,
-              height: 1.5,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 28),
-          if (_isRegister) ...[
-            _label('Nama lengkap'),
-            _field(
-              _nameCtrl,
-              'Nama Anda',
-              Icons.person_outline,
-              cap: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
-            _label('Nama usaha'),
-            _field(
-              _bizCtrl,
-              'Nama usaha Anda',
-              Icons.storefront_outlined,
-              cap: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
-          ],
-          _label('Email'),
-          _field(
-            _emailCtrl,
-            'nama@email.com',
-            Icons.email_outlined,
-            type: TextInputType.emailAddress,
-          ),
-          const SizedBox(height: 16),
-          _label('Password'),
-          _passField(),
-          if (_isOwner)
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: _loading ? null : _showForgotPassword,
-                child: const Text('Lupa password?'),
-              ),
-            ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Semantics(
-                liveRegion: true,
-                child: Text(
-                  _error!,
-                  style: const TextStyle(
-                    color: AppTheme.danger,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
+  Widget build(BuildContext context) => PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && !_loading) widget.onBack();
+      },
+      child: ZelaAuthBody(
+        child: AutofillGroup(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  onPressed: _loading ? null : widget.onBack,
+                  tooltip: 'Kembali',
+                  icon: const Icon(Icons.arrow_back),
                 ),
               ),
-            ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _loading ? null : _submit,
-            child: _loading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      color: AppTheme.primary,
-                      strokeWidth: 2,
+              const ZelaBrand(),
+              const SizedBox(height: 28),
+              Text(
+                _title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                _isRegister
+                    ? 'Buat akun untuk mulai mengelola usaha Anda.'
+                    : 'Gunakan email dan password Anda. Akun owner, manajer, atau kasir dikenali otomatis.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 15,
+                  height: 1.5,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 28),
+              if (_isRegister) ...[
+                _label('Nama lengkap'),
+                _field(
+                  _nameCtrl,
+                  'Nama Anda',
+                  Icons.person_outline,
+                  cap: TextCapitalization.words,
+                ),
+                const SizedBox(height: 16),
+                _label('Nama usaha'),
+                _field(
+                  _bizCtrl,
+                  'Nama usaha Anda',
+                  Icons.storefront_outlined,
+                  cap: TextCapitalization.words,
+                ),
+                const SizedBox(height: 16),
+              ],
+              _label('Email'),
+              _field(
+                _emailCtrl,
+                'nama@email.com',
+                Icons.email_outlined,
+                type: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 16),
+              _label('Password'),
+              _passField(),
+              if (_isOwner)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _loading ? null : _showForgotPassword,
+                    child: const Text('Lupa password?'),
+                  ),
+                ),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(
+                        color: AppTheme.danger,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
                     ),
-                  )
-                : Text(_isRegister ? 'Daftar sekarang' : 'Masuk'),
+                  ),
+                ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: _loading ? null : _submit,
+                child: _loading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: AppTheme.primary,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(_isRegister ? 'Daftar sekarang' : 'Masuk'),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'POS untuk operasional yang lebih rapi.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+              ),
+            ],
           ),
-          const SizedBox(height: 24),
-          const Text(
-            'POS untuk operasional yang lebih rapi.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
-          ),
-        ],
-      ),
-    ),
-  );
+        ),
+      ));
 
   Widget _label(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 6),
-    child: Text(
-      text,
-      style: const TextStyle(
-        color: Colors.black87,
-        fontWeight: FontWeight.w600,
-        fontSize: 14,
-      ),
-    ),
-  );
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: AppTheme.textPrimary,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+      );
 
   Widget _field(
     TextEditingController ctrl,
@@ -658,72 +675,82 @@ class _FormViewState extends State<_FormView> {
     IconData icon, {
     TextInputType? type,
     TextCapitalization cap = TextCapitalization.none,
-  }) => TextFormField(
-    controller: ctrl,
-    keyboardType: type,
-    textCapitalization: cap,
-    style: const TextStyle(color: Colors.black87),
-    decoration: InputDecoration(
-      hintText: hint,
-      hintStyle: TextStyle(color: const Color(0xFF62736F), fontSize: 14),
-      prefixIcon: Icon(icon, color: const Color(0xFF62736F), size: 20),
-      filled: true,
-      fillColor: const Color(0xFFF7F9F8),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: _accent, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-    ),
-  );
+  }) =>
+      TextFormField(
+        controller: ctrl,
+        keyboardType: type,
+        textInputAction: TextInputAction.next,
+        scrollPadding: const EdgeInsets.all(24),
+        autocorrect: type != TextInputType.emailAddress,
+        textCapitalization: cap,
+        style: const TextStyle(color: AppTheme.textPrimary),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+          prefixIcon: Icon(icon, color: AppTheme.textSecondary, size: 20),
+          filled: true,
+          fillColor: AppTheme.surfaceLight,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: AppTheme.fieldBorder!),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: AppTheme.fieldBorder!),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: _accent, width: 1.5),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        ),
+      );
 
   Widget _passField() => TextFormField(
-    controller: _passCtrl,
-    obscureText: !_showPass,
-    style: const TextStyle(color: Colors.black87),
-    onFieldSubmitted: (_) => _submit(),
-    decoration: InputDecoration(
-      hintText: 'Masukkan password',
-      hintStyle: TextStyle(color: const Color(0xFF62736F), fontSize: 14),
-      prefixIcon: Icon(
-        Icons.lock_outline,
-        color: const Color(0xFF62736F),
-        size: 20,
-      ),
-      suffixIcon: IconButton(
-        tooltip: 'Visibility Off',
-        icon: Icon(
-          _showPass ? Icons.visibility_off : Icons.visibility,
-          color: const Color(0xFF62736F),
-          size: 20,
+        controller: _passCtrl,
+        obscureText: !_showPass,
+        autocorrect: false,
+        enableSuggestions: false,
+        textInputAction: TextInputAction.done,
+        scrollPadding: const EdgeInsets.all(24),
+        style: const TextStyle(color: AppTheme.textPrimary),
+        onFieldSubmitted: (_) => _submit(),
+        decoration: InputDecoration(
+          hintText: 'Masukkan password',
+          hintStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+          prefixIcon: Icon(
+            Icons.lock_outline,
+            color: AppTheme.textSecondary,
+            size: 20,
+          ),
+          suffixIcon: IconButton(
+            tooltip: _showPass ? 'Sembunyikan password' : 'Tampilkan password',
+            icon: Icon(
+              _showPass ? Icons.visibility_off : Icons.visibility,
+              color: AppTheme.textSecondary,
+              size: 20,
+            ),
+            onPressed: () => setState(() => _showPass = !_showPass),
+          ),
+          filled: true,
+          fillColor: AppTheme.surfaceLight,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: AppTheme.fieldBorder!),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: AppTheme.fieldBorder!),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: _accent, width: 1.5),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         ),
-        onPressed: () => setState(() => _showPass = !_showPass),
-      ),
-      filled: true,
-      fillColor: const Color(0xFFF7F9F8),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: _accent, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-    ),
-  );
+      );
 
   void _showForgotPassword() {
     final ctrl = TextEditingController(text: _emailCtrl.text);
@@ -759,13 +786,16 @@ class _FormViewState extends State<_FormView> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('✅ Link reset password dikirim ke email'),
-                      backgroundColor: Colors.green,
+                      backgroundColor: AppTheme.primary,
                     ),
                   );
                 }
               } catch (_) {}
             },
-            child: const Text('Kirim', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Kirim',
+              style: TextStyle(color: AppTheme.onAction),
+            ),
           ),
         ],
       ),

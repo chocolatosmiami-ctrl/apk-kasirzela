@@ -37,9 +37,9 @@ class _StockTransferScreenState extends State<StockTransferScreen>
         backgroundColor: AppTheme.primaryRed,
         bottom: TabBar(
           controller: _tabCtrl,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white,
-          indicatorColor: Colors.white,
+          labelColor: AppTheme.onAction,
+          unselectedLabelColor: AppTheme.onAction,
+          indicatorColor: AppTheme.onAction,
           tabs: const [
             Tab(icon: Icon(Icons.swap_horiz), text: 'Transfer'),
             Tab(icon: Icon(Icons.history), text: 'Riwayat'),
@@ -194,7 +194,7 @@ class _TransferTabState extends State<_TransferTab> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: isError ? Colors.red : Colors.green,
+        backgroundColor: isError ? AppTheme.danger : AppTheme.primary,
         duration: const Duration(seconds: 4),
       ),
     );
@@ -237,6 +237,7 @@ class _TransferTabState extends State<_TransferTab> {
 
                   // Cabang asal
                   DropdownButtonFormField<String>(
+ isExpanded: true,
                     value: _fromBranchId,
                     decoration: const InputDecoration(
                       labelText: 'Dari Cabang',
@@ -261,6 +262,7 @@ class _TransferTabState extends State<_TransferTab> {
 
                   // Cabang tujuan
                   DropdownButtonFormField<String>(
+ isExpanded: true,
                     value: _toBranchId,
                     decoration: const InputDecoration(
                       labelText: 'Ke Cabang',
@@ -282,6 +284,7 @@ class _TransferTabState extends State<_TransferTab> {
 
                   // Menu
                   DropdownButtonFormField<String>(
+ isExpanded: true,
                     value: _selectedMenu,
                     decoration: InputDecoration(
                       labelText: 'Menu',
@@ -318,14 +321,14 @@ class _TransferTabState extends State<_TransferTab> {
                       margin: const EdgeInsets.only(top: 8),
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.orange[50],
+                        color: AppTheme.warningSurface,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         children: [
                           const Icon(
                             Icons.inventory_2,
-                            color: Colors.orange,
+                            color: AppTheme.warningInk,
                             size: 16,
                           ),
                           const SizedBox(width: 8),
@@ -376,15 +379,15 @@ class _TransferTabState extends State<_TransferTab> {
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                                 strokeWidth: 2,
                               ),
                             )
-                          : const Icon(Icons.swap_horiz, color: Colors.white),
+                          : const Icon(Icons.swap_horiz, color: AppTheme.onAction),
                       label: Text(
                         _submitting ? 'Memproses...' : 'Transfer Stok',
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.onAction,
                           fontSize: 15,
                         ),
                       ),
@@ -408,13 +411,13 @@ class _TransferTabState extends State<_TransferTab> {
       return Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.orange[50],
+          color: AppTheme.warningSurface,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.orange[200]!),
+          border: Border.all(color: AppTheme.warningSurface!),
         ),
         child: const Row(
           children: [
-            Icon(Icons.info_outline, color: Colors.orange),
+            Icon(Icons.info_outline, color: AppTheme.warningInk),
             SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -467,10 +470,10 @@ class _TransferTabState extends State<_TransferTab> {
                     ),
                     decoration: BoxDecoration(
                       color: sisa <= 0
-                          ? Colors.red[100]
+                          ? AppTheme.dangerSurface
                           : sisa <= minAlert
-                          ? Colors.orange[100]
-                          : Colors.green[100],
+                          ? AppTheme.warningSurface
+                          : AppTheme.primarySurface,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -478,10 +481,10 @@ class _TransferTabState extends State<_TransferTab> {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: sisa <= 0
-                            ? Colors.red
+                            ? AppTheme.danger
                             : sisa <= minAlert
-                            ? Colors.orange[800]
-                            : Colors.green[800],
+                            ? AppTheme.warningInk
+                            : AppTheme.primary,
                       ),
                     ),
                   ),
@@ -551,7 +554,7 @@ class _HistoryTabState extends State<_HistoryTab> {
         // Date picker bar
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          color: const Color(0xFFF7F9F8),
+          color: AppTheme.surfaceLight,
           child: Row(
             children: [
               const Icon(
@@ -581,13 +584,13 @@ class _HistoryTabState extends State<_HistoryTab> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('📦', style: TextStyle(fontSize: 40)),
+                      const Icon(Icons.inventory_2_outlined, size: 40, color: AppTheme.textSecondary),
                       const SizedBox(height: 8),
                       Text(
                         'Tidak ada transfer pada\n'
                         '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.grey),
+                        style: const TextStyle(color: AppTheme.textSecondary),
                       ),
                     ],
                   ),
@@ -634,13 +637,13 @@ class _HistoryTabState extends State<_HistoryTab> {
                                     vertical: 3,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.green[100],
+                                    color: AppTheme.primarySurface,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
                                     '${(h['qty'] as num).toInt()} porsi',
                                     style: TextStyle(
-                                      color: Colors.green[800],
+                                      color: AppTheme.primary,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
@@ -654,13 +657,13 @@ class _HistoryTabState extends State<_HistoryTab> {
                                 const Icon(
                                   Icons.arrow_forward,
                                   size: 14,
-                                  color: Colors.grey,
+                                  color: AppTheme.textSecondary,
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
                                   '${h['from_branch']}  →  ${h['to_branch']}',
                                   style: TextStyle(
-                                    color: const Color(0xFF62736F),
+                                    color: AppTheme.textSecondary,
                                     fontSize: 14,
                                   ),
                                 ),
@@ -672,7 +675,7 @@ class _HistoryTabState extends State<_HistoryTab> {
                                 child: Text(
                                   '📝 ${h['notes']}',
                                   style: TextStyle(
-                                    color: const Color(0xFF62736F),
+                                    color: AppTheme.textSecondary,
                                     fontSize: 14,
                                   ),
                                 ),
@@ -684,13 +687,13 @@ class _HistoryTabState extends State<_HistoryTab> {
                                   Icon(
                                     Icons.person_outline,
                                     size: 12,
-                                    color: const Color(0xFF62736F),
+                                    color: AppTheme.textSecondary,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${h['created_by']}  ·  $timeStr',
                                     style: TextStyle(
-                                      color: const Color(0xFF62736F),
+                                      color: AppTheme.textSecondary,
                                       fontSize: 12,
                                     ),
                                   ),

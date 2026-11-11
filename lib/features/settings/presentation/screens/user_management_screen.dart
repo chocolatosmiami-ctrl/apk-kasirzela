@@ -68,6 +68,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
+ isExpanded: true,
                   value: role,
                   decoration: const InputDecoration(labelText: 'Peran'),
                   items: const [
@@ -133,7 +134,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               },
               child: Text(
                 user == null ? 'Tambah' : 'Simpan',
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: AppTheme.onAction),
               ),
             ),
           ],
@@ -171,7 +172,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                 user.role == 'owner' ||
                                 user.role == 'superadmin')
                             ? AppTheme.lightOrange
-                            : const Color(0xFFF7F9F8),
+                            : AppTheme.surfaceLight,
                         child: Text(
                           (user.role == 'admin' ||
                                   user.role == 'owner' ||
@@ -198,7 +199,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                       user.role == 'owner' ||
                                       user.role == 'superadmin')
                                   ? AppTheme.lightOrange
-                                  : const Color(0xFFF7F9F8),
+                                  : AppTheme.surfaceLight,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -210,7 +211,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                         user.role == 'owner' ||
                                         user.role == 'superadmin')
                                     ? AppTheme.primaryRed
-                                    : const Color(0xFF62736F),
+                                    : AppTheme.textSecondary,
                               ),
                             ),
                           ),
@@ -222,8 +223,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: user.isActive
-                                  ? Colors.green[50]
-                                  : Colors.red[50],
+                                  ? AppTheme.primarySurface
+                                  : AppTheme.dangerSurface,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -231,8 +232,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                               style: TextStyle(
                                 fontSize: 12,
                                 color: user.isActive
-                                    ? Colors.green[700]
-                                    : Colors.red,
+                                    ? AppTheme.primary
+                                    : AppTheme.danger,
                               ),
                             ),
                           ),
@@ -255,7 +256,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                               tooltip: 'Edit',
                               icon: const Icon(
                                 Icons.person_off,
-                                color: Colors.red,
+                                color: AppTheme.danger,
                               ),
                               onPressed: () async {
                                 await context.read<AuthProvider>().deleteUser(
@@ -276,7 +277,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             'features_settings_presentation_screens_user_management_screen_2',
         backgroundColor: AppTheme.primaryRed,
         onPressed: () => _showUserDialog(),
-        child: const Icon(Icons.person_add, color: Colors.white),
+        child: const Icon(Icons.person_add, color: AppTheme.onAction),
       ),
     );
   }

@@ -46,7 +46,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
         .contains(auth.currentUser?.role.trim().toLowerCase());
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.onAction,
       appBar: AppBar(
         title: const Text('Manajemen Meja'),
         actions: [
@@ -70,29 +70,29 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                   if (prov.lastError != null)
                     Padding(padding: const EdgeInsets.all(12),
                       child: Text(prov.lastError!, style: const TextStyle(
-                        color: Color(0xFF845500), fontSize: 12))),
+                        color: AppTheme.warningInk, fontSize: 12))),
                   // ── Summary bar ───────────────────────────────────
                   Container(
-                    color: Colors.white,
+                    color: AppTheme.onAction,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _summaryChip('Kosong', prov.emptyCount, Colors.green),
+                        _summaryChip('Kosong', prov.emptyCount, AppTheme.primary),
                         _summaryChip(
                           'Terisi',
                           prov.occupiedCount,
-                          const Color(0xFF00796B),
+                          AppTheme.primary,
                         ),
                         _summaryChip(
                           'Minta bill',
                           prov.billCount,
-                          Colors.orange,
+                          AppTheme.warningInk,
                         ),
                         _summaryChip(
                           'Total',
                           prov.allTables.length,
-                          Colors.grey,
+                          AppTheme.textSecondary,
                         ),
                       ],
                     ),
@@ -116,20 +116,20 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: sel ? AppTheme.primaryRed : Colors.white,
+                              color: sel ? AppTheme.primaryRed : AppTheme.onAction,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: sel
                                     ? AppTheme.primaryRed
-                                    : Colors.grey[300]!,
+                                    : AppTheme.fieldBorder!,
                               ),
                             ),
                             child: Text(
                               z,
                               style: TextStyle(
                                 color: sel
-                                    ? Colors.white
-                                    : const Color(0xFF62736F),
+                                    ? AppTheme.onAction
+                                    : AppTheme.textSecondary,
                                 fontSize: 14,
                                 fontWeight: sel
                                     ? FontWeight.w600
@@ -151,7 +151,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                         ? const Center(
                             child: Text(
                               'Belum ada meja',
-                              style: TextStyle(color: Colors.grey),
+                              style: TextStyle(color: AppTheme.textSecondary),
                             ),
                           )
                         : GridView.builder(
@@ -202,6 +202,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
+ scrollable: true,
         title: Text('Dudukkan Tamu - ${table.name}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -218,7 +219,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             const SizedBox(height: 8),
             Text(
               'Kapasitas: ${table.capacity} orang',
-              style: TextStyle(color: const Color(0xFF62736F), fontSize: 14),
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
             ),
           ],
         ),
@@ -244,14 +245,14 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('${table.name} ditandai terisi'),
-                    backgroundColor: Colors.red,
+                    backgroundColor: AppTheme.danger,
                   ),
                 );
               }
             },
             child: const Text(
               'Mulai Layani',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: AppTheme.onAction),
             ),
           ),
         ],
@@ -273,7 +274,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             height: 4,
             margin: const EdgeInsets.only(top: 10),
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: AppTheme.fieldBorder,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -297,7 +298,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                       Text(
                         '👤 ${table.customerName}',
                         style: TextStyle(
-                          color: const Color(0xFF62736F),
+                          color: AppTheme.textSecondary,
                           fontSize: 14,
                         ),
                       ),
@@ -324,7 +325,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.receipt, color: Colors.orange),
+            leading: const Icon(Icons.receipt, color: AppTheme.warningInk),
             title: const Text('Minta Bill'),
             onTap: () async {
               Navigator.pop(context);
@@ -335,7 +336,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.swap_horiz, color: Colors.teal),
+            leading: const Icon(Icons.swap_horiz, color: AppTheme.primary),
             title: const Text('Pindah Meja'),
             onTap: () {
               if (!mounted) return;
@@ -345,7 +346,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
           ),
           if (table.needsBill)
             ListTile(
-              leading: const Icon(Icons.price_check, color: Colors.teal),
+              leading: const Icon(Icons.price_check, color: AppTheme.primary),
               title: const Text('Tandai Sudah Bayar'),
               subtitle: const Text(
                 'Bayar cash langsung, tanpa proses di Kasir',
@@ -360,14 +361,14 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                       content: Text(
                         '${table.name} ditandai sudah bayar & dikosongkan',
                       ),
-                      backgroundColor: Colors.green,
+                      backgroundColor: AppTheme.primary,
                     ),
                   );
                 }
               },
             ),
           ListTile(
-            leading: const Icon(Icons.check_circle, color: Colors.green),
+            leading: const Icon(Icons.check_circle, color: AppTheme.primary),
             title: const Text('Kosongkan Meja'),
             subtitle: const Text('Tamu sudah pergi'),
             onTap: () async {
@@ -423,7 +424,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                   content: Text(
                                     'Pesanan dipindah ke ${t.name}',
                                   ),
-                                  backgroundColor: Colors.green,
+                                  backgroundColor: AppTheme.primary,
                                 ),
                               );
                             }
@@ -448,7 +449,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
       builder: (_) => TableEditorDialog(table: table));
     if (mounted && saved == true) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Meja berhasil disimpan ke server.'), backgroundColor: Color(0xFF00796B)));
+        content: Text('Meja berhasil disimpan ke server.'), backgroundColor: AppTheme.primary));
     }
   }
 
@@ -458,7 +459,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
         ListTile(leading: const Icon(Icons.edit_outlined), title: const Text('Edit meja'),
           onTap: () { Navigator.pop(sheetContext); _showTableEditor(table: table); }),
         if (context.read<AuthProvider>().isAdmin && table.isEmpty)
-          ListTile(leading: const Icon(Icons.delete_outline, color: Colors.red),
+          ListTile(leading: const Icon(Icons.delete_outline, color: AppTheme.danger),
             title: Text('Hapus ${table.name}'), onTap: () async {
               Navigator.pop(sheetContext);
               final provider = context.read<TableProvider>();
@@ -480,7 +481,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
           color: color,
         ),
       ),
-      Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
     ],
   );
 }
@@ -501,26 +502,26 @@ class _TableCard extends StatelessWidget {
   Color get _bgColor {
     switch (table.status) {
       case TableStatus.empty:
-        return Colors.white;
+        return AppTheme.onAction;
       case TableStatus.occupied:
-        return const Color(0xFFEAF5F1);
+        return AppTheme.primarySurface;
       case TableStatus.bill:
-        return const Color(0xFFFFF4E5);
+        return AppTheme.warningSurface;
       case TableStatus.reserved:
-        return const Color(0xFFF0F4F2);
+        return AppTheme.surfaceLight;
     }
   }
 
   Color get _borderColor {
     switch (table.status) {
       case TableStatus.empty:
-        return const Color(0xFF62736F);
+        return AppTheme.textSecondary;
       case TableStatus.occupied:
-        return const Color(0xFF00796B);
+        return AppTheme.primary;
       case TableStatus.bill:
-        return const Color(0xFF845500);
+        return AppTheme.warningInk;
       case TableStatus.reserved:
-        return const Color(0xFF62736F);
+        return AppTheme.textSecondary;
     }
   }
 
@@ -560,7 +561,7 @@ class _TableCard extends StatelessWidget {
             ),
             Text(
               table.zone,
-              style: TextStyle(fontSize: 12, color: const Color(0xFF62736F)),
+              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 3),
             Container(

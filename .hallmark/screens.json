@@ -1,0 +1,518 @@
+[
+  {
+    "file": "lib/features/auth/presentation/screens/firebase_login_screen.dart",
+    "screens": [
+      "FirebaseLoginScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/auth/presentation/screens/login_screen.dart",
+    "screens": [
+      "LoginScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/auth/presentation/screens/owner_dashboard_screen.dart",
+    "screens": [
+      "OwnerDashboardScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/auth/presentation/screens/pin_verify_screen.dart",
+    "screens": [
+      "PinVerifyScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/auth/presentation/screens/set_pin_screen.dart",
+    "screens": [
+      "SetPinScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/auth/presentation/screens/splash_screen.dart",
+    "screens": [
+      "SplashScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": false,
+    "error": true,
+    "dialogs": false,
+    "forms": false
+  },
+  {
+    "file": "lib/features/cashier/presentation/screens/cashier_screen.dart",
+    "screens": [
+      "CashierScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/cashier/presentation/screens/checkout_screen.dart",
+    "screens": [
+      "CheckoutScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/cashier/presentation/screens/receipt_screen.dart",
+    "screens": [
+      "ReceiptScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/expenses/presentation/screens/expenses_screen.dart",
+    "screens": [
+      "ExpensesScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/home/presentation/screens/ai_chat_screen.dart",
+    "screens": [
+      "AiChatScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/home/presentation/screens/home_dashboard_screen.dart",
+    "screens": [
+      "HomeDashboardScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": false,
+    "dialogs": false,
+    "forms": false
+  },
+  {
+    "file": "lib/features/home/presentation/screens/home_screen.dart",
+    "screens": [
+      "HomeScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": false
+  },
+  {
+    "file": "lib/features/inventory/presentation/screens/inventory_screen.dart",
+    "screens": [
+      "InventoryScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/inventory/presentation/screens/stock_transfer_screen.dart",
+    "screens": [
+      "StockTransferScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": false,
+    "forms": true
+  },
+  {
+    "file": "lib/features/menu/presentation/screens/category_management_screen.dart",
+    "screens": [
+      "CategoryManagementScreen"
+    ],
+    "review": "source",
+    "loading": false,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/menu/presentation/screens/menu_item_form_screen.dart",
+    "screens": [
+      "MenuItemFormScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/menu/presentation/screens/menu_screen.dart",
+    "screens": [
+      "MenuScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/orders/presentation/screens/orders_screen.dart",
+    "screens": [
+      "OrdersScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/reports/presentation/screens/admin_report_screen.dart",
+    "screens": [
+      "AdminReportScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": false,
+    "forms": false
+  },
+  {
+    "file": "lib/features/reports/presentation/screens/reports_screen.dart",
+    "screens": [
+      "ReportsScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": false,
+    "forms": false
+  },
+  {
+    "file": "lib/features/retail/presentation/screens/retail_cashier_screen.dart",
+    "screens": [
+      "RetailCashierScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/retail/presentation/screens/retail_checkout_screen.dart",
+    "screens": [
+      "RetailCheckoutScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": false,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/retail/presentation/screens/retail_product_form_screen.dart",
+    "screens": [
+      "RetailProductFormScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/retail/presentation/screens/retail_product_list_screen.dart",
+    "screens": [
+      "RetailProductListScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/approval_screen.dart",
+    "screens": [
+      "ApprovalScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": false
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/branch_management_screen.dart",
+    "screens": [
+      "BranchManagementScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/preset_management_screen.dart",
+    "screens": [
+      "PresetManagementScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/printer_settings_screen.dart",
+    "screens": [
+      "PrinterSettingsScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": false,
+    "forms": false
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/printer_station_screen.dart",
+    "screens": [
+      "PrinterStationScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/role_permissions_screen.dart",
+    "screens": [
+      "RolePermissionsScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": false,
+    "forms": false
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/settings_screen.dart",
+    "screens": [
+      "SettingsScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/sqlite_sync_screen.dart",
+    "screens": [
+      "SqliteSyncScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": false,
+    "error": true,
+    "dialogs": false,
+    "forms": false
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/user_management_screen.dart",
+    "screens": [
+      "UserManagementScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": false,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/settings/presentation/screens/wa_report_settings_screen.dart",
+    "screens": [
+      "WaReportSettingsScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": false,
+    "error": true,
+    "dialogs": false,
+    "forms": true
+  },
+  {
+    "file": "lib/features/shift/presentation/screens/shift_screen.dart",
+    "screens": [
+      "ShiftScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/subscription/presentation/screens/admin_subscription_screen.dart",
+    "screens": [
+      "AdminSubscriptionScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": false,
+    "forms": false
+  },
+  {
+    "file": "lib/features/subscription/presentation/screens/locked_screen.dart",
+    "screens": [
+      "LockedScreen"
+    ],
+    "review": "source",
+    "loading": false,
+    "empty": false,
+    "error": true,
+    "dialogs": false,
+    "forms": false
+  },
+  {
+    "file": "lib/features/subscription/presentation/screens/midtrans_payment_screen.dart",
+    "screens": [
+      "MidtransPaymentScreen"
+    ],
+    "review": "source",
+    "loading": false,
+    "empty": false,
+    "error": false,
+    "dialogs": false,
+    "forms": false
+  },
+  {
+    "file": "lib/features/subscription/presentation/screens/subscription_screen.dart",
+    "screens": [
+      "SubscriptionScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": false,
+    "error": true,
+    "dialogs": false,
+    "forms": false
+  },
+  {
+    "file": "lib/features/subscription/presentation/screens/super_admin_screen.dart",
+    "screens": [
+      "SuperAdminScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": false,
+    "forms": false
+  },
+  {
+    "file": "lib/features/table_management/presentation/screens/table_management_screen.dart",
+    "screens": [
+      "TableManagementScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": true,
+    "dialogs": true,
+    "forms": true
+  },
+  {
+    "file": "lib/features/table_management/presentation/screens/table_order_summary_screen.dart",
+    "screens": [
+      "TableOrderSummaryScreen"
+    ],
+    "review": "source",
+    "loading": true,
+    "empty": true,
+    "error": false,
+    "dialogs": false,
+    "forms": false
+  }
+]

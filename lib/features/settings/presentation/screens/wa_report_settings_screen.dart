@@ -58,7 +58,7 @@ class _WaReportSettingsScreenState extends State<WaReportSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('✅ Pengaturan WA disimpan'),
-          backgroundColor: Colors.green[700],
+          backgroundColor: AppTheme.primary,
         ),
       );
     }
@@ -78,7 +78,7 @@ class _WaReportSettingsScreenState extends State<WaReportSettingsScreen> {
       appBar: AppBar(
         title: const Text('Laporan WA Otomatis'),
         backgroundColor: AppTheme.primaryRed,
-        foregroundColor: Colors.white,
+        foregroundColor: AppTheme.onAction,
       ),
       body: ZelaPage(
         child: _loading
@@ -92,16 +92,16 @@ class _WaReportSettingsScreenState extends State<WaReportSettingsScreen> {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.teal[50],
+                        color: AppTheme.primarySurface,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.teal[200]!),
+                        border: Border.all(color: AppTheme.primarySurface!),
                       ),
                       child: const Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Icon(
                             Icons.info_outline,
-                            color: Colors.teal,
+                            color: AppTheme.primary,
                             size: 20,
                           ),
                           SizedBox(width: 8),
@@ -112,7 +112,7 @@ class _WaReportSettingsScreenState extends State<WaReportSettingsScreen> {
                               'WhatsApp. Owner tinggal klik Send.',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.teal,
+                                color: AppTheme.primary,
                               ),
                             ),
                           ),
@@ -127,7 +127,7 @@ class _WaReportSettingsScreenState extends State<WaReportSettingsScreen> {
                         title: const Text('Aktifkan Laporan WA Otomatis'),
                         subtitle: const Text('Setiap hari jam 22.00'),
                         value: _autoEnabled,
-                        activeColor: const Color(0xFF00796B),
+                        activeColor: AppTheme.primary,
                         onChanged: (v) => setState(() => _autoEnabled = v),
                       ),
                     ),
@@ -183,9 +183,9 @@ class _WaReportSettingsScreenState extends State<WaReportSettingsScreen> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.amber[50],
+                        color: AppTheme.warningSurface,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.amber[200]!),
+                        border: Border.all(color: AppTheme.warningSurface!),
                       ),
                       child: const Text(
                         '📌 Cara dapat link grup:\n'
@@ -193,7 +193,7 @@ class _WaReportSettingsScreenState extends State<WaReportSettingsScreen> {
                         '2. Tap nama grup → Info Grup\n'
                         '3. Tap "Link Undangan Grup"\n'
                         '4. Salin link → paste di sini',
-                        style: TextStyle(fontSize: 14, color: Colors.brown),
+                        style: TextStyle(fontSize: 14, color: AppTheme.warningInk),
                       ),
                     ),
                     const SizedBox(height: 28),
@@ -209,7 +209,7 @@ class _WaReportSettingsScreenState extends State<WaReportSettingsScreen> {
                                 height: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  color: AppTheme.onAction,
                                 ),
                               )
                             : const Icon(Icons.save),
@@ -218,7 +218,7 @@ class _WaReportSettingsScreenState extends State<WaReportSettingsScreen> {
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryRed,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppTheme.onAction,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -233,13 +233,13 @@ class _WaReportSettingsScreenState extends State<WaReportSettingsScreen> {
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: _testSend,
-                        icon: const Icon(Icons.send, color: Colors.green),
+                        icon: const Icon(Icons.send, color: AppTheme.primary),
                         label: const Text(
                           'Test Kirim Laporan Sekarang',
-                          style: TextStyle(color: Colors.green),
+                          style: TextStyle(color: AppTheme.primary),
                         ),
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Colors.green),
+                          side: const BorderSide(color: AppTheme.primary),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -253,7 +253,7 @@ class _WaReportSettingsScreenState extends State<WaReportSettingsScreen> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7F9F8),
+                        color: AppTheme.surfaceLight,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
@@ -263,7 +263,7 @@ class _WaReportSettingsScreenState extends State<WaReportSettingsScreen> {
                         '• Laporan ke grup: link grup terbuka, pesan sudah '
                         'disalin otomatis — paste dan Send\n'
                         '• App harus dibuka oleh owner pada jam 22.00 atau setelahnya',
-                        style: TextStyle(fontSize: 14, color: Colors.grey),
+                        style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
                       ),
                     ),
                   ],

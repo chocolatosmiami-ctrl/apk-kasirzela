@@ -280,7 +280,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('✅ Hak akses berhasil diterapkan ke semua kasir'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppTheme.primary,
             duration: Duration(seconds: 3),
           ),
         );
@@ -294,7 +294,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
       if (mounted) {
         setState(() => _isPushing = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Gagal: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('❌ Gagal: $e'), backgroundColor: AppTheme.danger),
         );
       }
     }
@@ -375,7 +375,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
       _userHasOverride[user.authId ?? ''] = true;
       _userPerms[user.authId ?? ''] = Map<String, bool>.from(base);
     });
-    _snack('✅ Hak akses khusus aktif untuk ${user.name}', Colors.green);
+    _snack('✅ Hak akses khusus aktif untuk ${user.name}', AppTheme.primary);
   }
 
   Future<void> _disableOverride(UserModel user) async {
@@ -399,7 +399,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
     });
     _snack(
       '↩️ ${user.name} kembali ke hak akses role ${_rn(user.role)}',
-      Colors.teal,
+      AppTheme.primary,
     );
   }
 
@@ -463,7 +463,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
         if (uid.isNotEmpty) _userPerms[uid] = newPerms;
       }
     });
-    _snack('✅ Preset "$preset" diterapkan', Colors.green);
+    _snack('✅ Preset "$preset" diterapkan', AppTheme.primary);
   }
 
   bool _presetHas(String role, String preset, String perm) {
@@ -540,7 +540,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: AppTheme.onAction,
                       ),
                     ),
                   )
@@ -548,13 +548,13 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
                     onPressed: _pushAllToSupabase,
                     icon: Icon(
                       _pushSuccess ? Icons.check_circle : Icons.cloud_upload,
-                      color: _pushSuccess ? Colors.greenAccent : Colors.white,
+                      color: _pushSuccess ? AppTheme.primary : AppTheme.onAction,
                       size: 18,
                     ),
                     label: Text(
                       _pushSuccess ? 'Tersimpan' : 'Terapkan',
                       style: TextStyle(
-                        color: _pushSuccess ? Colors.greenAccent : Colors.white,
+                        color: _pushSuccess ? AppTheme.primary : AppTheme.onAction,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
@@ -564,9 +564,9 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
         ],
         bottom: TabBar(
           controller: _tabCtrl,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white,
+          indicatorColor: AppTheme.onAction,
+          labelColor: AppTheme.onAction,
+          unselectedLabelColor: AppTheme.onAction,
           tabs: const [
             Tab(icon: Icon(Icons.badge, size: 18), text: 'Kasir'),
             Tab(icon: Icon(Icons.work, size: 18), text: 'Manajer'),
@@ -580,8 +580,8 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
             : TabBarView(
                 controller: _tabCtrl,
                 children: [
-                  _roleTab('kasir', _kasirPerms, Colors.teal),
-                  _roleTab('manajer', _manajerPerms, Colors.green),
+                  _roleTab('kasir', _kasirPerms, AppTheme.primary),
+                  _roleTab('manajer', _manajerPerms, AppTheme.primary),
                   _perUserTab(),
                 ],
               ),
@@ -599,14 +599,14 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF00796B),
+            color: AppTheme.primary,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             children: [
               Icon(
                 role == 'kasir' ? Icons.badge : Icons.work,
-                color: Colors.white,
+                color: AppTheme.onAction,
                 size: 26,
               ),
               const SizedBox(width: 10),
@@ -617,7 +617,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
                     Text(
                       'Role: ${_rn(role)}',
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppTheme.onAction,
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
                       ),
@@ -625,7 +625,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
                     Text(
                       '$count dari ${permDefs.length} fitur diaktifkan',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.85),
+                        color: AppTheme.onAction.withOpacity(0.85),
                         fontSize: 14,
                       ),
                     ),
@@ -634,7 +634,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
               ),
               // Preset menu
               PopupMenuButton<int>(
-                icon: const Icon(Icons.tune, color: Colors.white),
+                icon: const Icon(Icons.tune, color: AppTheme.onAction),
                 tooltip: 'Terapkan Preset',
                 onSelected: (presetId) async {
                   if (presetId == -1) {
@@ -669,7 +669,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
                                 '${p.permissions.length} fitur',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: const Color(0xFF62736F),
+                                  color: AppTheme.textSecondary,
                                 ),
                               ),
                             ],
@@ -683,7 +683,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
                     value: -1,
                     child: Row(
                       children: [
-                        Icon(Icons.settings, size: 16, color: Colors.grey),
+                        Icon(Icons.settings, size: 16, color: AppTheme.textSecondary),
                         SizedBox(width: 8),
                         Text(
                           'Kelola Preset...',
@@ -713,16 +713,16 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
-                  color: const Color(0xFF62736F),
+                  color: AppTheme.textSecondary,
                   letterSpacing: 0.5,
                 ),
               ),
             ),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppTheme.onAction,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
+                border: Border.all(color: AppTheme.borderLight!),
               ),
               child: Column(
                 children: items.asMap().entries.map((entry) {
@@ -764,15 +764,15 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('👤', style: TextStyle(fontSize: 48)),
+            Icon(Icons.person_outline, size: 40, color: AppTheme.textSecondary),
             SizedBox(height: 12),
             Text(
               'Belum ada Kasir/Manajer',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: AppTheme.textSecondary),
             ),
             Text(
               'Tambah dulu di Manajemen Pengguna',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
             ),
           ],
         ),
@@ -786,19 +786,19 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.teal[50],
+            color: AppTheme.primarySurface,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.teal[200]!),
+            border: Border.all(color: AppTheme.primarySurface!),
           ),
           child: const Row(
             children: [
-              Icon(Icons.info_outline, color: Colors.teal, size: 16),
+              Icon(Icons.info_outline, color: AppTheme.primary, size: 16),
               SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Atur hak akses khusus per individu. '
                   'Aktifkan toggle untuk override dari role.',
-                  style: TextStyle(fontSize: 14, color: Colors.teal),
+                  style: TextStyle(fontSize: 14, color: AppTheme.primary),
                 ),
               ),
             ],
@@ -814,7 +814,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
     final hasOverride = _userHasOverride[user.authId ?? ''] ?? false;
     final perms = _userPerms[user.authId ?? ''] ?? {};
     final count = perms.values.where((v) => v).length;
-    final rc = user.role == 'manajer' ? Colors.green : Colors.teal;
+    final rc = user.role == 'manajer' ? AppTheme.primary : AppTheme.primary;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -822,19 +822,19 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: hasOverride
-            ? const BorderSide(color: Colors.teal, width: 1.5)
+            ? const BorderSide(color: AppTheme.primary, width: 1.5)
             : BorderSide.none,
       ),
       child: ExpansionTile(
         leading: CircleAvatar(
           backgroundColor: hasOverride
-              ? Colors.teal[100]
+              ? AppTheme.primarySurface
               : rc.withOpacity(0.15),
           child: Text(
             user.name[0].toUpperCase(),
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: hasOverride ? Colors.teal : rc,
+              color: hasOverride ? AppTheme.primary : rc,
             ),
           ),
         ),
@@ -861,12 +861,12 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.teal[100],
+                  color: AppTheme.primarySurface,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Text(
                   'Custom',
-                  style: TextStyle(fontSize: 12, color: Colors.teal),
+                  style: TextStyle(fontSize: 12, color: AppTheme.primary),
                 ),
               ),
           ],
@@ -896,7 +896,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
                     ),
                     Switch(
                       value: hasOverride,
-                      activeColor: Colors.teal,
+                      activeColor: AppTheme.primary,
                       onChanged: (v) =>
                           v ? _enableOverride(user) : _disableOverride(user),
                     ),
@@ -912,7 +912,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
                         child: _presetBtn(
                           '🔒',
                           'Minimal',
-                          Colors.red,
+                          AppTheme.danger,
                           () => _applyPreset(
                             'user_${user.id?.toString() ?? ''}',
                             'minimal',
@@ -925,7 +925,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
                         child: _presetBtn(
                           '📋',
                           'Standar',
-                          Colors.teal,
+                          AppTheme.primary,
                           () => _applyPreset(
                             'user_${user.id?.toString() ?? ''}',
                             'standard',
@@ -938,7 +938,7 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
                         child: _presetBtn(
                           '🔓',
                           'Penuh',
-                          Colors.green,
+                          AppTheme.primary,
                           () => _applyPreset(
                             'user_${user.id?.toString() ?? ''}',
                             'full',
@@ -964,13 +964,13 @@ class _RolePermissionsScreenState extends State<RolePermissionsScreen>
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: const Color(0xFF62736F),
+                            color: AppTheme.textSecondary,
                           ),
                         ),
                       ),
                       Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey[200]!),
+                          border: Border.all(color: AppTheme.borderLight!),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Column(
@@ -1059,13 +1059,13 @@ class _PermRow extends StatelessWidget {
             width: dense ? 32 : 36,
             height: dense ? 32 : 36,
             decoration: BoxDecoration(
-              color: enabled ? color.withOpacity(0.1) : const Color(0xFFF7F9F8),
+              color: enabled ? color.withOpacity(0.1) : AppTheme.surfaceLight,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
               size: dense ? 16 : 18,
-              color: enabled ? color : const Color(0xFF62736F),
+              color: enabled ? color : AppTheme.textSecondary,
             ),
           ),
           const SizedBox(width: 10),
@@ -1078,14 +1078,14 @@ class _PermRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: dense ? 12 : 13,
                     fontWeight: FontWeight.w600,
-                    color: locked ? const Color(0xFF62736F) : null,
+                    color: locked ? AppTheme.textSecondary : null,
                   ),
                 ),
                 Text(
                   desc,
                   style: TextStyle(
                     fontSize: 12,
-                    color: locked ? Colors.grey[300] : const Color(0xFF62736F),
+                    color: locked ? AppTheme.fieldBorder : AppTheme.textSecondary,
                   ),
                 ),
               ],
@@ -1094,7 +1094,7 @@ class _PermRow extends StatelessWidget {
           locked
               ? Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Icon(Icons.lock, size: 14, color: Colors.grey[300]),
+                  child: Icon(Icons.lock, size: 14, color: AppTheme.fieldBorder),
                 )
               : Switch(
                   value: enabled,

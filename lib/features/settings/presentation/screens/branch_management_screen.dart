@@ -83,7 +83,7 @@ class _BranchManagementScreenState extends State<BranchManagementScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('✅ Beralih ke cabang: ${branch.name}'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppTheme.primary,
         ),
       );
     }
@@ -225,14 +225,14 @@ class _BranchManagementScreenState extends State<BranchManagementScreen> {
                               ? '✅ Cabang ditambahkan'
                               : '✅ Cabang diperbarui',
                         ),
-                        backgroundColor: Colors.green,
+                        backgroundColor: AppTheme.primary,
                       ),
                     );
                   }
                 },
                 child: Text(
                   branch == null ? 'Tambah Cabang' : 'Simpan',
-                  style: const TextStyle(color: Colors.white, fontSize: 15),
+                  style: const TextStyle(color: AppTheme.onAction, fontSize: 15),
                 ),
               ),
             ),
@@ -247,7 +247,7 @@ class _BranchManagementScreenState extends State<BranchManagementScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Tidak bisa hapus cabang yang sedang aktif'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppTheme.warningInk,
         ),
       );
       return;
@@ -256,7 +256,7 @@ class _BranchManagementScreenState extends State<BranchManagementScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Minimal harus ada 1 cabang'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppTheme.warningInk,
         ),
       );
       return;
@@ -272,7 +272,7 @@ class _BranchManagementScreenState extends State<BranchManagementScreen> {
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
             onPressed: () async {
               await DatabaseHelper.instance.delete('branches', 'id = ?', [
                 branch.id,
@@ -282,7 +282,7 @@ class _BranchManagementScreenState extends State<BranchManagementScreen> {
                 await _load();
               }
             },
-            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+            child: const Text('Hapus', style: TextStyle(color: AppTheme.onAction)),
           ),
         ],
       ),
@@ -305,12 +305,12 @@ class _BranchManagementScreenState extends State<BranchManagementScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
-                Icon(Icons.lock, size: 56, color: Colors.grey),
+                Icon(Icons.lock, size: 56, color: AppTheme.textSecondary),
                 SizedBox(height: 12),
                 Text(
                   'Hanya Admin yang dapat mengubah cabang',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey, fontSize: 15),
+                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 15),
                 ),
               ],
             ),
@@ -333,12 +333,12 @@ class _BranchManagementScreenState extends State<BranchManagementScreen> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
-                    color: Colors.teal[50],
+                    color: AppTheme.primarySurface,
                     child: Row(
                       children: [
                         const Icon(
                           Icons.info_outline,
-                          color: Colors.teal,
+                          color: AppTheme.primary,
                           size: 18,
                         ),
                         const SizedBox(width: 8),
@@ -348,7 +348,7 @@ class _BranchManagementScreenState extends State<BranchManagementScreen> {
                             'Tap cabang untuk beralih.',
                             style: const TextStyle(
                               fontSize: 14,
-                              color: Colors.teal,
+                              color: AppTheme.primary,
                             ),
                           ),
                         ),
@@ -361,12 +361,12 @@ class _BranchManagementScreenState extends State<BranchManagementScreen> {
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(color: const Color(0xFF00796B)),
+                      decoration: BoxDecoration(color: AppTheme.primary),
                       child: Row(
                         children: [
                           const Icon(
                             Icons.store,
-                            color: Colors.white,
+                            color: AppTheme.onAction,
                             size: 20,
                           ),
                           const SizedBox(width: 10),
@@ -377,14 +377,14 @@ class _BranchManagementScreenState extends State<BranchManagementScreen> {
                                 const Text(
                                   'Cabang Aktif HP Ini',
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: AppTheme.onAction,
                                     fontSize: 12,
                                   ),
                                 ),
                                 Text(
                                   _currentBranch!.name,
                                   style: const TextStyle(
-                                    color: Colors.white,
+                                    color: AppTheme.onAction,
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -393,7 +393,7 @@ class _BranchManagementScreenState extends State<BranchManagementScreen> {
                                   Text(
                                     _currentBranch!.address!,
                                     style: const TextStyle(
-                                      color: Colors.white,
+                                      color: AppTheme.onAction,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -406,13 +406,13 @@ class _BranchManagementScreenState extends State<BranchManagementScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: AppTheme.onAction.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Text(
                               'AKTIF',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -447,10 +447,10 @@ class _BranchManagementScreenState extends State<BranchManagementScreen> {
             'features_settings_presentation_screens_branch_management_screen_1',
         backgroundColor: AppTheme.primaryRed,
         onPressed: () => _showForm(),
-        icon: const Icon(Icons.add_business, color: Colors.white),
+        icon: const Icon(Icons.add_business, color: AppTheme.onAction),
         label: const Text(
           'Tambah Cabang',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppTheme.onAction),
         ),
       ),
     );
@@ -491,7 +491,7 @@ class _BranchCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: branch.isCurrent
                       ? AppTheme.primaryRed.withOpacity(0.1)
-                      : const Color(0xFFF7F9F8),
+                      : AppTheme.surfaceLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Center(
@@ -499,7 +499,7 @@ class _BranchCard extends StatelessWidget {
                     Icons.store,
                     color: branch.isCurrent
                         ? AppTheme.primaryRed
-                        : const Color(0xFF62736F),
+                        : AppTheme.textSecondary,
                     size: 24,
                   ),
                 ),
@@ -548,7 +548,7 @@ class _BranchCard extends StatelessWidget {
                       Text(
                         branch.address!,
                         style: TextStyle(
-                          color: const Color(0xFF62736F),
+                          color: AppTheme.textSecondary,
                           fontSize: 14,
                         ),
                       ),
@@ -556,7 +556,7 @@ class _BranchCard extends StatelessWidget {
                       Text(
                         '📞 ${branch.phone}',
                         style: TextStyle(
-                          color: const Color(0xFF62736F),
+                          color: AppTheme.textSecondary,
                           fontSize: 12,
                         ),
                       ),
@@ -567,7 +567,7 @@ class _BranchCard extends StatelessWidget {
                 children: [
                   IconButton(
                     tooltip: 'Edit',
-                    icon: const Icon(Icons.edit, size: 18, color: Colors.teal),
+                    icon: const Icon(Icons.edit, size: 18, color: AppTheme.primary),
                     onPressed: onEdit,
                     padding: const EdgeInsets.all(4),
                     constraints: const BoxConstraints(),
@@ -578,7 +578,7 @@ class _BranchCard extends StatelessWidget {
                       icon: const Icon(
                         Icons.delete_outline,
                         size: 18,
-                        color: Colors.red,
+                        color: AppTheme.danger,
                       ),
                       onPressed: onDelete,
                       padding: const EdgeInsets.all(4),

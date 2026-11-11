@@ -1,0 +1,12 @@
+{
+  "same": 106,
+  "different": [
+    "lib\\core\\services\\ai_chat_service.dart",
+    "lib\\core\\services\\pin_secret.dart",
+    "lib\\core\\services\\supabase_auth_service.dart",
+    "lib\\features\\auth\\presentation\\providers\\auth_provider.dart",
+    "lib\\features\\auth\\presentation\\screens\\set_pin_screen.dart",
+    "lib\\features\\home\\presentation\\screens\\ai_chat_screen.dart",
+    "lib\\features\\orders\\presentation\\providers\\orders_provider.dart"
+  ]
+}

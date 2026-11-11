@@ -30,10 +30,10 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.onAction,
       appBar: AppBar(
         backgroundColor: AppTheme.primaryOrange,
-        foregroundColor: Colors.white,
+        foregroundColor: AppTheme.onAction,
         title: const Text('Produk Retail'),
         actions: [
           IconButton(
@@ -71,7 +71,7 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
               children: [
                 // Search bar
                 Container(
-                  color: const Color(0xFFF7F9F8),
+                  color: AppTheme.surfaceLight,
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                   child: TextField(
                     onChanged: (v) => setState(() => _search = v),
@@ -79,18 +79,18 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
                       hintText: 'Cari produk atau barcode...',
                       prefixIcon: const Icon(Icons.search, size: 20),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: AppTheme.onAction,
                       contentPadding: const EdgeInsets.symmetric(
                         vertical: 10,
                         horizontal: 14,
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
+                        borderSide: BorderSide(color: AppTheme.fieldBorder!),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
+                        borderSide: BorderSide(color: AppTheme.fieldBorder!),
                       ),
                     ),
                   ),
@@ -102,19 +102,19 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
                     horizontal: 14,
                     vertical: 8,
                   ),
-                  color: Colors.orange[50],
+                  color: AppTheme.warningSurface,
                   child: Row(
                     children: [
                       Icon(
                         Icons.inventory_2,
-                        color: Colors.orange[700],
+                        color: AppTheme.warningInk,
                         size: 16,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         '${products.length} produk',
                         style: TextStyle(
-                          color: Colors.orange[800],
+                          color: AppTheme.warningInk,
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
@@ -126,14 +126,14 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
                       )) ...[
                         Icon(
                           Icons.warning_amber,
-                          color: Colors.red[400],
+                          color: AppTheme.danger,
                           size: 16,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           '${retail.products.where((p) => p.stock <= (p.minStock ?? 5 ?? 5)).length} stok tipis',
                           style: TextStyle(
-                            color: Colors.red[600],
+                            color: AppTheme.danger,
                             fontSize: 14,
                           ),
                         ),
@@ -149,14 +149,14 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text('📦', style: TextStyle(fontSize: 48)),
+                              const Icon(Icons.inventory_2_outlined, size: 40, color: AppTheme.textSecondary),
                               const SizedBox(height: 12),
                               Text(
                                 _search.isEmpty
                                     ? 'Belum ada produk'
                                     : 'Produk tidak ditemukan',
                                 style: TextStyle(
-                                  color: const Color(0xFF62736F),
+                                  color: AppTheme.textSecondary,
                                   fontSize: 16,
                                 ),
                               ),
@@ -165,7 +165,7 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
                                 Text(
                                   'Tap + untuk tambah produk',
                                   style: TextStyle(
-                                    color: const Color(0xFF62736F),
+                                    color: AppTheme.textSecondary,
                                   ),
                                 ),
                               ],
@@ -191,8 +191,8 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
                                   height: 44,
                                   decoration: BoxDecoration(
                                     color: isLowStock
-                                        ? Colors.red[50]
-                                        : Colors.orange[50],
+                                        ? AppTheme.dangerSurface
+                                        : AppTheme.warningSurface,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Center(
@@ -203,8 +203,8 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
                                       style: TextStyle(
                                         fontSize: 18,
                                         color: isLowStock
-                                            ? Colors.red[700]
-                                            : Colors.orange[700],
+                                            ? AppTheme.danger
+                                            : AppTheme.warningInk,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -235,8 +235,8 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
                                               : Icons.check_circle_outline,
                                           size: 12,
                                           color: isLowStock
-                                              ? Colors.red
-                                              : Colors.green,
+                                              ? AppTheme.danger
+                                              : AppTheme.primary,
                                         ),
                                         const SizedBox(width: 3),
                                         Text(
@@ -244,8 +244,8 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
                                           style: TextStyle(
                                             fontSize: 12,
                                             color: isLowStock
-                                                ? Colors.red
-                                                : const Color(0xFF62736F),
+                                                ? AppTheme.danger
+                                                : AppTheme.textSecondary,
                                           ),
                                         ),
                                         if (p.barcode?.isNotEmpty == true) ...[
@@ -253,14 +253,14 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
                                           Icon(
                                             Icons.qr_code,
                                             size: 11,
-                                            color: const Color(0xFF62736F),
+                                            color: AppTheme.textSecondary,
                                           ),
                                           const SizedBox(width: 2),
                                           Text(
                                             p.barcode!,
                                             style: TextStyle(
                                               fontSize: 12,
-                                              color: const Color(0xFF62736F),
+                                              color: AppTheme.textSecondary,
                                             ),
                                           ),
                                         ],
@@ -277,7 +277,7 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
                                       child: Container(
                                         padding: const EdgeInsets.all(6),
                                         decoration: BoxDecoration(
-                                          color: Colors.teal[50],
+                                          color: AppTheme.primarySurface,
                                           borderRadius: BorderRadius.circular(
                                             6,
                                           ),
@@ -285,7 +285,7 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
                                         child: Icon(
                                           Icons.tune,
                                           size: 18,
-                                          color: const Color(0xFF00796B),
+                                          color: AppTheme.primary,
                                         ),
                                       ),
                                     ),
@@ -309,7 +309,7 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
                                       child: Container(
                                         padding: const EdgeInsets.all(6),
                                         decoration: BoxDecoration(
-                                          color: Colors.orange[50],
+                                          color: AppTheme.warningSurface,
                                           borderRadius: BorderRadius.circular(
                                             6,
                                           ),
@@ -317,7 +317,7 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
                                         child: Icon(
                                           Icons.edit,
                                           size: 18,
-                                          color: Colors.orange[700],
+                                          color: AppTheme.warningInk,
                                         ),
                                       ),
                                     ),
@@ -381,12 +381,12 @@ class _RetailProductListScreenState extends State<RetailProductListScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('✅ Stok ${p.name} → $newStock'),
-                    backgroundColor: Colors.green,
+                    backgroundColor: AppTheme.primary,
                   ),
                 );
               }
             },
-            child: const Text('Simpan', style: TextStyle(color: Colors.white)),
+            child: const Text('Simpan', style: TextStyle(color: AppTheme.onAction)),
           ),
         ],
       ),

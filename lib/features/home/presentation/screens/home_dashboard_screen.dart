@@ -266,7 +266,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                                 (sub.isWarning || sub.isLocked)) ...[
                               const SizedBox(height: 24),
                               _Surface(
-                                color: const Color(0xFFFFF4E5),
+                                color: AppTheme.warningSurface,
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -277,7 +277,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                                       style: const TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xFF845500),
+                                        color: AppTheme.warningInk,
                                       ),
                                     ),
                                     const SizedBox(height: 6),
@@ -286,7 +286,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                                           ? 'Isi saldo untuk melanjutkan berjualan.'
                                           : 'Tersisa ${sub.remainingTrx} transaksi.',
                                       style: const TextStyle(
-                                        color: Color(0xFF845500),
+                                        color: AppTheme.warningInk,
                                       ),
                                     ),
                                     if (onTapSubscription != null)
@@ -316,7 +316,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                                             : Icons.warning_amber_rounded,
                                         color: attention.isEmpty
                                             ? AppTheme.primary
-                                            : const Color(0xFF845500),
+                                            : AppTheme.warningInk,
                                       ),
                                       const SizedBox(width: 10),
                                       Expanded(
@@ -348,7 +348,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
                                           Text(
                                             'Sisa ${ingredient.currentStock}',
                                             style: const TextStyle(
-                                              color: Color(0xFF845500),
+                                              color: AppTheme.warningInk,
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
@@ -382,7 +382,7 @@ class _HomeDashboardScreenState extends State<HomeDashboardScreen> {
 class _Surface extends StatelessWidget {
   final Widget child;
   final Color color;
-  const _Surface({required this.child, this.color = Colors.white});
+  const _Surface({required this.child, this.color = AppTheme.onAction});
   @override
   Widget build(BuildContext context) => Container(
     width: double.infinity,
@@ -451,7 +451,7 @@ class _QuickAction extends StatelessWidget {
   Widget build(BuildContext context) => SizedBox(
     width: width,
     child: Material(
-      color: Colors.white,
+      color: AppTheme.onAction,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: const BorderSide(color: AppTheme.borderLight),

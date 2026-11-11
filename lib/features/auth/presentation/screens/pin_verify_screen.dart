@@ -434,10 +434,11 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
+ scrollable: true,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Row(
           children: [
-            Text('🔐 ', style: TextStyle(fontSize: 22)),
+            Icon(Icons.lock_outline, size: 22, color: AppTheme.textSecondary),
             Text('Lupa PIN'),
           ],
         ),
@@ -453,13 +454,13 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
             _forgotOption(
               '1️⃣ Reset lewat Super Admin',
               'Hubungi pemilik aplikasi untuk reset PIN Anda di panel Super Admin.',
-              Colors.teal,
+              AppTheme.primary,
             ),
             const SizedBox(height: 10),
             _forgotOption(
               '2️⃣ Login ulang',
               'Keluar dari akun lalu login kembali dengan email & password. PIN akan di-reset.',
-              Colors.orange,
+              AppTheme.warningInk,
             ),
           ],
         ),
@@ -469,13 +470,13 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
             child: const Text('Batal'),
           ),
           ElevatedButton.icon(
-            icon: const Icon(Icons.logout, size: 16, color: Colors.white),
+            icon: const Icon(Icons.logout, size: 16, color: AppTheme.onAction),
             label: const Text(
               'Logout & Login Ulang',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: AppTheme.onAction),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange[700],
+              backgroundColor: AppTheme.warningInk,
             ),
             onPressed: () async {
               Navigator.pop(context);
@@ -506,7 +507,7 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
           ),
         ),
         const SizedBox(height: 4),
-        Text(desc, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+        Text(desc, style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary)),
       ],
     ),
   );
@@ -539,7 +540,7 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.danger),
         );
       }
     }
@@ -556,7 +557,7 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
       width: 72,
       height: 72,
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F9F8),
+        color: AppTheme.surfaceLight,
         shape: BoxShape.circle,
         boxShadow: const <BoxShadow>[],
       ),
@@ -566,7 +567,7 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
           style: const TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppTheme.textPrimary,
           ),
         ),
       ),
@@ -634,14 +635,14 @@ class _OpenShiftDialogState extends State<_OpenShiftDialog> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.orange[50],
+                  color: AppTheme.warningSurface,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
                     const Icon(
                       Icons.lock_clock,
-                      color: Colors.orange,
+                      color: AppTheme.warningInk,
                       size: 28,
                     ),
                     const SizedBox(width: 12),
@@ -660,7 +661,7 @@ class _OpenShiftDialogState extends State<_OpenShiftDialog> {
                             'Halo ${widget.userName}! Isi modal awal.',
                             style: TextStyle(
                               fontSize: 14,
-                              color: const Color(0xFF62736F),
+                              color: AppTheme.textSecondary,
                             ),
                           ),
                         ],
@@ -676,22 +677,22 @@ class _OpenShiftDialogState extends State<_OpenShiftDialog> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF7F9F8),
+                  color: AppTheme.surfaceLight,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[200]!),
+                  border: Border.all(color: AppTheme.borderLight!),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.schedule,
-                      color: const Color(0xFF62736F),
+                      color: AppTheme.textSecondary,
                       size: 16,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'Mulai shift: ${_formatNow()}',
                       style: TextStyle(
-                        color: const Color(0xFF62736F),
+                        color: AppTheme.textSecondary,
                         fontSize: 14,
                       ),
                     ),
@@ -704,15 +705,15 @@ class _OpenShiftDialogState extends State<_OpenShiftDialog> {
                 decoration: InputDecoration(
                   labelText: 'Nama Kasir Bertugas *',
                   hintText: 'Contoh: Suci',
-                  prefixIcon: const Icon(Icons.person, color: Colors.green),
-                  fillColor: Colors.green[50],
+                  prefixIcon: const Icon(Icons.person, color: AppTheme.primary),
+                  fillColor: AppTheme.primarySurface,
                   filled: true,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.green[700]!, width: 2),
+                    borderSide: BorderSide(color: AppTheme.primary!, width: 2),
                   ),
                 ),
               ),
@@ -732,14 +733,14 @@ class _OpenShiftDialogState extends State<_OpenShiftDialog> {
                 ),
                 decoration: InputDecoration(
                   prefixText: 'Rp ',
-                  fillColor: Colors.green[50],
+                  fillColor: AppTheme.primarySurface,
                   filled: true,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.green[700]!, width: 2),
+                    borderSide: BorderSide(color: AppTheme.primary!, width: 2),
                   ),
                 ),
               ),
@@ -758,14 +759,14 @@ class _OpenShiftDialogState extends State<_OpenShiftDialog> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.green[50],
+                            color: AppTheme.primarySurface,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.green[300]!),
+                            border: Border.all(color: AppTheme.primary!),
                           ),
                           child: Text(
                             'Rp ${(amt / 1000).toInt()}rb',
                             style: TextStyle(
-                              color: Colors.green[700],
+                              color: AppTheme.primary,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -794,13 +795,13 @@ class _OpenShiftDialogState extends State<_OpenShiftDialog> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  icon: const Icon(Icons.play_arrow, color: Colors.white),
+                  icon: const Icon(Icons.play_arrow, color: AppTheme.onAction),
                   label: const Text(
                     'Mulai Shift & Masuk',
-                    style: TextStyle(color: Colors.white, fontSize: 15),
+                    style: TextStyle(color: AppTheme.onAction, fontSize: 15),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[700],
+                    backgroundColor: AppTheme.primary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

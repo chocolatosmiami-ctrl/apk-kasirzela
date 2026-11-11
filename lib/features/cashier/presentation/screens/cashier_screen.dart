@@ -1,3 +1,4 @@
+import '../../../../core/theme/zela_product_grid.dart';
 import '../widgets/checkout_failure_dialog.dart';
 import '../../../../core/theme/minimal_ui.dart';
 import 'dart:async';
@@ -37,13 +38,14 @@ class CashierScreen extends StatefulWidget {
   State<CashierScreen> createState() => _CashierScreenState();
 }
 
-class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserver {
+class _CashierScreenState extends State<CashierScreen>
+    with WidgetsBindingObserver {
   Future<AppUserProfile?>? _profileFuture;
   String _searchQuery = '';
   int? _selectedCategoryId;
   final _searchCtrl = TextEditingController();
   StockAvailability _avail = const StockAvailability(
-    enforced: true, stock: {}, comps: {}, unavailableReason: 'Memuat stok…');
+      enforced: true, stock: {}, comps: {}, unavailableReason: 'Memuat stok…');
   bool _refreshingStock = false;
   Timer? _availTimer;
   bool _visible = false;
@@ -57,7 +59,8 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _foreground = WidgetsBinding.instance.lifecycleState == null || WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+    _foreground = WidgetsBinding.instance.lifecycleState == null ||
+        WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
     _seenStockRevision = OfflineOrderSyncService.instance.stockRevision;
     OfflineOrderSyncService.instance.addListener(_onOrderSync);
     debugPrint(
@@ -102,26 +105,35 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _visible = TickerMode.of(context) && (ModalRoute.of(context)?.isCurrent ?? true);
+    _visible =
+        TickerMode.of(context) && (ModalRoute.of(context)?.isCurrent ?? true);
     _updatePolling();
   }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _foreground = state == AppLifecycleState.resumed;
     _updatePolling();
   }
+
   void _updatePolling() {
     final enabled = _visible && _foreground;
     if (enabled == _pollingEnabled) return;
     _pollingEnabled = enabled;
-    _availTimer?.cancel(); _availTimer = null;
+    _availTimer?.cancel();
+    _availTimer = null;
     if (!enabled) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) _refreshIngredientAvailability(); });
-    _availTimer = Timer.periodic(const Duration(seconds: 60), (_) => _refreshIngredientAvailability());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _refreshIngredientAvailability();
+    });
+    _availTimer = Timer.periodic(
+        const Duration(seconds: 60), (_) => _refreshIngredientAvailability());
   }
+
   void _onOrderSync() {
     final revision = OfflineOrderSyncService.instance.stockRevision;
-    if (revision == _seenStockRevision) return; // Idle outbox scans do not change stock.
+    if (revision == _seenStockRevision)
+      return; // Idle outbox scans do not change stock.
     _seenStockRevision = revision;
     if (_pollingEnabled) _refreshIngredientAvailability();
   }
@@ -207,7 +219,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEAF5F1),
+                        color: AppTheme.primarySurface,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -218,7 +230,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF172B2A),
+                      color: AppTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -226,14 +238,14 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                     'Stok bahan baku akan terpotong.\nNominal tidak masuk kas POS.',
                     style: const TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF62736F),
+                      color: AppTheme.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 16),
                   _OnlinePlatformTile(
                     label: 'GoFood',
                     sublabel: 'via Gojek',
-                    color: const Color(0xFF00AA13),
+                    color: AppTheme.deliveryGojek,
                     onTap: () {
                       Navigator.pop(sheetCtx);
                       _showOnlineConfirmDialog('gojek');
@@ -243,7 +255,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                   _OnlinePlatformTile(
                     label: 'GrabFood',
                     sublabel: 'via Grab',
-                    color: const Color(0xFF00B14F),
+                    color: AppTheme.deliveryGrab,
                     onTap: () {
                       Navigator.pop(sheetCtx);
                       _showOnlineConfirmDialog('grab');
@@ -253,7 +265,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                   _OnlinePlatformTile(
                     label: 'ShopeeFood',
                     sublabel: 'via Shopee',
-                    color: const Color(0xFFEE4D2D),
+                    color: AppTheme.deliveryShopee,
                     onTap: () {
                       Navigator.pop(sheetCtx);
                       _showOnlineConfirmDialog('shopee');
@@ -263,7 +275,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                   _OnlinePlatformTile(
                     label: 'Digunakan Pribadi',
                     sublabel: 'Konsumsi internal / makan staff',
-                    color: Colors.teal,
+                    color: AppTheme.primary,
                     onTap: () {
                       Navigator.pop(sheetCtx);
                       _showOnlineConfirmDialog('internal');
@@ -273,7 +285,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                   _OnlinePlatformTile(
                     label: 'Barang Rusak',
                     sublabel: 'Stok terpotong, tidak masuk kas',
-                    color: Colors.brown,
+                    color: AppTheme.warningInk,
                     onTap: () {
                       Navigator.pop(sheetCtx);
                       _showOnlineConfirmDialog('rusak');
@@ -294,14 +306,14 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
     final cashier = context.read<CashierProvider>();
     final platformLabel = CashierProvider.platformLabel(platform);
     final Color platformColor = platform == 'shopee'
-        ? const Color(0xFFEE4D2D)
+        ? AppTheme.deliveryShopee
         : platform == 'grab'
-        ? const Color(0xFF00B14F)
-        : platform == 'internal'
-        ? Colors.teal
-        : platform == 'rusak'
-        ? Colors.brown
-        : const Color(0xFF00AA13);
+            ? AppTheme.deliveryGrab
+            : platform == 'internal'
+                ? AppTheme.primary
+                : platform == 'rusak'
+                    ? AppTheme.warningInk
+                    : AppTheme.deliveryGojek;
 
     showDialog(
       context: context,
@@ -315,7 +327,8 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                 color: platformColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text('🛵', style: TextStyle(fontSize: 20)),
+              child: const Icon(Icons.delivery_dining_outlined,
+                  size: 20, color: AppTheme.textSecondary),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -333,7 +346,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                     'Konfirmasi pesanan',
                     style: const TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF62736F),
+                      color: AppTheme.textSecondary,
                       fontWeight: FontWeight.normal,
                     ),
                   ),
@@ -349,9 +362,9 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF7F9F8),
+                color: AppTheme.surfaceLight,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFDEE7E3)),
+                border: Border.all(color: AppTheme.borderLight),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,19 +399,21 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.orange[50],
+                color: AppTheme.warningSurface,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('⚠️', style: TextStyle(fontSize: 14)),
+                  Icon(Icons.warning_amber_rounded,
+                      size: 14, color: AppTheme.textSecondary),
                   SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       'Stok bahan baku akan terpotong.\n'
                       'Transaksi ini TIDAK masuk ke kas POS.',
-                      style: TextStyle(fontSize: 14, color: Colors.orange),
+                      style:
+                          TextStyle(fontSize: 14, color: AppTheme.warningInk),
                     ),
                   ),
                 ],
@@ -418,10 +433,10 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            icon: const Icon(Icons.check, color: Colors.white, size: 16),
+            icon: const Icon(Icons.check, color: AppTheme.onAction, size: 16),
             label: Text(
               'Proses $platformLabel',
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: AppTheme.onAction),
             ),
             onPressed: () {
               Navigator.of(dialogCtx).pop();
@@ -478,7 +493,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
             content: Text(
               '"${problem.key}" tidak bisa dijual: ${problem.value}',
             ),
-            backgroundColor: Colors.red[700],
+            backgroundColor: AppTheme.danger,
           ),
         );
         return;
@@ -494,7 +509,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
               width: 18,
               height: 18,
               child: CircularProgressIndicator(
-                color: Colors.white,
+                color: AppTheme.onAction,
                 strokeWidth: 2,
               ),
             ),
@@ -503,7 +518,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
           ],
         ),
         duration: const Duration(seconds: 10),
-        backgroundColor: const Color(0xFF00796B),
+        backgroundColor: AppTheme.primary,
       ),
     );
 
@@ -573,7 +588,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
     final isWide = MediaQuery.of(context).size.width > 600;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
         title: FutureBuilder<AppUserProfile?>(
           future: _profileFuture,
@@ -588,7 +603,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                     branchName,
                     style: const TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF62736F),
+                      color: AppTheme.textSecondary,
                     ),
                   ),
               ],
@@ -624,12 +639,12 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                         horizontal: 14,
                         vertical: 10,
                       ),
-                      color: Colors.red[800],
+                      color: AppTheme.danger,
                       child: Row(
                         children: [
                           const Icon(
                             Icons.money_off,
-                            color: Colors.white,
+                            color: AppTheme.onAction,
                             size: 16,
                           ),
                           const SizedBox(width: 8),
@@ -638,7 +653,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                               '🔒 Saldo Rp ${sub.balance.toInt()} — di bawah minimum Rp 5.000. '
                               'Kasir tidak dapat digunakan. Tap untuk isi saldo.',
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                                 fontSize: 14,
                               ),
                             ),
@@ -660,16 +675,16 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                         horizontal: 14,
                         vertical: 8,
                       ),
-                      color: Colors.red[700],
+                      color: AppTheme.danger,
                       child: const Row(
                         children: [
-                          Icon(Icons.lock, color: Colors.white, size: 14),
+                          Icon(Icons.lock, color: AppTheme.onAction, size: 14),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               '🔒 Saldo habis! Tap untuk top up.',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                                 fontSize: 14,
                               ),
                             ),
@@ -689,15 +704,15 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                             content: Text(
                               result.success
                                   ? result.isLocked == true
-                                        ? '⚠️ Saldo habis setelah sync. Top up dulu!'
-                                        : '✅ ${result.trxSynced} trx offline berhasil disync'
+                                      ? '⚠️ Saldo habis setelah sync. Top up dulu!'
+                                      : '✅ ${result.trxSynced} trx offline berhasil disync'
                                   : '❌ Sync gagal, coba lagi',
                             ),
                             backgroundColor: result.success
                                 ? result.isLocked == true
-                                      ? Colors.orange
-                                      : Colors.green
-                                : Colors.red,
+                                    ? AppTheme.warningInk
+                                    : AppTheme.primary
+                                : AppTheme.danger,
                           ),
                         );
                       }
@@ -708,17 +723,18 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                         horizontal: 14,
                         vertical: 8,
                       ),
-                      color: const Color(0xFF0F6E56),
+                      color: AppTheme.primaryDark,
                       child: Row(
                         children: [
-                          const Icon(Icons.sync, color: Colors.white, size: 14),
+                          const Icon(Icons.sync,
+                              color: AppTheme.onAction, size: 14),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               '📡 ${sub.offlineTrxCount} trx offline belum sync. '
                               'Tap untuk sync sekarang.',
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                                 fontSize: 14,
                               ),
                             ),
@@ -742,12 +758,12 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                         horizontal: 14,
                         vertical: 8,
                       ),
-                      color: Colors.orange[700],
+                      color: AppTheme.warningInk,
                       child: Row(
                         children: [
                           const Icon(
                             Icons.warning_amber,
-                            color: Colors.white,
+                            color: AppTheme.onAction,
                             size: 14,
                           ),
                           const SizedBox(width: 8),
@@ -755,7 +771,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                             child: Text(
                               '⚠️ Saldo hampir habis! Sisa ${sub.remainingTrx} trx.',
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                                 fontSize: 14,
                               ),
                             ),
@@ -772,14 +788,16 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                       horizontal: 14,
                       vertical: 6,
                     ),
-                    color: const Color(0xFF62736F),
+                    color: AppTheme.textSecondary,
                     child: const Row(
                       children: [
-                        Icon(Icons.wifi_off, color: Colors.white, size: 12),
+                        Icon(Icons.wifi_off,
+                            color: AppTheme.onAction, size: 12),
                         SizedBox(width: 6),
                         Text(
                           'Mode Offline — Transaksi tetap bisa dilakukan',
-                          style: TextStyle(color: Colors.white, fontSize: 12),
+                          style:
+                              TextStyle(color: AppTheme.onAction, fontSize: 12),
                         ),
                       ],
                     ),
@@ -799,7 +817,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
     return Row(
       children: [
         Expanded(flex: 3, child: _buildMenuPanel()),
-        Container(width: 1, color: const Color(0xFFDEE7E3)),
+        Container(width: 1, color: AppTheme.borderLight),
         SizedBox(
           width: MediaQuery.of(context).size.width.clamp(0, 320),
           child: _buildCartPanel(),
@@ -826,30 +844,29 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
 
         List<MenuItemModel> items = _searchQuery.isNotEmpty
             ? menuProv
-                  .searchMenu(_searchQuery)
-                  .where((i) => i.isActive)
-                  .toList()
+                .searchMenu(_searchQuery)
+                .where((i) => i.isActive)
+                .toList()
             : (_selectedCategoryId != null
-                  ? menuProv.menuItems
-                        .where(
-                          (i) =>
-                              i.categoryId == _selectedCategoryId && i.isActive,
-                        )
-                        .toList()
-                  : menuProv.activeMenuItems);
+                ? menuProv.menuItems
+                    .where(
+                      (i) => i.categoryId == _selectedCategoryId && i.isActive,
+                    )
+                    .toList()
+                : menuProv.activeMenuItems);
 
         return Column(
           children: [
             Container(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-              color: Colors.white,
+              color: AppTheme.onAction,
               child: TextField(
                 controller: _searchCtrl,
                 decoration: InputDecoration(
                   hintText: 'Cari menu...',
                   prefixIcon: const Icon(
                     Icons.search,
-                    color: Color(0xFF00796B),
+                    color: AppTheme.primary,
                     size: 20,
                   ),
                   suffixIcon: _searchQuery.isNotEmpty
@@ -867,19 +884,19 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                     vertical: 8,
                   ),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: AppTheme.onAction,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFDEE7E3)),
+                    borderSide: const BorderSide(color: AppTheme.borderLight),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: Color(0xFFDEE7E3)),
+                    borderSide: const BorderSide(color: AppTheme.borderLight),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
                     borderSide: const BorderSide(
-                      color: Color(0xFF00796B),
+                      color: AppTheme.primary,
                       width: 1.5,
                     ),
                   ),
@@ -890,8 +907,8 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
             ),
             if (menuProv.categories.isNotEmpty)
               Container(
-                height: 46,
-                color: Colors.white,
+                height: 60,
+                color: AppTheme.onAction,
                 child: ListView(
                   physics: const ClampingScrollPhysics(),
                   scrollDirection: Axis.horizontal,
@@ -901,9 +918,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                   ),
                   children: [
                     _buildCatChip('Semua', null),
-                    ...menuProv.categories
-                        .where((c) => c.isActive)
-                        .map(
+                    ...menuProv.categories.where((c) => c.isActive).map(
                           (cat) =>
                               _buildCatChip('${cat.icon} ${cat.name}', cat.id),
                         ),
@@ -917,13 +932,15 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text('🔍', style: TextStyle(fontSize: 40)),
+                          const Icon(Icons.search,
+                              size: 40, color: AppTheme.textSecondary),
                           const SizedBox(height: 8),
                           Text(
                             _searchQuery.isNotEmpty
                                 ? 'Menu tidak ditemukan'
                                 : 'Tidak ada menu aktif',
-                            style: const TextStyle(color: Colors.grey),
+                            style:
+                                const TextStyle(color: AppTheme.textSecondary),
                           ),
                         ],
                       ),
@@ -931,14 +948,13 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                   : GridView.builder(
                       physics: const ClampingScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 260,
-                        mainAxisExtent:
-                            300 +
+                      gridDelegate: ZelaProductGridDelegate(
+                        minItemWidth: 160 +
                             (MediaQuery.textScalerOf(context).scale(14) - 14) *
                                 5,
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
+                        mainAxisExtent: 300 +
+                            (MediaQuery.textScalerOf(context).scale(14) - 14) *
+                                5,
                       ),
                       itemCount: items.length,
                       itemBuilder: (context, index) =>
@@ -953,31 +969,12 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
 
   Widget _buildCatChip(String label, int? catId) {
     final isSelected = _selectedCategoryId == catId;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedCategoryId = catId),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        margin: const EdgeInsets.only(right: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF00796B) : Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: isSelected
-                ? const Color(0xFF00796B)
-                : const Color(0xFFDEE7E3),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : const Color(0xFF62736F),
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-      ),
-    );
+    return Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: AppTheme.categoryChip(
+            label: label,
+            selected: isSelected,
+            onTap: () => setState(() => _selectedCategoryId = catId)));
   }
 
   Widget _buildCartPanel() {
@@ -987,30 +984,31 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              color: const Color(0xFFEAF5F1),
+              color: AppTheme.primarySurface,
               child: Row(
                 children: [
                   Expanded(
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
+                        isExpanded: true,
                         value: cashier.orderType,
                         isDense: true,
                         style: const TextStyle(
                           fontSize: 14,
-                          color: Colors.black87,
+                          color: AppTheme.textPrimary,
                         ),
                         items: const [
                           DropdownMenuItem(
                             value: 'dine_in',
-                            child: Text('🪑 Makan di Sini'),
+                            child: Text('Makan di sini'),
                           ),
                           DropdownMenuItem(
                             value: 'takeaway',
-                            child: Text('🛍️ Bawa Pulang'),
+                            child: Text('Bawa pulang'),
                           ),
                           DropdownMenuItem(
                             value: 'delivery',
-                            child: Text('🛵 Antar'),
+                            child: Text('Antar'),
                           ),
                         ],
                         onChanged: (v) => cashier.setOrderType(v!),
@@ -1026,9 +1024,9 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppTheme.onAction,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFF00796B)),
+                          border: Border.all(color: AppTheme.primary),
                         ),
                         child: Text(
                           cashier.tableNumber != null
@@ -1036,7 +1034,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                               : 'Pilih Meja',
                           style: const TextStyle(
                             fontSize: 14,
-                            color: Color(0xFF00796B),
+                            color: AppTheme.primary,
                           ),
                         ),
                       ),
@@ -1054,11 +1052,12 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                           SizedBox(height: 8),
                           Text(
                             'Keranjang kosong',
-                            style: TextStyle(color: Colors.grey),
+                            style: TextStyle(color: AppTheme.textSecondary),
                           ),
                           Text(
                             'Ketuk menu untuk menambah',
-                            style: TextStyle(color: Colors.grey, fontSize: 14),
+                            style: TextStyle(
+                                color: AppTheme.textSecondary, fontSize: 14),
                           ),
                         ],
                       ),
@@ -1074,8 +1073,9 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white,
-                border: const Border(top: BorderSide(color: Color(0xFFDEE7E3))),
+                color: AppTheme.onAction,
+                border:
+                    const Border(top: BorderSide(color: AppTheme.borderLight)),
               ),
               child: Column(
                 children: [
@@ -1083,40 +1083,34 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                     'Subtotal',
                     AppUtils.formatCurrency(cashier.subtotal),
                   ),
-
                   if (cashier.branchDiskonEnabled &&
                       cashier.branchDiscountAmount > 0)
                     _SummaryRow(
                       '🎉 ${cashier.branchDiskonLabel}',
                       '- ${AppUtils.formatCurrency(cashier.branchDiscountAmount)}',
-                      color: Colors.green,
+                      color: AppTheme.primary,
                     ),
-
                   if (cashier.discountAmount > 0)
                     _SummaryRow(
                       'Diskon Manual',
                       '- ${AppUtils.formatCurrency(cashier.discountAmount)}',
-                      color: Colors.green,
+                      color: AppTheme.primary,
                       trailing: _discountBadge(cashier),
                     ),
-
                   if (cashier.taxEnabled && cashier.taxAmount > 0)
                     _SummaryRow(
                       'Pajak (${cashier.taxPercent.toInt()}%)',
                       AppUtils.formatCurrency(cashier.taxAmount),
                     ),
-
                   if (cashier.serviceChargeEnabled &&
                       cashier.serviceChargeAmount > 0)
                     _SummaryRow(
                       'Service Charge',
                       AppUtils.formatCurrency(cashier.serviceChargeAmount),
                     ),
-
                   Builder(
                     builder: (_) {
-                      final raw =
-                          cashier.taxableAmount +
+                      final raw = cashier.taxableAmount +
                           cashier.taxAmount +
                           cashier.serviceChargeAmount;
                       final diff = cashier.total - raw;
@@ -1124,12 +1118,11 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                       return _SummaryRow(
                         'Pembulatan',
                         '${diff >= 0 ? '+' : ''}${AppUtils.formatCurrency(diff)}',
-                        color: const Color(0xFF62736F),
+                        color: AppTheme.textSecondary,
                       );
                     },
                   ),
-
-                  const Divider(height: 12, color: Color(0xFFF0F0F0)),
+                  const Divider(height: 12, color: AppTheme.surfaceLight),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -1138,7 +1131,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
-                          color: Color(0xFF172B2A),
+                          color: AppTheme.textPrimary,
                         ),
                       ),
                       Text(
@@ -1146,13 +1139,12 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 18,
-                          color: Color(0xFF00796B),
+                          color: AppTheme.primary,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
-
                   Row(
                     children: [
                       Expanded(
@@ -1161,8 +1153,8 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                           icon: const Icon(Icons.discount_outlined, size: 16),
                           label: const Text('Diskon'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF00796B),
-                            side: const BorderSide(color: Color(0xFF00796B)),
+                            foregroundColor: AppTheme.primary,
+                            side: const BorderSide(color: AppTheme.primary),
                           ),
                         ),
                       ),
@@ -1200,19 +1192,18 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                               icon: Icon(
                                 blocked ? Icons.lock : Icons.payment,
                                 size: 18,
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                               ),
                               label: Text(
                                 blocked ? 'Saldo Kurang' : 'Bayar',
                                 style: const TextStyle(
                                   fontSize: 15,
-                                  color: Colors.white,
+                                  color: AppTheme.onAction,
                                 ),
                               ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: blocked
-                                    ? const Color(0xFF62736F)
-                                    : null,
+                                backgroundColor:
+                                    blocked ? AppTheme.textSecondary : null,
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 12,
                                 ),
@@ -1223,16 +1214,14 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 8),
-
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: cashier.isEmpty
-                          ? null
-                          : _showOnlinePlatformSheet,
-                      icon: const Text('🛵', style: TextStyle(fontSize: 15)),
+                      onPressed:
+                          cashier.isEmpty ? null : _showOnlinePlatformSheet,
+                      icon: const Icon(Icons.delivery_dining_outlined,
+                          size: 20, color: AppTheme.onAction),
                       label: const Text(
                         'Online (GoFood / GrabFood / ShopeeFood)',
                         style: TextStyle(
@@ -1241,14 +1230,14 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
+                        foregroundColor: AppTheme.onAction,
                         backgroundColor: cashier.isEmpty
-                            ? Colors.grey[300]
-                            : const Color(0xFF0F6E56),
+                            ? AppTheme.fieldBorder
+                            : AppTheme.primaryDark,
                         side: BorderSide(
                           color: cashier.isEmpty
-                              ? Colors.grey[300]!
-                              : const Color(0xFF00796B)!,
+                              ? AppTheme.fieldBorder!
+                              : AppTheme.primary!,
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         shape: RoundedRectangleBorder(
@@ -1270,54 +1259,12 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
     return Consumer<CashierProvider>(
       builder: (_, cashier, __) {
         if (cashier.isEmpty) return const SizedBox();
-        return GestureDetector(
-          onTap: () => _showCartBottomSheet(),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF00796B),
-              boxShadow: const <BoxShadow>[],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${cashier.totalQty}',
-                    style: const TextStyle(
-                      color: Color(0xFF00796B),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                const Text(
-                  'Lihat Keranjang',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  AppUtils.formatCurrency(cashier.total),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
+        return AppTheme.cartBar(
+            itemCount: cashier.totalQty,
+            previewText: '',
+            totalText: AppUtils.formatCurrency(cashier.total),
+            actionLabel: 'Lihat keranjang',
+            onTap: _showCartBottomSheet);
       },
     );
   }
@@ -1325,7 +1272,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
   Widget _discountBadge(CashierProvider cashier) {
     return GestureDetector(
       onTap: cashier.clearDiscount,
-      child: const Icon(Icons.close, size: 16, color: Colors.red),
+      child: const Icon(Icons.close, size: 16, color: AppTheme.danger),
     );
   }
 
@@ -1348,13 +1295,13 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00796B),
+              backgroundColor: AppTheme.primary,
             ),
             onPressed: () {
               cashier.setTableNumber(ctrl.text.isEmpty ? null : ctrl.text);
               Navigator.pop(context);
             },
-            child: const Text('OK', style: TextStyle(color: Colors.white)),
+            child: const Text('OK', style: TextStyle(color: AppTheme.onAction)),
           ),
         ],
       ),
@@ -1367,9 +1314,8 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
           ? cashier.discountValue.toStringAsFixed(0)
           : '',
     );
-    String type = cashier.discountType == 'none'
-        ? 'percent'
-        : cashier.discountType;
+    String type =
+        cashier.discountType == 'none' ? 'percent' : cashier.discountType;
 
     showModalBottomSheet(
       context: context,
@@ -1403,8 +1349,8 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
                           color: type == 'percent'
-                              ? const Color(0xFF00796B)
-                              : const Color(0xFFF7F9F8),
+                              ? AppTheme.primary
+                              : AppTheme.surfaceLight,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -1412,8 +1358,8 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: type == 'percent'
-                                ? Colors.white
-                                : const Color(0xFF62736F),
+                                ? AppTheme.onAction
+                                : AppTheme.textSecondary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -1428,8 +1374,8 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
                           color: type == 'nominal'
-                              ? const Color(0xFF00796B)
-                              : const Color(0xFFF7F9F8),
+                              ? AppTheme.primary
+                              : AppTheme.surfaceLight,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -1437,8 +1383,8 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: type == 'nominal'
-                                ? Colors.white
-                                : const Color(0xFF62736F),
+                                ? AppTheme.onAction
+                                : AppTheme.textSecondary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -1452,9 +1398,8 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                 controller: ctrl,
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  labelText: type == 'percent'
-                      ? 'Persentase (%)'
-                      : 'Nominal (Rp)',
+                  labelText:
+                      type == 'percent' ? 'Persentase (%)' : 'Nominal (Rp)',
                   prefixText: type == 'nominal' ? 'Rp ' : null,
                   suffixText: type == 'percent' ? '%' : null,
                 ),
@@ -1475,7 +1420,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00796B),
+                        backgroundColor: AppTheme.primary,
                       ),
                       onPressed: () {
                         final val = double.tryParse(ctrl.text) ?? 0;
@@ -1484,7 +1429,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
                       },
                       child: const Text(
                         'Terapkan',
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: AppTheme.onAction),
                       ),
                     ),
                   ),
@@ -1515,7 +1460,7 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
               height: 4,
               margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFFEAF5F1),
+                color: AppTheme.primarySurface,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1538,14 +1483,14 @@ class _CashierScreenState extends State<CashierScreen> with WidgetsBindingObserv
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
             onPressed: () {
               Navigator.pop(context);
               context.read<CashierProvider>().clearCart();
             },
             child: const Text(
               'Kosongkan',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: AppTheme.onAction),
             ),
           ),
         ],
@@ -1589,7 +1534,8 @@ class _OnlinePlatformTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Center(
-                child: Text('🛵', style: const TextStyle(fontSize: 22)),
+                child: Icon(Icons.delivery_dining_outlined,
+                    size: 22, color: AppTheme.textSecondary),
               ),
             ),
             const SizedBox(width: 14),
@@ -1609,7 +1555,7 @@ class _OnlinePlatformTile extends StatelessWidget {
                     sublabel,
                     style: const TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF62736F),
+                      color: AppTheme.textSecondary,
                     ),
                   ),
                 ],
@@ -1645,12 +1591,10 @@ class _MenuCard extends StatelessWidget {
           final selected = cartItem != null;
           return Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.onAction,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: selected
-                    ? const Color(0xFF00796B)
-                    : const Color(0xFFDEE7E3),
+                color: selected ? AppTheme.primary : AppTheme.borderLight,
                 width: selected ? 2 : 1,
               ),
             ),
@@ -1666,11 +1610,18 @@ class _MenuCard extends StatelessWidget {
                         opacity: unavailable ? 0.45 : 1,
                         child: item.imagePath == null || item.imagePath!.isEmpty
                             ? _placeholderImage()
-                            : item.imagePath!.startsWith('https://') || item.imagePath!.startsWith('http://')
-                              ? Image.network(item.imagePath!, fit: BoxFit.cover, cacheWidth: 640,
-                                  errorBuilder: (_, __, ___) => _placeholderImage())
-                              : Image.asset(item.imagePath!, fit: BoxFit.cover, cacheWidth: 640,
-                                  errorBuilder: (_, __, ___) => _placeholderImage()),
+                            : item.imagePath!.startsWith('https://') ||
+                                    item.imagePath!.startsWith('http://')
+                                ? Image.network(item.imagePath!,
+                                    fit: BoxFit.cover,
+                                    cacheWidth: 640,
+                                    errorBuilder: (_, __, ___) =>
+                                        _placeholderImage())
+                                : Image.asset(item.imagePath!,
+                                    fit: BoxFit.cover,
+                                    cacheWidth: 640,
+                                    errorBuilder: (_, __, ___) =>
+                                        _placeholderImage()),
                       ),
                       if (unavailable || remaining != null)
                         Positioned(
@@ -1686,10 +1637,10 @@ class _MenuCard extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: unavailable
-                                    ? const Color(0xFFFBEDEC)
+                                    ? AppTheme.dangerSurface
                                     : remaining! <= 3
-                                    ? const Color(0xFFFFF4E5)
-                                    : const Color(0xFFEAF5F1),
+                                        ? AppTheme.warningSurface
+                                        : AppTheme.primarySurface,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -1700,10 +1651,10 @@ class _MenuCard extends StatelessWidget {
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                   color: unavailable
-                                      ? const Color(0xFFBA3A3A)
+                                      ? AppTheme.danger
                                       : remaining! <= 3
-                                      ? const Color(0xFF845500)
-                                      : const Color(0xFF00695C),
+                                          ? AppTheme.warningInk
+                                          : AppTheme.primaryDark,
                                 ),
                               ),
                             ),
@@ -1725,7 +1676,7 @@ class _MenuCard extends StatelessWidget {
                           fontSize: 14,
                           height: 1.3,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF172B2A),
+                          color: AppTheme.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -1734,19 +1685,19 @@ class _MenuCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF172B2A),
+                          color: AppTheme.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 10),
                       SizedBox(
-                        height: 44,
+                        height: 48,
                         child: unavailable
                             ? const Row(
                                 children: [
                                   Icon(
                                     Icons.lock_outline,
                                     size: 16,
-                                    color: Color(0xFFBA3A3A),
+                                    color: AppTheme.danger,
                                   ),
                                   SizedBox(width: 6),
                                   Expanded(
@@ -1754,7 +1705,7 @@ class _MenuCard extends StatelessWidget {
                                       'Tidak tersedia',
                                       style: TextStyle(
                                         fontSize: 14,
-                                        color: Color(0xFFBA3A3A),
+                                        color: AppTheme.danger,
                                       ),
                                     ),
                                   ),
@@ -1776,7 +1727,7 @@ class _MenuCard extends StatelessWidget {
                                           style: const TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w700,
-                                            color: Color(0xFF172B2A),
+                                            color: AppTheme.textPrimary,
                                           ),
                                         ),
                                       ),
@@ -1800,15 +1751,15 @@ class _MenuCard extends StatelessWidget {
       );
 
   Widget _placeholderImage() => Container(
-    color: const Color(0xFFF0F4F2),
-    child: const Center(
-      child: Icon(
-        Icons.restaurant_outlined,
-        size: 40,
-        color: Color(0xFF82968F),
-      ),
-    ),
-  );
+        color: AppTheme.surfaceLight,
+        child: const Center(
+          child: Icon(
+            Icons.restaurant_outlined,
+            size: 40,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+      );
 }
 
 // ── Cureva-style qty button (solid teal atau outline) ─────────
@@ -1823,27 +1774,8 @@ class _CurevaQtyBtn extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: solid ? const Color(0xFF00796B) : Colors.white,
-          borderRadius: BorderRadius.circular(7),
-          border: Border.all(
-            color: solid ? const Color(0xFF00796B) : const Color(0xFFDEE7E3),
-          ),
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: solid ? Colors.white : const Color(0xFF00796B),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      AppTheme.qtyButton(icon: icon, onTap: onTap, solid: solid);
 }
 
 class _CartItemTile extends StatelessWidget {
@@ -1857,9 +1789,9 @@ class _CartItemTile extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F9F8),
+        color: AppTheme.surfaceLight,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFDEE7E3)),
+        border: Border.all(color: AppTheme.borderLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1872,14 +1804,14 @@ class _CartItemTile extends StatelessWidget {
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: Color(0xFF172B2A),
+                    color: AppTheme.textPrimary,
                   ),
                 ),
               ),
               Text(
                 AppUtils.formatCurrency(item.subtotal),
                 style: const TextStyle(
-                  color: const Color(0xFF00796B),
+                  color: AppTheme.primary,
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                 ),
@@ -1889,54 +1821,38 @@ class _CartItemTile extends StatelessWidget {
           if (item.note != null && item.note!.isNotEmpty)
             Text(
               '📝 ${item.note}',
-              style: const TextStyle(fontSize: 12, color: Color(0xFF62736F)),
+              style:
+                  const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
             ),
           const SizedBox(height: 4),
-          Row(
-            children: [
-              Text(
-                AppUtils.formatCurrency(item.menuItem.price),
-                style: const TextStyle(color: Color(0xFF62736F), fontSize: 14),
-              ),
-              const Spacer(),
-              _QtyButton(
-                icon: Icons.remove,
-                onTap: () => cashier.removeItem(item.menuItem.id!),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text(
-                  '${item.qty}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-              ),
-              _QtyButton(
-                icon: Icons.add,
-                onTap: () => cashier.addItem(item.menuItem),
-              ),
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: () => _showNoteDialog(context, cashier),
-                child: Icon(
-                  Icons.note_add_outlined,
-                  size: 18,
-                  color: const Color(0xFF62736F),
-                ),
-              ),
-              const SizedBox(width: 6),
-              GestureDetector(
-                onTap: () => cashier.deleteItem(item.menuItem.id!),
-                child: const Icon(
-                  Icons.delete_outline,
-                  size: 18,
-                  color: Colors.red,
-                ),
-              ),
-            ],
-          ),
+          Text(AppUtils.formatCurrency(item.menuItem.price),
+              style: AppTheme.labelSm),
+          Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 4,
+              children: [
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  _QtyButton(
+                      icon: Icons.remove,
+                      onTap: () => cashier.removeItem(item.menuItem.id!)),
+                  Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text('${item.qty}', style: AppTheme.headingMd)),
+                  _QtyButton(
+                      icon: Icons.add,
+                      onTap: () => cashier.addItem(item.menuItem)),
+                ]),
+                IconButton(
+                    tooltip: 'Catatan item',
+                    icon: const Icon(Icons.note_add_outlined),
+                    onPressed: () => _showNoteDialog(context, cashier)),
+                IconButton(
+                    tooltip: 'Hapus item',
+                    icon: const Icon(Icons.delete_outline,
+                        color: AppTheme.danger),
+                    onPressed: () => cashier.deleteItem(item.menuItem.id!)),
+              ]),
         ],
       ),
     );
@@ -1963,13 +1879,14 @@ class _CartItemTile extends StatelessWidget {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00796B),
+              backgroundColor: AppTheme.primary,
             ),
             onPressed: () {
               cashier.setItemNote(item.menuItem.id!, ctrl.text);
               Navigator.pop(context);
             },
-            child: const Text('Simpan', style: TextStyle(color: Colors.white)),
+            child: const Text('Simpan',
+                style: TextStyle(color: AppTheme.onAction)),
           ),
         ],
       ),
@@ -1983,20 +1900,8 @@ class _QtyButton extends StatelessWidget {
   const _QtyButton({required this.icon, required this.onTap});
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 26,
-        height: 26,
-        decoration: BoxDecoration(
-          color: const Color(0xFFEAF5F1),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Icon(icon, size: 16, color: const Color(0xFF00796B)),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      AppTheme.qtyButton(icon: icon, onTap: onTap);
 }
 
 class _SummaryRow extends StatelessWidget {
@@ -2015,7 +1920,7 @@ class _SummaryRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(color: Color(0xFF62736F), fontSize: 14),
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
           ),
           if (trailing != null) ...[const SizedBox(width: 4), trailing!],
           const Spacer(),

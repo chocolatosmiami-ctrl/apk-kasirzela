@@ -77,12 +77,12 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                             decoration: BoxDecoration(
                               color: selectedIcon == emoji
                                   ? AppTheme.lightOrange
-                                  : const Color(0xFFF7F9F8),
+                                  : AppTheme.surfaceLight,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: selectedIcon == emoji
                                     ? AppTheme.primaryRed
-                                    : Colors.transparent,
+                                    : AppTheme.transparent,
                                 width: 2,
                               ),
                             ),
@@ -138,7 +138,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
               },
               child: Text(
                 category == null ? 'Tambah' : 'Simpan',
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: AppTheme.onAction),
               ),
             ),
           ],
@@ -172,7 +172,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                       decoration: BoxDecoration(
                         color: cat.isActive
                             ? AppTheme.lightOrange
-                            : Colors.grey[200],
+                            : AppTheme.borderLight,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Center(
@@ -189,7 +189,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                     subtitle: Text(
                       cat.isActive ? 'Aktif' : 'Nonaktif',
                       style: TextStyle(
-                        color: cat.isActive ? Colors.green : Colors.red,
+                        color: cat.isActive ? AppTheme.primary : AppTheme.danger,
                         fontSize: 14,
                       ),
                     ),
@@ -206,7 +206,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                         ),
                         IconButton(
                           tooltip: 'Edit',
-                          icon: const Icon(Icons.delete, color: Colors.red),
+                          icon: const Icon(Icons.delete, color: AppTheme.danger),
                           onPressed: () async {
                             final ok = await menuProv.deleteCategory(cat.id!);
                             if (!ok && context.mounted) {
@@ -215,7 +215,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
                                   content: Text(
                                     'Hapus semua menu di kategori ini dulu',
                                   ),
-                                  backgroundColor: Colors.red,
+                                  backgroundColor: AppTheme.danger,
                                 ),
                               );
                             }
@@ -235,7 +235,7 @@ class _CategoryManagementScreenState extends State<CategoryManagementScreen> {
             'features_menu_presentation_screens_category_management_screen_7',
         backgroundColor: AppTheme.primaryRed,
         onPressed: () => _showCategoryDialog(),
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add, color: AppTheme.onAction),
       ),
     );
   }

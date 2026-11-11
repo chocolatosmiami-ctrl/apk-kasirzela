@@ -40,14 +40,14 @@ const Map<String, IconData> _permIcons = {
 };
 
 const List<Color> _colorOptions = [
-  Color(0xFFD32F2F), // Merah
-  Color(0xFF1565C0), // Biru
-  Color(0xFF2E7D32), // Hijau
-  Color(0xFF6A1B9A), // Ungu
-  Color(0xFFE65100), // Orange
-  Color(0xFF00695C), // Teal
-  Color(0xFF37474F), // Abu gelap
-  Color(0xFFC62828), // Merah tua
+  AppTheme.danger, // Merah
+  AppTheme.information, // Biru
+  AppTheme.primaryDark, // Hijau
+  AppTheme.reservedInk, // Ungu
+  AppTheme.warningInk, // Orange
+  AppTheme.primaryDark, // Teal
+  AppTheme.textSecondary, // Abu gelap
+  AppTheme.danger, // Merah tua
 ];
 
 const List<String> _emojiOptions = [
@@ -122,7 +122,7 @@ class _PresetManagementScreenState extends State<PresetManagementScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: AppTheme.fieldBorder,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -243,10 +243,10 @@ class _PresetManagementScreenState extends State<PresetManagementScreen> {
                             decoration: BoxDecoration(
                               color: sel
                                   ? selectedColor
-                                  : const Color(0xFFF7F9F8),
+                                  : AppTheme.surfaceLight,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: sel ? selectedColor : Colors.grey[300]!,
+                                color: sel ? selectedColor : AppTheme.fieldBorder!,
                               ),
                             ),
                             child: Center(
@@ -281,14 +281,14 @@ class _PresetManagementScreenState extends State<PresetManagementScreen> {
                               color: col,
                               shape: BoxShape.circle,
                               border: sel
-                                  ? Border.all(color: Colors.white, width: 3)
+                                  ? Border.all(color: AppTheme.onAction, width: 3)
                                   : null,
                               boxShadow: const <BoxShadow>[],
                             ),
                             child: sel
                                 ? const Icon(
                                     Icons.check,
-                                    color: Colors.white,
+                                    color: AppTheme.onAction,
                                     size: 18,
                                   )
                                 : null,
@@ -319,14 +319,14 @@ class _PresetManagementScreenState extends State<PresetManagementScreen> {
                           onPressed: () => setS(() => selectedPerms.clear()),
                           child: const Text(
                             'Hapus Semua',
-                            style: TextStyle(color: Colors.red),
+                            style: TextStyle(color: AppTheme.danger),
                           ),
                         ),
                       ],
                     ),
                     Container(
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[200]!),
+                        border: Border.all(color: AppTheme.borderLight!),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -354,7 +354,7 @@ class _PresetManagementScreenState extends State<PresetManagementScreen> {
                                       decoration: BoxDecoration(
                                         color: isSelected
                                             ? selectedColor.withOpacity(0.1)
-                                            : const Color(0xFFF7F9F8),
+                                            : AppTheme.surfaceLight,
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Icon(
@@ -362,7 +362,7 @@ class _PresetManagementScreenState extends State<PresetManagementScreen> {
                                         size: 18,
                                         color: isSelected
                                             ? selectedColor
-                                            : const Color(0xFF62736F),
+                                            : AppTheme.textSecondary,
                                       ),
                                     ),
                                     title: Text(
@@ -396,12 +396,12 @@ class _PresetManagementScreenState extends State<PresetManagementScreen> {
                       child: ElevatedButton.icon(
                         icon: Icon(
                           preset == null ? Icons.add : Icons.save,
-                          color: Colors.white,
+                          color: AppTheme.onAction,
                         ),
                         label: Text(
                           preset == null ? 'Buat Preset' : 'Simpan Perubahan',
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppTheme.onAction,
                             fontSize: 15,
                           ),
                         ),
@@ -441,7 +441,7 @@ class _PresetManagementScreenState extends State<PresetManagementScreen> {
                                         ? '✅ Preset "${nameCtrl.text.trim()}" dibuat'
                                         : '✅ Preset diperbarui',
                                   ),
-                                  backgroundColor: Colors.green,
+                                  backgroundColor: AppTheme.primary,
                                 ),
                               );
                             }
@@ -471,7 +471,7 @@ class _PresetManagementScreenState extends State<PresetManagementScreen> {
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
             onPressed: () async {
               await DatabaseHelper.instance.delete('presets', 'id = ?', [
                 preset.id,
@@ -481,7 +481,7 @@ class _PresetManagementScreenState extends State<PresetManagementScreen> {
                 await _load();
               }
             },
-            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+            child: const Text('Hapus', style: TextStyle(color: AppTheme.onAction)),
           ),
         ],
       ),
@@ -502,16 +502,16 @@ class _PresetManagementScreenState extends State<PresetManagementScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(12),
-                    color: Colors.teal[50],
+                    color: AppTheme.primarySurface,
                     child: const Row(
                       children: [
-                        Icon(Icons.info_outline, color: Colors.teal, size: 16),
+                        Icon(Icons.info_outline, color: AppTheme.primary, size: 16),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Preset adalah template hak akses. '
                             'Buat preset sesuai kebutuhan, lalu terapkan ke role atau user.',
-                            style: TextStyle(fontSize: 14, color: Colors.teal),
+                            style: TextStyle(fontSize: 14, color: AppTheme.primary),
                           ),
                         ),
                       ],
@@ -523,11 +523,11 @@ class _PresetManagementScreenState extends State<PresetManagementScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text('📋', style: TextStyle(fontSize: 48)),
+                                Icon(Icons.assignment_outlined, size: 40, color: AppTheme.textSecondary),
                                 SizedBox(height: 12),
                                 Text(
                                   'Belum ada preset',
-                                  style: TextStyle(color: Colors.grey),
+                                  style: TextStyle(color: AppTheme.textSecondary),
                                 ),
                               ],
                             ),
@@ -573,8 +573,8 @@ class _PresetManagementScreenState extends State<PresetManagementScreen> {
             'features_settings_presentation_screens_preset_management_screen_3',
         backgroundColor: AppTheme.primaryRed,
         onPressed: () => _showPresetEditor(),
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Buat Preset', style: TextStyle(color: Colors.white)),
+        icon: const Icon(Icons.add, color: AppTheme.onAction),
+        label: const Text('Buat Preset', style: TextStyle(color: AppTheme.onAction)),
       ),
     );
   }
@@ -602,7 +602,7 @@ class _PresetCard extends StatelessWidget {
         child: Row(
           children: [
             // Drag handle
-            Icon(Icons.drag_handle, color: const Color(0xFF62736F)),
+            Icon(Icons.drag_handle, color: AppTheme.textSecondary),
             const SizedBox(width: 8),
             // Icon
             Container(
@@ -639,14 +639,14 @@ class _PresetCard extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
+                            color: AppTheme.borderLight,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             'bawaan',
                             style: TextStyle(
                               fontSize: 12,
-                              color: const Color(0xFF62736F),
+                              color: AppTheme.textSecondary,
                             ),
                           ),
                         ),
@@ -690,14 +690,14 @@ class _PresetCard extends StatelessWidget {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.grey[200],
+                                        color: AppTheme.borderLight,
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
                                         '+${preset.permissions.length - 5} lagi',
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: const Color(0xFF62736F),
+                                          color: AppTheme.textSecondary,
                                         ),
                                       ),
                                     ),
@@ -713,7 +713,7 @@ class _PresetCard extends StatelessWidget {
               children: [
                 IconButton(
                   tooltip: 'Edit',
-                  icon: const Icon(Icons.edit, size: 18, color: Colors.teal),
+                  icon: const Icon(Icons.edit, size: 18, color: AppTheme.primary),
                   onPressed: onEdit,
                   padding: const EdgeInsets.all(4),
                   constraints: const BoxConstraints(),
@@ -724,7 +724,7 @@ class _PresetCard extends StatelessWidget {
                     icon: const Icon(
                       Icons.delete_outline,
                       size: 18,
-                      color: Colors.red,
+                      color: AppTheme.danger,
                     ),
                     onPressed: onDelete,
                     padding: const EdgeInsets.all(4),

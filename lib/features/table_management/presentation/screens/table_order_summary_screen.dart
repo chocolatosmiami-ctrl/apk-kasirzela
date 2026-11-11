@@ -74,7 +74,7 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
     final cashier = context.watch<CashierProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
         title: Text('Pesanan — ${widget.table.name}'),
         backgroundColor: AppTheme.primaryRed,
@@ -86,7 +86,7 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
               widget.table.customerName != null
                   ? '👤 ${widget.table.customerName}'
                   : widget.table.zone,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: const TextStyle(color: AppTheme.onAction, fontSize: 14),
             ),
           ),
         ),
@@ -99,17 +99,17 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('🍽️', style: TextStyle(fontSize: 48)),
+                    const Icon(Icons.restaurant_outlined, size: 40, color: AppTheme.textSecondary),
                     const SizedBox(height: 12),
                     Text(
                       'Belum ada pesanan di ${widget.table.name}',
-                      style: const TextStyle(color: Colors.grey),
+                      style: const TextStyle(color: AppTheme.textSecondary),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Tekan "Tambah Pesanan" untuk mulai',
                       style: TextStyle(
-                        color: const Color(0xFF62736F),
+                        color: AppTheme.textSecondary,
                         fontSize: 14,
                       ),
                     ),
@@ -150,7 +150,7 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
                               '@${AppUtils.formatCurrency(item.menuItem.price)}',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: const Color(0xFF62736F),
+                                color: AppTheme.textSecondary,
                               ),
                             ),
                       trailing: Text(
@@ -169,7 +169,7 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppTheme.onAction,
             boxShadow: const <BoxShadow>[],
           ),
           child: Column(
@@ -224,15 +224,15 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
                       icon: const Icon(
                         Icons.payment,
                         size: 18,
-                        color: Colors.white,
+                        color: AppTheme.onAction,
                       ),
                       label: const Text(
                         'Bayar',
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: AppTheme.onAction),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: cashier.isEmpty
-                            ? const Color(0xFF62736F)
+                            ? AppTheme.textSecondary
                             : AppTheme.primaryRed,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(

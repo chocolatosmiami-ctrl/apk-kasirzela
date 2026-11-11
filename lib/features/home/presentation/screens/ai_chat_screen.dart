@@ -1,3 +1,4 @@
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/ai_chat_service.dart';
 import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
@@ -227,7 +228,7 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00796B),
+              backgroundColor: AppTheme.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -237,7 +238,7 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
               setState(() => _messages.clear());
               _sendWelcome();
             },
-            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+            child: const Text('Hapus', style: TextStyle(color: AppTheme.onAction)),
           ),
         ],
       ),
@@ -257,16 +258,16 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF172B2A),
+        backgroundColor: AppTheme.onAction,
+        foregroundColor: AppTheme.textPrimary,
         elevation: 0,
-        surfaceTintColor: Colors.transparent,
+        surfaceTintColor: AppTheme.transparent,
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_rounded,
-            color: Color(0xFF00796B),
+            color: AppTheme.primary,
             size: 20,
           ),
           onPressed: () => Navigator.pop(context),
@@ -277,11 +278,11 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: const Color(0xFF00796B),
+                color: AppTheme.primary,
                 shape: BoxShape.circle,
               ),
               child: const Center(
-                child: Text('🤖', style: TextStyle(fontSize: 18)),
+                child: Icon(Icons.insights_outlined, size: 18, color: AppTheme.textSecondary),
               ),
             ),
             const SizedBox(width: 10),
@@ -293,7 +294,7 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
-                    color: Color(0xFF172B2A),
+                    color: AppTheme.textPrimary,
                   ),
                 ),
                 Row(
@@ -302,14 +303,14 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
                       width: 6,
                       height: 6,
                       decoration: const BoxDecoration(
-                        color: Color(0xFF00796B),
+                        color: AppTheme.primary,
                         shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 4),
                     const Text(
                       'Online · AI Bisnis Assistant',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF62736F)),
+                      style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                     ),
                   ],
                 ),
@@ -321,7 +322,7 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
           IconButton(
             icon: const Icon(
               Icons.delete_outline_rounded,
-              color: Color(0xFF62736F),
+              color: AppTheme.textSecondary,
             ),
             tooltip: 'Hapus percakapan',
             onPressed: _clearChat,
@@ -337,7 +338,7 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
               child: _messages.isEmpty
                   ? const Center(
                       child: CircularProgressIndicator(
-                        color: Color(0xFF00796B),
+                        color: AppTheme.primary,
                       ),
                     )
                   : ListView.builder(
@@ -357,7 +358,7 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
             // ── Quick prompts (hanya muncul kalau pesan sedikit) ──
             if (_messages.length <= 2)
               Container(
-                color: Colors.white,
+                color: AppTheme.onAction,
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -373,10 +374,10 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
                                 vertical: 7,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFEAF5F1),
+                                color: AppTheme.primarySurface,
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: const Color(0xFFB2DFDB),
+                                  color: AppTheme.accentMint,
                                 ),
                               ),
                               child: Row(
@@ -391,7 +392,7 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
                                     p.$2,
                                     style: const TextStyle(
                                       fontSize: 12,
-                                      color: Color(0xFF00796B),
+                                      color: AppTheme.primary,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -407,7 +408,7 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
 
             // ── Input bar ────────────────────────────────────
             Container(
-              color: Colors.white,
+              color: AppTheme.onAction,
               padding: EdgeInsets.fromLTRB(
                 12,
                 8,
@@ -421,9 +422,9 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7F9F8),
+                        color: AppTheme.surfaceLight,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFDEE7E3)),
+                        border: Border.all(color: AppTheme.borderLight),
                       ),
                       child: TextField(
                         controller: _textCtrl,
@@ -433,12 +434,12 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
                         textCapitalization: TextCapitalization.sentences,
                         style: const TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF172B2A),
+                          color: AppTheme.textPrimary,
                         ),
                         decoration: const InputDecoration(
                           hintText: 'Tanya sesuatu tentang bisnis kamu...',
                           hintStyle: TextStyle(
-                            color: Color(0xFF62736F),
+                            color: AppTheme.textSecondary,
                             fontSize: 14,
                           ),
                           border: InputBorder.none,
@@ -461,15 +462,15 @@ Mulai percakapan dengan sapaan hangat dan tawaran bantuan.
                       height: 44,
                       decoration: BoxDecoration(
                         color: _isTyping
-                            ? const Color(0xFFB2DFDB)
-                            : const Color(0xFF00796B),
+                            ? AppTheme.accentMint
+                            : AppTheme.primary,
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
                         _isTyping
                             ? Icons.hourglass_top_rounded
                             : Icons.send_rounded,
-                        color: Colors.white,
+                        color: AppTheme.onAction,
                         size: 20,
                       ),
                     ),
@@ -506,11 +507,11 @@ class _MessageBubble extends StatelessWidget {
               height: 28,
               margin: const EdgeInsets.only(right: 8),
               decoration: const BoxDecoration(
-                color: const Color(0xFF00796B),
+                color: AppTheme.primary,
                 shape: BoxShape.circle,
               ),
               child: const Center(
-                child: Text('🤖', style: TextStyle(fontSize: 14)),
+                child: Icon(Icons.insights_outlined, size: 14, color: AppTheme.textSecondary),
               ),
             ),
           ],
@@ -519,10 +520,10 @@ class _MessageBubble extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: isUser
-                    ? const Color(0xFF00796B)
+                    ? AppTheme.primary
                     : msg.isError
-                    ? const Color(0xFFFBEDEC)
-                    : Colors.white,
+                    ? AppTheme.dangerSurface
+                    : AppTheme.onAction,
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(18),
                   topRight: const Radius.circular(18),
@@ -533,8 +534,8 @@ class _MessageBubble extends StatelessWidget {
                     ? null
                     : Border.all(
                         color: msg.isError
-                            ? const Color(0xFFFCA5A5)
-                            : const Color(0xFFDEE7E3),
+                            ? AppTheme.dangerSurface
+                            : AppTheme.borderLight,
                       ),
               ),
               child: _buildText(msg.text, isUser, msg.isError),
@@ -559,10 +560,10 @@ class _MessageBubble extends StatelessWidget {
             fontSize: 14,
             height: 1.5,
             color: isUser
-                ? Colors.white
+                ? AppTheme.onAction
                 : isError
-                ? const Color(0xFFDC2626)
-                : const Color(0xFF172B2A),
+                ? AppTheme.danger
+                : AppTheme.textPrimary,
           ),
         ),
       );
@@ -588,24 +589,24 @@ class _TypingIndicator extends StatelessWidget {
             height: 28,
             margin: const EdgeInsets.only(right: 8),
             decoration: const BoxDecoration(
-              color: const Color(0xFF00796B),
+              color: AppTheme.primary,
               shape: BoxShape.circle,
             ),
             child: const Center(
-              child: Text('🤖', style: TextStyle(fontSize: 14)),
+              child: Icon(Icons.insights_outlined, size: 14, color: AppTheme.textSecondary),
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.onAction,
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(18),
                 topRight: Radius.circular(18),
                 bottomRight: Radius.circular(18),
                 bottomLeft: Radius.circular(4),
               ),
-              border: Border.all(color: const Color(0xFFDEE7E3)),
+              border: Border.all(color: AppTheme.borderLight),
             ),
             child: AnimatedBuilder(
               animation: anim,

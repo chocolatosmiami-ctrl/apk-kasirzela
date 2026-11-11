@@ -1,3 +1,4 @@
+import '../../../../core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/services/offline_order_sync_service.dart';
@@ -50,10 +51,10 @@ class _ReceiptSyncStatusState extends State<ReceiptSyncStatus> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: confirmed ? const Color(0xFFEAF5F1) : const Color(0xFFFFF3DA),
+      color: confirmed ? AppTheme.primarySurface : AppTheme.warningSurface,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(_readError ?? state?.message ?? 'Memeriksa status pengiriman…',
-          style: const TextStyle(fontSize: 13, color: Color(0xFF172B2A))),
+          style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary)),
         Wrap(spacing: 12, children: [
           if (!confirmed) TextButton(onPressed: () async {
             try { await _sync.flush(); } catch (_) { /* Read durable status below. */ }

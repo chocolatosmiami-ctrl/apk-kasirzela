@@ -55,7 +55,7 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: AppTheme.fieldBorder,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -69,10 +69,10 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.orange[50],
+                  color: AppTheme.warningSurface,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.camera_alt, color: Colors.orange[700]),
+                child: Icon(Icons.camera_alt, color: AppTheme.warningInk),
               ),
               title: const Text('Ambil dari Kamera'),
               onTap: () {
@@ -84,12 +84,12 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.teal[50],
+                  color: AppTheme.primarySurface,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   Icons.photo_library,
-                  color: const Color(0xFF00796B),
+                  color: AppTheme.primary,
                 ),
               ),
               title: const Text('Pilih dari Galeri'),
@@ -103,10 +103,10 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.red[50],
+                    color: AppTheme.dangerSurface,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.delete, color: Colors.red),
+                  child: const Icon(Icons.delete, color: AppTheme.danger),
                 ),
                 title: const Text('Hapus Foto'),
                 onTap: () {
@@ -237,7 +237,7 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
           content: Text(
             _isEdit ? '✅ Produk diperbarui' : '✅ Produk ditambahkan',
           ),
-          backgroundColor: Colors.green,
+          backgroundColor: AppTheme.primary,
         ),
       );
       Navigator.pop(context);
@@ -247,11 +247,11 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
   Widget _photoPlaceholder() => Column(
     mainAxisAlignment: MainAxisAlignment.center,
     children: [
-      Icon(Icons.add_a_photo_outlined, size: 36, color: Colors.orange[400]),
+      Icon(Icons.add_a_photo_outlined, size: 36, color: AppTheme.warningInk),
       const SizedBox(height: 8),
       Text(
         'Tap untuk upload foto',
-        style: TextStyle(color: Colors.orange[500], fontSize: 14),
+        style: TextStyle(color: AppTheme.warningInk, fontSize: 14),
       ),
     ],
   );
@@ -272,7 +272,7 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
           if (_isEdit)
             IconButton(
               tooltip: 'Delete Outline',
-              icon: const Icon(Icons.delete_outline, color: Colors.white),
+              icon: const Icon(Icons.delete_outline, color: AppTheme.onAction),
               onPressed: () async {
                 final confirm = await showDialog<bool>(
                   context: context,
@@ -288,12 +288,12 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
                       ),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
+                          backgroundColor: AppTheme.danger,
                         ),
                         onPressed: () => Navigator.pop(context, true),
                         child: const Text(
                           'Hapus',
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(color: AppTheme.onAction),
                         ),
                       ),
                     ],
@@ -372,9 +372,9 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.orange[50],
+                          color: AppTheme.warningSurface,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.orange[200]!),
+                          border: Border.all(color: AppTheme.warningSurface!),
                         ),
                         child: const Icon(
                           Icons.arrow_drop_down,
@@ -397,7 +397,7 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
                         children: [
                           const Text(
                             'Satuan Utama',
-                            style: TextStyle(fontSize: 14, color: Colors.grey),
+                            style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
                           ),
                           const SizedBox(height: 6),
                           Container(
@@ -406,7 +406,7 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey[300]!),
+                              border: Border.all(color: AppTheme.fieldBorder!),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: DropdownButtonHideUnderline(
@@ -445,7 +445,7 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
                       children: [
                         const Text(
                           'Jual per\nBerat/Volume',
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
+                          style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
                           textAlign: TextAlign.center,
                         ),
                         Switch(
@@ -461,7 +461,7 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.orange[50],
+                      color: AppTheme.warningSurface,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Row(
@@ -518,17 +518,17 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: margin >= 20
-                          ? Colors.green[50]
+                          ? AppTheme.primarySurface
                           : margin >= 10
-                          ? Colors.orange[50]
-                          : Colors.red[50],
+                          ? AppTheme.warningSurface
+                          : AppTheme.dangerSurface,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: margin >= 20
-                            ? Colors.green[300]!
+                            ? AppTheme.primary!
                             : margin >= 10
-                            ? Colors.orange[300]!
-                            : Colors.red[300]!,
+                            ? AppTheme.warningInk!
+                            : AppTheme.danger!,
                       ),
                     ),
                     child: Row(
@@ -537,16 +537,16 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
                         _marginStat(
                           'Laba/Unit',
                           AppUtils.formatCurrency(profit),
-                          profit >= 0 ? Colors.green : Colors.red,
+                          profit >= 0 ? AppTheme.primary : AppTheme.danger,
                         ),
                         _marginStat(
                           'Margin',
                           '${margin.toStringAsFixed(1)}%',
                           margin >= 20
-                              ? Colors.green
+                              ? AppTheme.primary
                               : margin >= 10
-                              ? Colors.orange
-                              : Colors.red,
+                              ? AppTheme.warningInk
+                              : AppTheme.danger,
                         ),
                         _marginStat(
                           'Status',
@@ -555,7 +555,7 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
                               : margin >= 10
                               ? '⚠️ Tipis'
                               : '❌ Rugi',
-                          Colors.black87,
+                          AppTheme.textPrimary,
                         ),
                       ],
                     ),
@@ -589,12 +589,12 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.teal[50],
+                    color: AppTheme.primarySurface,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
                     'ℹ️ Notifikasi muncul saat stok mencapai minimum',
-                    style: TextStyle(fontSize: 12, color: Colors.teal),
+                    style: TextStyle(fontSize: 12, color: AppTheme.primary),
                   ),
                 ),
               ]),
@@ -609,17 +609,17 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            color: AppTheme.onAction,
                             strokeWidth: 2,
                           ),
                         )
                       : Icon(
                           _isEdit ? Icons.save : Icons.add,
-                          color: Colors.white,
+                          color: AppTheme.onAction,
                         ),
                   label: Text(
                     _isEdit ? 'Simpan Perubahan' : 'Tambah Produk',
-                    style: const TextStyle(color: Colors.white, fontSize: 15),
+                    style: const TextStyle(color: AppTheme.onAction, fontSize: 15),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryOrange,
@@ -641,9 +641,9 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
   Widget _section(String title, List<Widget> children) => Container(
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: AppTheme.onAction,
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.grey[200]!),
+      border: Border.all(color: AppTheme.borderLight!),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -722,7 +722,7 @@ class _RetailProductFormScreenState extends State<RetailProductFormScreen> {
           fontSize: 14,
         ),
       ),
-      Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
     ],
   );
 }

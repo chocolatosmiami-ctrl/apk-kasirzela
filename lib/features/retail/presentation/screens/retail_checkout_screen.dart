@@ -53,7 +53,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(permission.reason ?? 'Transaksi tidak diizinkan'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.danger,
           duration: const Duration(seconds: 3),
         ),
       );
@@ -67,7 +67,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
           content: Text(
             '⚠️ Mode Offline — Sisa ${permission.remainingGraceTrx} trx',
           ),
-          backgroundColor: Colors.orange[700],
+          backgroundColor: AppTheme.warningInk,
           duration: const Duration(seconds: 2),
         ),
       );
@@ -80,7 +80,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
           content: Text(
             'Uang kurang ${AppUtils.formatCurrency(_total - paid)}',
           ),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppTheme.warningInk,
         ),
       );
       return;
@@ -127,7 +127,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Transaksi gagal, coba lagi'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.danger,
         ),
       );
     }
@@ -246,6 +246,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
+ scrollable: true,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -254,12 +255,12 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                color: Colors.green[50],
+                color: AppTheme.primarySurface,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.check_circle,
-                color: Colors.green,
+                color: AppTheme.primary,
                 size: 44,
               ),
             ),
@@ -279,7 +280,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.green,
+                  color: AppTheme.primary,
                 ),
               ),
           ],
@@ -337,7 +338,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Share gagal: $e'),
-                        backgroundColor: Colors.red,
+                        backgroundColor: AppTheme.danger,
                       ),
                     );
                   }
@@ -353,8 +354,8 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
               icon: const Icon(Icons.print, size: 16),
               label: const Text('Cetak ke Printer'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF00796B),
-                side: BorderSide(color: const Color(0xFF00796B)!),
+                foregroundColor: AppTheme.primary,
+                side: BorderSide(color: AppTheme.primary!),
               ),
               onPressed: () async {
                 final settings = context.read<SettingsProvider>();
@@ -383,7 +384,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Print gagal: $e'),
-                        backgroundColor: Colors.red,
+                        backgroundColor: AppTheme.danger,
                       ),
                     );
                   }
@@ -404,7 +405,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
               },
               child: const Text(
                 'Transaksi Baru',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: AppTheme.onAction),
               ),
             ),
           ),
@@ -486,14 +487,14 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                           Text(
                             'HPP',
                             style: TextStyle(
-                              color: const Color(0xFF62736F),
+                              color: AppTheme.textSecondary,
                               fontSize: 14,
                             ),
                           ),
                           Text(
                             AppUtils.formatCurrency(retail.cartHPP),
                             style: TextStyle(
-                              color: const Color(0xFF62736F),
+                              color: AppTheme.textSecondary,
                               fontSize: 14,
                             ),
                           ),
@@ -516,7 +517,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                   children: [
                     const Icon(
                       Icons.local_offer,
-                      color: Colors.green,
+                      color: AppTheme.primary,
                       size: 18,
                     ),
                     const SizedBox(width: 8),
@@ -591,7 +592,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                         decoration: InputDecoration(
                           labelText: 'Uang Dibayar',
                           prefixText: 'Rp ',
-                          fillColor: Colors.green[50],
+                          fillColor: AppTheme.primarySurface,
                           filled: true,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -621,7 +622,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                                         AppUtils.formatCurrency(a),
                                         style: const TextStyle(fontSize: 12),
                                       ),
-                                      backgroundColor: Colors.green[50],
+                                      backgroundColor: AppTheme.primarySurface,
                                     ),
                                   ),
                                 )
@@ -632,7 +633,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                           margin: const EdgeInsets.only(top: 8),
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.green[50],
+                            color: AppTheme.primarySurface,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -647,7 +648,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
-                                  color: Colors.green,
+                                  color: AppTheme.primary,
                                 ),
                               ),
                             ],
@@ -674,12 +675,12 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                     children: [
                       const Text(
                         'TOTAL',
-                        style: TextStyle(color: Colors.white, fontSize: 14),
+                        style: TextStyle(color: AppTheme.onAction, fontSize: 14),
                       ),
                       Text(
                         AppUtils.formatCurrency(_total),
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.onAction,
                           fontSize: 26,
                           fontWeight: FontWeight.bold,
                         ),
@@ -691,7 +692,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
+                        backgroundColor: AppTheme.onAction,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -728,16 +729,16 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: sel ? AppTheme.primaryOrange : const Color(0xFFF7F9F8),
+          color: sel ? AppTheme.primaryOrange : AppTheme.surfaceLight,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: sel ? AppTheme.primaryOrange : Colors.grey[300]!,
+            color: sel ? AppTheme.primaryOrange : AppTheme.fieldBorder!,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: sel ? Colors.white : const Color(0xFF62736F),
+            color: sel ? AppTheme.onAction : AppTheme.textSecondary,
             fontSize: 14,
             fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
           ),

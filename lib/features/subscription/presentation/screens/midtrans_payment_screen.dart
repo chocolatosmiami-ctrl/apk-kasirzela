@@ -1,3 +1,4 @@
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/minimal_ui.dart';
 // File ini tidak digunakan lagi.
 // Top up dilakukan via Website Dashboard, bukan in-app.
@@ -18,14 +19,14 @@ class MidtransPaymentScreen extends StatelessWidget {
           'Tidak Tersedia',
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: Color(0xFF172B2A),
+            color: AppTheme.textPrimary,
           ),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF172B2A),
+        backgroundColor: AppTheme.onAction,
+        foregroundColor: AppTheme.textPrimary,
         elevation: 0,
       ),
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: AppTheme.surfaceLight,
       body: ZelaPage(
         child: const Center(
           child: Text(

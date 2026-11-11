@@ -244,19 +244,19 @@ class _InventoryScreenState extends State<InventoryScreen>
         .length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
         title: const Text(
           'Stok Bahan',
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF172B2A),
+        backgroundColor: AppTheme.onAction,
+        foregroundColor: AppTheme.textPrimary,
         elevation: 0,
-        surfaceTintColor: Colors.transparent,
+        surfaceTintColor: AppTheme.transparent,
         actions: [
           IconButton(
-            icon: const Icon(Icons.swap_horiz, color: Color(0xFF62736F)),
+            icon: const Icon(Icons.swap_horiz, color: AppTheme.textSecondary),
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const StockTransferScreen()),
@@ -264,16 +264,16 @@ class _InventoryScreenState extends State<InventoryScreen>
             tooltip: 'Transfer Stok',
           ),
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF62736F)),
+            icon: const Icon(Icons.refresh_rounded, color: AppTheme.textSecondary),
             onPressed: _load,
             tooltip: 'Refresh',
           ),
         ],
         bottom: TabBar(
           controller: _tabCtrl,
-          indicatorColor: const Color(0xFF00796B),
-          labelColor: const Color(0xFF00796B),
-          unselectedLabelColor: const Color(0xFF62736F),
+          indicatorColor: AppTheme.primary,
+          labelColor: AppTheme.primary,
+          unselectedLabelColor: AppTheme.textSecondary,
           tabs: [
             Tab(text: '🥩 Semua Bahan (${_bahanBaku.length})'),
             Tab(text: '⚠️ Perlu Perhatian (${habis + menipis})'),
@@ -283,7 +283,7 @@ class _InventoryScreenState extends State<InventoryScreen>
       body: ZelaPage(
         child: _loading
             ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFF00796B)),
+                child: CircularProgressIndicator(color: AppTheme.primary),
               )
             : Column(
                 children: [
@@ -308,11 +308,11 @@ class _InventoryScreenState extends State<InventoryScreen>
       bottomNavigationBar: canManage
           ? SafeArea(
               child: Container(
-                color: Colors.white,
+                color: AppTheme.onAction,
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00796B),
+                    backgroundColor: AppTheme.primary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -322,13 +322,13 @@ class _InventoryScreenState extends State<InventoryScreen>
                   onPressed: () => _showSetAllStock(context),
                   icon: const Icon(
                     Icons.playlist_add_rounded,
-                    color: Colors.white,
+                    color: AppTheme.onAction,
                     size: 20,
                   ),
                   label: const Text(
                     'Set Stok Semua Bahan',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppTheme.onAction,
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
                     ),
@@ -343,22 +343,22 @@ class _InventoryScreenState extends State<InventoryScreen>
   Widget _buildSummaryBar(int set, int total, int habis, int menipis) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: const Color(0xFFF7F9F8),
+      color: AppTheme.surfaceLight,
       child: Row(
         children: [
-          _statChip('Diset', '$set/$total', Colors.teal),
+          _statChip('Diset', '$set/$total', AppTheme.primary),
           const SizedBox(width: 8),
-          _statChip('Habis', '$habis', habis > 0 ? Colors.red : Colors.green),
+          _statChip('Habis', '$habis', habis > 0 ? AppTheme.danger : AppTheme.primary),
           const SizedBox(width: 8),
           _statChip(
             'Menipis',
             '$menipis',
-            menipis > 0 ? Colors.orange : Colors.green,
+            menipis > 0 ? AppTheme.warningInk : AppTheme.primary,
           ),
           const Spacer(),
           Text(
             'Hari ini',
-            style: TextStyle(color: const Color(0xFF62736F), fontSize: 12),
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
           ),
         ],
       ),
@@ -377,7 +377,7 @@ class _InventoryScreenState extends State<InventoryScreen>
       children: [
         Text(
           label,
-          style: TextStyle(color: const Color(0xFF62736F), fontSize: 12),
+          style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
         ),
         const SizedBox(width: 4),
         Text(
@@ -398,21 +398,21 @@ class _InventoryScreenState extends State<InventoryScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('🥩', style: TextStyle(fontSize: 48)),
+            const Icon(Icons.inventory_2_outlined, size: 40, color: AppTheme.textSecondary),
             const SizedBox(height: 12),
             const Text(
               'Belum ada bahan baku',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 16),
             ),
             const SizedBox(height: 6),
             Text(
               'Tambah bahan baku di dashboard website',
-              style: TextStyle(color: const Color(0xFF62736F), fontSize: 14),
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
             ),
             const SizedBox(height: 6),
             Text(
               'dashboard.kasirzela.id → Bahan Baku',
-              style: TextStyle(color: const Color(0xFF62736F), fontSize: 14),
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
             ),
           ],
         ),
@@ -452,12 +452,12 @@ class _InventoryScreenState extends State<InventoryScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('✅', style: TextStyle(fontSize: 48)),
+            Icon(Icons.check_circle_outline, size: 40, color: AppTheme.textSecondary),
             SizedBox(height: 12),
             Text(
               'Semua bahan baku aman!',
               style: TextStyle(
-                color: Colors.green,
+                color: AppTheme.primary,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -465,7 +465,7 @@ class _InventoryScreenState extends State<InventoryScreen>
             SizedBox(height: 6),
             Text(
               'Tidak ada bahan yang habis atau menipis',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
             ),
           ],
         ),
@@ -526,10 +526,10 @@ class _InventoryScreenState extends State<InventoryScreen>
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: AppTheme.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text('🥩', style: TextStyle(fontSize: 20)),
+                  child: const Icon(Icons.inventory_2_outlined, size: 20, color: AppTheme.textSecondary),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -549,7 +549,7 @@ class _InventoryScreenState extends State<InventoryScreen>
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.teal[50],
+                  color: AppTheme.primarySurface,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -561,10 +561,10 @@ class _InventoryScreenState extends State<InventoryScreen>
                       'Sisa',
                       '${existing.stockSisa.toInt()}',
                       color: existing.isHabis
-                          ? Colors.red
+                          ? AppTheme.danger
                           : existing.isLow
-                          ? Colors.orange
-                          : Colors.green,
+                          ? AppTheme.warningInk
+                          : AppTheme.primary,
                     ),
                   ],
                 ),
@@ -608,13 +608,13 @@ class _InventoryScreenState extends State<InventoryScreen>
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                icon: const Icon(Icons.save, color: Colors.white),
+                icon: const Icon(Icons.save, color: AppTheme.onAction),
                 label: const Text(
                   'Simpan Stok',
-                  style: TextStyle(color: Colors.white, fontSize: 15),
+                  style: TextStyle(color: AppTheme.onAction, fontSize: 15),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green[700],
+                  backgroundColor: AppTheme.primary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -649,12 +649,12 @@ class _InventoryScreenState extends State<InventoryScreen>
         style: TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 18,
-          color: color ?? Colors.black87,
+          color: color ?? AppTheme.textPrimary,
         ),
       ),
       Text(
         label,
-        style: TextStyle(color: const Color(0xFF62736F), fontSize: 12),
+        style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
       ),
     ],
   );
@@ -685,7 +685,7 @@ class _InventoryScreenState extends State<InventoryScreen>
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: AppTheme.fieldBorder,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -693,7 +693,7 @@ class _InventoryScreenState extends State<InventoryScreen>
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  const Text('🥩', style: TextStyle(fontSize: 20)),
+                  const Icon(Icons.inventory_2_outlined, size: 20, color: AppTheme.textSecondary),
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Text(
@@ -707,7 +707,7 @@ class _InventoryScreenState extends State<InventoryScreen>
                   Text(
                     _branchName,
                     style: TextStyle(
-                      color: const Color(0xFF62736F),
+                      color: AppTheme.textSecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -719,7 +719,7 @@ class _InventoryScreenState extends State<InventoryScreen>
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
                 'Kosongkan = tidak tracking stok bahan ini',
-                style: TextStyle(color: const Color(0xFF62736F), fontSize: 14),
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
               ),
             ),
             const Divider(),
@@ -735,7 +735,7 @@ class _InventoryScreenState extends State<InventoryScreen>
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Row(
                       children: [
-                        const Text('🥩', style: TextStyle(fontSize: 16)),
+                        const Icon(Icons.inventory_2_outlined, size: 16, color: AppTheme.textSecondary),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Column(
@@ -753,10 +753,10 @@ class _InventoryScreenState extends State<InventoryScreen>
                                   'Sisa: ${stock.stockSisa.toInt()} porsi',
                                   style: TextStyle(
                                     color: stock.isHabis
-                                        ? Colors.red
+                                        ? AppTheme.danger
                                         : stock.isLow
-                                        ? Colors.orange
-                                        : Colors.green,
+                                        ? AppTheme.warningInk
+                                        : AppTheme.primary,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -802,13 +802,13 @@ class _InventoryScreenState extends State<InventoryScreen>
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  icon: const Icon(Icons.save, color: Colors.white),
+                  icon: const Icon(Icons.save, color: AppTheme.onAction),
                   label: const Text(
                     'Simpan Semua',
-                    style: TextStyle(color: Colors.white, fontSize: 15),
+                    style: TextStyle(color: AppTheme.onAction, fontSize: 15),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[700],
+                    backgroundColor: AppTheme.primary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -832,7 +832,7 @@ class _InventoryScreenState extends State<InventoryScreen>
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('✅ $saved bahan baku stok diperbarui'),
-                          backgroundColor: Colors.green,
+                          backgroundColor: AppTheme.primary,
                         ),
                       );
                     }
@@ -870,7 +870,7 @@ class _InventoryScreenState extends State<InventoryScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('✅ Stok $name: $stok porsi'),
-            backgroundColor: Colors.green,
+            backgroundColor: AppTheme.primary,
           ),
         );
       }
@@ -879,7 +879,7 @@ class _InventoryScreenState extends State<InventoryScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ Gagal simpan: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.danger,
           ),
         );
       }
@@ -926,21 +926,21 @@ class _BahanBakuCard extends StatelessWidget {
     final isLow = stock?.isLow ?? false;
     final sudahDiSet = stock?.sudahDiSet ?? false;
 
-    Color statusColor = Colors.grey;
+    Color statusColor = AppTheme.textSecondary;
     String statusText = 'Belum diset';
     IconData statusIcon = Icons.help_outline;
 
     if (sudahDiSet) {
       if (isHabis) {
-        statusColor = Colors.red;
+        statusColor = AppTheme.danger;
         statusText = 'HABIS';
         statusIcon = Icons.cancel;
       } else if (isLow) {
-        statusColor = Colors.orange;
+        statusColor = AppTheme.warningInk;
         statusText = 'Menipis';
         statusIcon = Icons.warning_amber;
       } else {
-        statusColor = Colors.green;
+        statusColor = AppTheme.primary;
         statusText = 'Aman';
         statusIcon = Icons.check_circle;
       }
@@ -968,7 +968,7 @@ class _BahanBakuCard extends StatelessWidget {
               child: Center(
                 child: sudahDiSet
                     ? Icon(statusIcon, color: statusColor, size: 24)
-                    : const Text('🥩', style: TextStyle(fontSize: 22)),
+                    : const Icon(Icons.inventory_2_outlined, size: 22, color: AppTheme.textSecondary),
               ),
             ),
             const SizedBox(width: 12),
@@ -1022,7 +1022,7 @@ class _BahanBakuCard extends StatelessWidget {
                           text: '/${stock!.stockAwal.toInt()}',
                           style: TextStyle(
                             fontSize: 14,
-                            color: const Color(0xFF62736F),
+                            color: AppTheme.textSecondary,
                           ),
                         ),
                       ],
@@ -1031,7 +1031,7 @@ class _BahanBakuCard extends StatelessWidget {
                   Text(
                     'porsi sisa',
                     style: TextStyle(
-                      color: const Color(0xFF62736F),
+                      color: AppTheme.textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -1047,13 +1047,13 @@ class _BahanBakuCard extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: sudahDiSet
-                        ? Colors.teal[50]
-                        : Colors.green.withOpacity(0.1),
+                        ? AppTheme.primarySurface
+                        : AppTheme.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     sudahDiSet ? Icons.edit : Icons.add,
-                    color: sudahDiSet ? Colors.teal : Colors.green[700],
+                    color: sudahDiSet ? AppTheme.primary : AppTheme.primary,
                     size: 18,
                   ),
                 ),

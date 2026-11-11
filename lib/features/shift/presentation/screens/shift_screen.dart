@@ -59,15 +59,15 @@ class _ShiftScreenState extends State<ShiftScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.onAction,
       appBar: AppBar(
         title: const Text('Shift KASIR ZL'),
         backgroundColor: AppTheme.primaryRed,
         bottom: TabBar(
           controller: _tabCtrl,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white,
+          indicatorColor: AppTheme.onAction,
+          labelColor: AppTheme.onAction,
+          unselectedLabelColor: AppTheme.onAction,
           tabs: const [
             Tab(icon: Icon(Icons.av_timer, size: 18), text: 'Shift Aktif'),
             Tab(icon: Icon(Icons.history, size: 18), text: 'Riwayat'),
@@ -114,9 +114,9 @@ class _ActiveShiftTab extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: const Color(0xFFF7F9F8),
+            color: AppTheme.surfaceLight,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
+            border: Border.all(color: AppTheme.borderLight!),
           ),
           child: Column(
             children: [
@@ -124,13 +124,13 @@ class _ActiveShiftTab extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: Colors.orange[50],
+                  color: AppTheme.warningSurface,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
                   Icons.lock_clock,
                   size: 40,
-                  color: Colors.orange,
+                  color: AppTheme.warningInk,
                 ),
               ),
               const SizedBox(height: 16),
@@ -141,7 +141,7 @@ class _ActiveShiftTab extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'Buka shift terlebih dahulu sebelum memulai transaksi',
-                style: TextStyle(color: const Color(0xFF62736F), fontSize: 14),
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -151,13 +151,13 @@ class _ActiveShiftTab extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            icon: const Icon(Icons.play_circle_outline, color: Colors.white),
+            icon: const Icon(Icons.play_circle_outline, color: AppTheme.onAction),
             label: const Text(
               'Buka Shift Sekarang',
-              style: TextStyle(color: Colors.white, fontSize: 16),
+              style: TextStyle(color: AppTheme.onAction, fontSize: 16),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green[700],
+              backgroundColor: AppTheme.primary,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -184,7 +184,7 @@ class _ActiveShiftTab extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: const Color(0xFF00796B),
+            color: AppTheme.primary,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -198,17 +198,17 @@ class _ActiveShiftTab extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: AppTheme.onAction.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Row(
                       children: [
-                        Icon(Icons.circle, color: Colors.greenAccent, size: 10),
+                        Icon(Icons.circle, color: AppTheme.primary, size: 10),
                         SizedBox(width: 6),
                         Text(
                           'SHIFT AKTIF',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppTheme.onAction,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
@@ -219,18 +219,18 @@ class _ActiveShiftTab extends StatelessWidget {
                   const Spacer(),
                   Text(
                     shift.durationText,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: const TextStyle(color: AppTheme.onAction, fontSize: 14),
                   ),
                 ],
               ),
               const SizedBox(height: 14),
               Row(
                 children: [
-                  const Icon(Icons.person, color: Colors.white, size: 13),
+                  const Icon(Icons.person, color: AppTheme.onAction, size: 13),
                   const SizedBox(width: 4),
                   const Text(
                     'Kasir Bertugas',
-                    style: TextStyle(color: Colors.white, fontSize: 12),
+                    style: TextStyle(color: AppTheme.onAction, fontSize: 12),
                   ),
                 ],
               ),
@@ -238,7 +238,7 @@ class _ActiveShiftTab extends StatelessWidget {
               Text(
                 shift.userName,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.onAction,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
@@ -247,7 +247,7 @@ class _ActiveShiftTab extends StatelessWidget {
               Text(
                 'Dibuka: ${AppUtils.formatDateTime(AppUtils.safeParseDate(shift.openedAt))}',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: AppTheme.onAction.withOpacity(0.8),
                   fontSize: 14,
                 ),
               ),
@@ -255,7 +255,7 @@ class _ActiveShiftTab extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
+                  color: AppTheme.onAction.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
@@ -263,12 +263,12 @@ class _ActiveShiftTab extends StatelessWidget {
                   children: [
                     const Text(
                       'Modal Awal',
-                      style: TextStyle(color: Colors.white, fontSize: 14),
+                      style: TextStyle(color: AppTheme.onAction, fontSize: 14),
                     ),
                     Text(
                       AppUtils.formatCurrency(shift.openingCash),
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppTheme.onAction,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -291,10 +291,10 @@ class _ActiveShiftTab extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            icon: const Icon(Icons.stop_circle_outlined, color: Colors.white),
+            icon: const Icon(Icons.stop_circle_outlined, color: AppTheme.onAction),
             label: const Text(
               'Tutup Shift',
-              style: TextStyle(color: Colors.white, fontSize: 16),
+              style: TextStyle(color: AppTheme.onAction, fontSize: 16),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryRed,
@@ -342,7 +342,7 @@ class _ActiveShiftTab extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.play_circle, color: Colors.green, size: 24),
+                const Icon(Icons.play_circle, color: AppTheme.primary, size: 24),
                 const SizedBox(width: 8),
                 const Text(
                   'Buka Shift',
@@ -362,15 +362,15 @@ class _ActiveShiftTab extends StatelessWidget {
               decoration: InputDecoration(
                 labelText: 'Nama Kasir Bertugas *',
                 hintText: 'Contoh: Suci',
-                prefixIcon: const Icon(Icons.person, color: Colors.green),
-                fillColor: Colors.green[50],
+                prefixIcon: const Icon(Icons.person, color: AppTheme.primary),
+                fillColor: AppTheme.primarySurface,
                 filled: true,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.green[700]!, width: 2),
+                  borderSide: BorderSide(color: AppTheme.primary!, width: 2),
                 ),
               ),
             ),
@@ -384,14 +384,14 @@ class _ActiveShiftTab extends StatelessWidget {
               decoration: InputDecoration(
                 labelText: 'Modal Awal (uang di laci) *',
                 prefixText: 'Rp ',
-                fillColor: Colors.green[50],
+                fillColor: AppTheme.primarySurface,
                 filled: true,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.green[700]!, width: 2),
+                  borderSide: BorderSide(color: AppTheme.primary!, width: 2),
                 ),
               ),
             ),
@@ -410,13 +410,13 @@ class _ActiveShiftTab extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                icon: const Icon(Icons.play_arrow, color: Colors.white),
+                icon: const Icon(Icons.play_arrow, color: AppTheme.onAction),
                 label: const Text(
                   'Mulai Shift',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                  style: TextStyle(color: AppTheme.onAction, fontSize: 16),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green[700],
+                  backgroundColor: AppTheme.primary,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -446,7 +446,7 @@ class _ActiveShiftTab extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('✅ Shift berhasil dibuka'),
-                        backgroundColor: Colors.green,
+                        backgroundColor: AppTheme.primary,
                       ),
                     );
                   }
@@ -487,7 +487,7 @@ class _ActiveShiftTab extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.stop_circle, color: Colors.red, size: 24),
+                  const Icon(Icons.stop_circle, color: AppTheme.danger, size: 24),
                   const SizedBox(width: 8),
                   const Text(
                     'Tutup Shift',
@@ -504,11 +504,11 @@ class _ActiveShiftTab extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 'Shift: ${shift.userName}',
-                style: TextStyle(color: const Color(0xFF62736F), fontSize: 14),
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
               ),
               Text(
                 'Durasi: ${shift.durationText}',
-                style: TextStyle(color: const Color(0xFF62736F), fontSize: 14),
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
               ),
               const SizedBox(height: 16),
 
@@ -516,9 +516,9 @@ class _ActiveShiftTab extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.teal[50],
+                  color: AppTheme.primarySurface,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.teal[200]!),
+                  border: Border.all(color: AppTheme.primarySurface!),
                 ),
                 child: Column(
                   children: [
@@ -550,7 +550,7 @@ class _ActiveShiftTab extends StatelessWidget {
                   labelText: 'Uang di laci sekarang *',
                   prefixText: 'Rp ',
                   hintText: 'Hitung uang tunai saat ini',
-                  fillColor: Colors.orange[50],
+                  fillColor: AppTheme.warningSurface,
                   filled: true,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -580,10 +580,10 @@ class _ActiveShiftTab extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  icon: const Icon(Icons.stop, color: Colors.white),
+                  icon: const Icon(Icons.stop, color: AppTheme.onAction),
                   label: const Text(
                     'Tutup Shift & Lihat Rekap',
-                    style: TextStyle(color: Colors.white, fontSize: 15),
+                    style: TextStyle(color: AppTheme.onAction, fontSize: 15),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryRed,
@@ -622,7 +622,7 @@ class _ActiveShiftTab extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(color: const Color(0xFF62736F), fontSize: 14),
+          style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
         ),
         Text(
           value,
@@ -678,7 +678,7 @@ class _LiveStatsCard extends StatelessWidget {
             const Center(
               child: Text(
                 'Shift sedang berjalan',
-                style: TextStyle(color: Colors.grey, fontSize: 14),
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
               ),
             ),
           ],
@@ -709,8 +709,8 @@ class _LiveTimerState extends State<_LiveTimer> with VisibleClock<_LiveTimer> {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-    decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(8)),
-    child: Text(_elapsed, style: TextStyle(fontFamily: 'monospace', color: Colors.green[700], fontSize: 14, fontWeight: FontWeight.bold)),
+    decoration: BoxDecoration(color: AppTheme.primarySurface, borderRadius: BorderRadius.circular(8)),
+    child: Text(_elapsed, style: TextStyle(fontFamily: 'monospace', color: AppTheme.primary, fontSize: 14, fontWeight: FontWeight.bold)),
   );
 }
 
@@ -746,7 +746,7 @@ class _StatBox extends StatelessWidget {
                   Text(
                     label,
                     style: TextStyle(
-                      color: const Color(0xFF62736F),
+                      color: AppTheme.textSecondary,
                       fontSize: 12,
                     ),
                   ),
@@ -776,7 +776,7 @@ class _ShiftReportDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final diffColor = shift.isShortage ? Colors.red : Colors.green[700]!;
+    final diffColor = shift.isShortage ? AppTheme.danger : AppTheme.primary!;
     final diffLabel = shift.isShortage ? '⚠️ KURANG' : '✅ LEBIH';
 
     return Dialog(
@@ -836,7 +836,7 @@ class _ShiftReportDialog extends StatelessWidget {
                 _rRow(
                   'Total Penjualan',
                   AppUtils.formatCurrency(shift.totalSales),
-                  valueColor: Colors.green[700],
+                  valueColor: AppTheme.primary,
                 ),
                 _rRow('  ∟ Tunai', AppUtils.formatCurrency(shift.totalCash)),
                 _rRow(
@@ -846,7 +846,7 @@ class _ShiftReportDialog extends StatelessWidget {
                 _rRow(
                   'Total Pengeluaran',
                   AppUtils.formatCurrency(shift.totalExpenses),
-                  valueColor: Colors.red,
+                  valueColor: AppTheme.danger,
                 ),
                 _rRow('Transaksi', '${shift.totalTransactions} transaksi'),
               ],
@@ -856,7 +856,7 @@ class _ShiftReportDialog extends StatelessWidget {
                   child: Text(
                     '📊 Detail omset hanya bisa dilihat oleh Manajer/Admin',
                     style: TextStyle(
-                      color: const Color(0xFF62736F),
+                      color: AppTheme.textSecondary,
                       fontSize: 14,
                       fontStyle: FontStyle.italic,
                     ),
@@ -869,9 +869,9 @@ class _ShiftReportDialog extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.teal[50],
+                    color: AppTheme.primarySurface,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.teal[200]!),
+                    border: Border.all(color: AppTheme.primarySurface!),
                   ),
                   child: Column(
                     children: [
@@ -882,12 +882,12 @@ class _ShiftReportDialog extends StatelessWidget {
                       _rRow(
                         '+ Penjualan tunai',
                         AppUtils.formatCurrency(shift.totalCash),
-                        valueColor: Colors.green[700],
+                        valueColor: AppTheme.primary,
                       ),
                       _rRow(
                         '- Pengeluaran',
                         AppUtils.formatCurrency(shift.totalExpenses),
-                        valueColor: Colors.red,
+                        valueColor: AppTheme.danger,
                       ),
                       const Divider(height: 10),
                       _rRow(
@@ -911,29 +911,29 @@ class _ShiftReportDialog extends StatelessWidget {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: shift.cashDifference.abs() < 1
-                        ? Colors.green[50]
+                        ? AppTheme.primarySurface
                         : shift.isShortage
-                        ? Colors.red[50]
-                        : Colors.orange[50],
+                        ? AppTheme.dangerSurface
+                        : AppTheme.warningSurface,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: shift.cashDifference.abs() < 1
-                          ? Colors.green[300]!
+                          ? AppTheme.primary!
                           : shift.isShortage
-                          ? Colors.red[300]!
-                          : Colors.orange[300]!,
+                          ? AppTheme.danger!
+                          : AppTheme.warningInk!,
                     ),
                   ),
                   child: shift.cashDifference.abs() < 1
                       ? const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.check_circle, color: Colors.green),
+                            Icon(Icons.check_circle, color: AppTheme.primary),
                             SizedBox(width: 8),
                             Text(
                               'Kas Sesuai! Tidak Ada Selisih',
                               style: TextStyle(
-                                color: Colors.green,
+                                color: AppTheme.primary,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -971,14 +971,14 @@ class _ShiftReportDialog extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF7F9F8),
+                    color: AppTheme.surfaceLight,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[200]!),
+                    border: Border.all(color: AppTheme.borderLight!),
                   ),
                   child: Text(
                     '📝 ${shift.notes}',
                     style: TextStyle(
-                      color: const Color(0xFF62736F),
+                      color: AppTheme.textSecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -993,15 +993,15 @@ class _ShiftReportDialog extends StatelessWidget {
                   child: OutlinedButton.icon(
                     icon: const Icon(
                       Icons.send,
-                      color: Color(0xFF25D366),
+                      color: AppTheme.whatsApp,
                       size: 16,
                     ),
                     label: const Text(
                       'Kirim Laporan WhatsApp',
-                      style: TextStyle(color: Color(0xFF25D366)),
+                      style: TextStyle(color: AppTheme.whatsApp),
                     ),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF25D366)),
+                      side: const BorderSide(color: AppTheme.whatsApp),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -1040,7 +1040,7 @@ class _ShiftReportDialog extends StatelessWidget {
                   ),
                   child: const Text(
                     'Selesai',
-                    style: TextStyle(color: Colors.white, fontSize: 15),
+                    style: TextStyle(color: AppTheme.onAction, fontSize: 15),
                   ),
                 ),
               ),
@@ -1064,7 +1064,7 @@ class _ShiftReportDialog extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(color: const Color(0xFF62736F), fontSize: 14),
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
           ),
           Text(
             value,
@@ -1092,11 +1092,11 @@ class _HistoryTab extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('📋', style: TextStyle(fontSize: 48)),
+            Icon(Icons.assignment_outlined, size: 40, color: AppTheme.textSecondary),
             SizedBox(height: 12),
             Text(
               'Belum ada riwayat shift',
-              style: TextStyle(color: Colors.grey, fontSize: 15),
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 15),
             ),
           ],
         ),
@@ -1127,7 +1127,7 @@ class _ShiftHistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isOpen = shift.isOpen;
-    final statusColor = isOpen ? Colors.green[700]! : const Color(0xFF62736F)!;
+    final statusColor = isOpen ? AppTheme.primary! : AppTheme.textSecondary!;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
@@ -1194,7 +1194,7 @@ class _ShiftHistoryCard extends StatelessWidget {
                             AppUtils.safeParseDate(shift.openedAt),
                           ),
                           style: TextStyle(
-                            color: const Color(0xFF62736F),
+                            color: AppTheme.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -1210,13 +1210,13 @@ class _ShiftHistoryCard extends StatelessWidget {
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: Colors.green,
+                            color: AppTheme.primary,
                           ),
                         ),
                         Text(
                           '${shift.totalTransactions} trx',
                           style: TextStyle(
-                            color: const Color(0xFF62736F),
+                            color: AppTheme.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -1230,15 +1230,15 @@ class _ShiftHistoryCard extends StatelessWidget {
                   children: [
                     _chip(
                       'Modal: ${AppUtils.formatCurrency(shift.openingCash)}',
-                      Colors.teal,
+                      AppTheme.primary,
                     ),
                     const SizedBox(width: 6),
-                    _chip('Durasi: ${shift.durationText}', Colors.orange),
+                    _chip('Durasi: ${shift.durationText}', AppTheme.warningInk),
                     const SizedBox(width: 6),
                     if (shift.cashDifference.abs() >= 1)
                       _chip(
                         shift.isShortage ? '⚠️ Kurang' : '✅ Lebih',
-                        shift.isShortage ? Colors.red : Colors.green,
+                        shift.isShortage ? AppTheme.danger : AppTheme.primary,
                       ),
                   ],
                 ),

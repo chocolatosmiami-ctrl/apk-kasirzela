@@ -1,3 +1,4 @@
+import '../../../../core/theme/zela_navigation.dart';
 import '../../../../core/theme/visible_clock.dart';
 import '../../../../core/services/auto_report_service.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
@@ -69,8 +70,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // true = side menu, false = bottom nav
   bool _useSideMenu = false;
   // Cached broadcast stream — prevents "already listened" error on rebuild
-  final Stream<List<PendingApproval>> _approvalStream = ApprovalService.instance
-      .pendingApprovalsStream();
+  final Stream<List<PendingApproval>> _approvalStream =
+      ApprovalService.instance.pendingApprovalsStream();
 
   @override
   void initState() {
@@ -93,8 +94,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _checkMultiBranchManager({bool force = false}) async {
     if (_branchPickerBusy) return;
     _branchPickerBusy = true;
-    try { await _pickBranch(force: force); } finally { _branchPickerBusy = false; }
+    try {
+      await _pickBranch(force: force);
+    } finally {
+      _branchPickerBusy = false;
+    }
   }
+
   Future<void> _pickBranch({required bool force}) async {
     final uid = context.read<AuthProvider>().currentUser?.authId;
     final prefs = await SharedPreferences.getInstance();
@@ -102,7 +108,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final role = prefs.getString(AppConstants.keyRole) ?? '';
     final branchId = prefs.getString(AppConstants.keyBranchId) ?? '';
 
-    if (!force && (role != 'manajer' || !isMultiBranch || branchId.isNotEmpty || (prefs.getString(AppConstants.keyBranchName) ?? '').isNotEmpty)) return;
+    if (!force &&
+        (role != 'manajer' ||
+            !isMultiBranch ||
+            branchId.isNotEmpty ||
+            (prefs.getString(AppConstants.keyBranchName) ?? '').isNotEmpty))
+      return;
     if (!mounted) return;
 
     // Fetch daftar cabang dari Supabase
@@ -115,9 +126,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           .select('id, name, mode')
           .eq('owner_id', ownerId)
           .eq('is_active', true)
-          .order('name').timeout(const Duration(seconds: 8));
+          .order('name')
+          .timeout(const Duration(seconds: 8));
 
-      if (!mounted || context.read<AuthProvider>().currentUser?.authId != uid || ownerId != prefs.getString(AppConstants.keyOwnerId)) return;
+      if (!mounted ||
+          context.read<AuthProvider>().currentUser?.authId != uid ||
+          ownerId != prefs.getString(AppConstants.keyOwnerId)) return;
       if (branches == null || (branches as List).isEmpty) return;
 
       // Tambahkan opsi "Semua Cabang"
@@ -132,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         builder: (_) => AlertDialog(
           title: const Row(
             children: [
-              Icon(Icons.store, color: const Color(0xFF00796B)),
+              Icon(Icons.store, color: AppTheme.primary),
               SizedBox(width: 8),
               Text('Pilih Cabang', style: TextStyle(fontSize: 16)),
             ],
@@ -151,20 +165,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     height: 36,
                     decoration: BoxDecoration(
                       color: isAll
-                          ? const Color(0xFFF7F9F8)
+                          ? AppTheme.surfaceLight
                           : b['mode'] == 'retail'
-                          ? Colors.orange[50]
-                          : const Color(0xFFEAF5F1),
+                              ? AppTheme.warningSurface
+                              : AppTheme.primarySurface,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Center(
-                      child: Text(
+                      child: Icon(
                         isAll
-                            ? '🏢'
+                            ? Icons.business_outlined
                             : b['mode'] == 'retail'
-                            ? '🛍️'
-                            : '🍽️',
-                        style: const TextStyle(fontSize: 18),
+                                ? Icons.shopping_bag_outlined
+                                : Icons.restaurant_outlined,
+                        color: AppTheme.primary,
                       ),
                     ),
                   ),
@@ -204,7 +218,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
                     // Rebuild nav dengan cabang baru
                     _branchKey++;
-                    _visited..clear()..add(0);
+                    _visited
+                      ..clear()
+                      ..add(0);
                     _selectedIndex = 0;
                     if (mounted) {
                       setState(() {}); // force rebuild AppBar banner
@@ -217,28 +233,46 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
         ),
       );
-    } catch (e) { ServiceHealth.trace('branch_picker',1,0,failureKind(e)); }
+    } catch (e) {
+      ServiceHealth.trace('branch_picker', 1, 0, failureKind(e));
+    }
   }
 
   final _reports = SingleFlight();
   String _reportAttemptDate = '';
   Future<void> _runScheduledReports() => _reports.run(() async {
-    if (!mounted || DateTime.now().hour < 22 || ServiceHealth.instance.cachedProfile) return;
-    final profile = context.read<AuthProvider>().currentUser;
-    if (profile == null || !const {'owner', 'superadmin'}.contains(profile.role)) return;
-    final today = DateTime.now().toIso8601String().substring(0,10);
-    if (_reportAttemptDate == today) return;
-    _reportAttemptDate = today; // At most one automatic attempt per process/day; no write retry.
-    try {
-      final pdf = await SchedulerService.shouldRunAutoPdf().timeout(const Duration(seconds: 3));
-      if (!mounted || context.read<AuthProvider>().currentUser?.authId != profile.authId) return;
-      if (pdf) await SchedulerService.runAutoPdf(context);
-      if (!mounted || context.read<AuthProvider>().currentUser?.authId != profile.authId) return;
-      final wa = await SchedulerService.shouldRunAutoWa().timeout(const Duration(seconds: 12));
-      if (!mounted || context.read<AuthProvider>().currentUser?.authId != profile.authId) return;
-      if (wa) await SchedulerService.runAutoWa(context);
-    } catch (e) { ServiceHealth.trace('scheduled_reports',1,0,failureKind(e)); }
-  });
+        if (!mounted ||
+            DateTime.now().hour < 22 ||
+            ServiceHealth.instance.cachedProfile) return;
+        final profile = context.read<AuthProvider>().currentUser;
+        if (profile == null ||
+            !const {'owner', 'superadmin'}.contains(profile.role)) return;
+        final today = DateTime.now().toIso8601String().substring(0, 10);
+        if (_reportAttemptDate == today) return;
+        _reportAttemptDate =
+            today; // At most one automatic attempt per process/day; no write retry.
+        try {
+          final pdf = await SchedulerService.shouldRunAutoPdf().timeout(
+            const Duration(seconds: 3),
+          );
+          if (!mounted ||
+              context.read<AuthProvider>().currentUser?.authId !=
+                  profile.authId) return;
+          if (pdf) await SchedulerService.runAutoPdf(context);
+          if (!mounted ||
+              context.read<AuthProvider>().currentUser?.authId !=
+                  profile.authId) return;
+          final wa = await SchedulerService.shouldRunAutoWa().timeout(
+            const Duration(seconds: 12),
+          );
+          if (!mounted ||
+              context.read<AuthProvider>().currentUser?.authId !=
+                  profile.authId) return;
+          if (wa) await SchedulerService.runAutoWa(context);
+        } catch (e) {
+          ServiceHealth.trace('scheduled_reports', 1, 0, failureKind(e));
+        }
+      });
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) unawaited(_runScheduledReports());
@@ -246,7 +280,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _loadMenuPref() async {
     final prefs = await SharedPreferences.getInstance();
-    if (mounted) setState(() => _useSideMenu = prefs.getBool('use_side_menu') ?? false);
+    if (mounted)
+      setState(() => _useSideMenu = prefs.getBool('use_side_menu') ?? false);
   }
 
   Future<void> _saveMenuPref(bool val) async {
@@ -254,19 +289,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     await prefs.setBool('use_side_menu', val);
   }
 
-  Future<void> _buildNav() => _navBuild ??= _buildNavAttempt().whenComplete(() => _navBuild = null);
+  Future<void> _buildNav() =>
+      _navBuild ??= _buildNavAttempt().whenComplete(() => _navBuild = null);
   Future<void> _buildNavAttempt() async {
     final ticket = ++_navEpoch;
     try {
       await _buildNavLocal(ticket).timeout(const Duration(seconds: 10));
       ServiceHealth.instance.record('home_navigation', null);
-    }
-    catch (e) {
+    } catch (e) {
       _navEpoch++; // The underlying Future may still finish; invalidate its UI result.
-      if (mounted) setState(() => _startupError = 'Menu belum dapat dimuat. Coba lagi; sesi tetap disimpan.');
-      ServiceHealth.log('home_navigation',1,0,failureKind(e));
+      if (mounted)
+        setState(
+          () => _startupError =
+              'Menu belum dapat dimuat. Coba lagi; sesi tetap disimpan.',
+        );
+      ServiceHealth.log('home_navigation', 1, 0, failureKind(e));
     }
   }
+
   Future<void> _buildNavLocal(int ticket, {bool refresh = true}) async {
     final auth = context.read<AuthProvider>();
     final role = auth.currentUser?.role ?? 'kasir';
@@ -278,9 +318,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Tidak pakai SQLite user_<id> karena bisa stale/lama
     final permissionPrefs = await SharedPreferences.getInstance();
     final owner = auth.currentUser?.ownerId ?? '';
-    final cacheMatches = permissionPrefs.getString('_permission_cache_owner') == owner &&
-        validCacheAge(DateTime.tryParse(permissionPrefs.getString('_permission_cache_time') ?? ''), DateTime.now().toUtc());
-    final rolePerms = cacheMatches ? await DatabaseHelper.instance.getRolePermissions(role) : <String>[];
+    final cacheMatches =
+        permissionPrefs.getString('_permission_cache_owner') == owner &&
+            validCacheAge(
+              DateTime.tryParse(
+                permissionPrefs.getString('_permission_cache_time') ?? '',
+              ),
+              DateTime.now().toUtc(),
+            );
+    final rolePerms = cacheMatches
+        ? await DatabaseHelper.instance.getRolePermissions(role)
+        : <String>[];
 
     List<String> perms = rolePerms;
 
@@ -293,7 +341,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _NavItem(
         icon: Icons.home_rounded,
         label: 'Home',
-        color: const Color(0xFF00796B),
+        color: AppTheme.primary,
       ),
     );
 
@@ -329,7 +377,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _NavItem(
           icon: Icons.storefront,
           label: 'KASIR ZL',
-          color: const Color(0xFF00796B),
+          color: AppTheme.primary,
         ),
       );
     } else {
@@ -338,7 +386,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _NavItem(
           icon: Icons.point_of_sale,
           label: 'KASIR ZL',
-          color: const Color(0xFF00796B),
+          color: AppTheme.primary,
         ),
       );
     }
@@ -349,7 +397,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (canShift) {
       screens.add(const ShiftScreen());
       items.add(
-        _NavItem(icon: Icons.av_timer, label: 'Shift', color: Colors.green),
+        _NavItem(icon: Icons.av_timer, label: 'Shift', color: AppTheme.primary),
       );
     }
 
@@ -365,7 +413,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _NavItem(
           icon: Icons.receipt_long,
           label: 'Riwayat',
-          color: Colors.orange,
+          color: AppTheme.warningInk,
         ),
       );
     }
@@ -382,7 +430,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _NavItem(
           icon: Icons.table_restaurant,
           label: 'Meja',
-          color: Colors.brown,
+          color: AppTheme.warningInk,
         ),
       );
     }
@@ -393,7 +441,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         // Retail: manage products
         screens.add(RetailProductListScreen(key: ValueKey(_branchKey)));
         items.add(
-          _NavItem(icon: Icons.inventory, label: 'Produk', color: Colors.teal),
+          _NavItem(
+            icon: Icons.inventory,
+            label: 'Produk',
+            color: AppTheme.primary,
+          ),
         );
       } else {
         // Food: manage menu
@@ -402,7 +454,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           _NavItem(
             icon: Icons.restaurant_menu,
             label: 'Menu',
-            color: Colors.teal,
+            color: AppTheme.primary,
           ),
         );
       }
@@ -415,7 +467,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _NavItem(
           icon: Icons.money_off,
           label: 'Pengeluaran',
-          color: Colors.red,
+          color: AppTheme.danger,
         ),
       );
     }
@@ -433,7 +485,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _NavItem(
           icon: Icons.inventory_2,
           label: isRetailMode ? 'Stok Produk' : 'Stok Bahan',
-          color: Colors.brown,
+          color: AppTheme.warningInk,
         ),
       );
     }
@@ -442,7 +494,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (isAdmin || isManajer || perms.contains('laporan')) {
       screens.add(ReportsScreen(key: ValueKey(_branchKey)));
       items.add(
-        _NavItem(icon: Icons.bar_chart, label: 'Laporan', color: Colors.teal),
+        _NavItem(
+          icon: Icons.bar_chart,
+          label: 'Laporan',
+          color: AppTheme.primary,
+        ),
       );
     }
 
@@ -453,7 +509,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _NavItem(
           icon: Icons.store,
           label: 'Semua Cabang',
-          color: Colors.teal,
+          color: AppTheme.primary,
         ),
       );
     }
@@ -465,7 +521,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _NavItem(
           icon: Icons.business,
           label: 'Cabang Saya',
-          color: Colors.teal,
+          color: AppTheme.primary,
         ),
       );
     }
@@ -477,7 +533,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _NavItem(
           icon: Icons.account_balance_wallet,
           label: 'Saldo',
-          color: Colors.teal,
+          color: AppTheme.primary,
         ),
       );
     }
@@ -489,7 +545,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _NavItem(
           icon: Icons.admin_panel_settings,
           label: 'Super Admin',
-          color: const Color(0xFF00796B),
+          color: AppTheme.primary,
         ),
       );
     }
@@ -502,7 +558,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         perms.contains('pengaturan')) {
       screens.add(const SettingsScreen());
       items.add(
-        _NavItem(icon: Icons.settings, label: 'Pengaturan', color: Colors.grey),
+        _NavItem(
+          icon: Icons.settings,
+          label: 'Pengaturan',
+          color: AppTheme.textSecondary,
+        ),
       );
     }
 
@@ -526,37 +586,51 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       onTapSubscription: screens.any((s) => s is SubscriptionScreen)
           ? () => openScreen((s) => s is SubscriptionScreen)
           : null,
-      onTapStok:
-          screens.any(
-            (s) => s is InventoryScreen || s is RetailProductListScreen,
-          )
+      onTapStok: screens.any(
+        (s) => s is InventoryScreen || s is RetailProductListScreen,
+      )
           ? () => openScreen(
-              (s) => s is InventoryScreen || s is RetailProductListScreen,
-            )
+                (s) => s is InventoryScreen || s is RetailProductListScreen,
+              )
           : null,
     );
 
     if (!mounted || ticket != _navEpoch) return;
     setState(() {
       _startupError = null;
-      final selectedLabel = _selectedIndex < _navItems.length ? _navItems[_selectedIndex].label : 'Home';
-      final visitedLabels = _visited.where((i) => i < _navItems.length).map((i) => _navItems[i].label).toSet();
+      final selectedLabel = _selectedIndex < _navItems.length
+          ? _navItems[_selectedIndex].label
+          : 'Home';
+      final visitedLabels = _visited
+          .where((i) => i < _navItems.length)
+          .map((i) => _navItems[i].label)
+          .toSet();
       _selectedIndex = items.indexWhere((item) => item.label == selectedLabel);
       if (_selectedIndex < 0) _selectedIndex = 0;
-      _visited..clear()..add(0)..add(_selectedIndex);
-      for (var i = 0; i < items.length; i++) { if (visitedLabels.contains(items[i].label)) _visited.add(i); }
+      _visited
+        ..clear()
+        ..add(0)
+        ..add(_selectedIndex);
+      for (var i = 0; i < items.length; i++) {
+        if (visitedLabels.contains(items[i].label)) _visited.add(i);
+      }
       _screens = screens;
       _navItems = items;
       _loaded = true;
     });
 
-    if (refresh) unawaited(_refreshOptional().catchError((Object e) { ServiceHealth.log('home_refresh',1,0,failureKind(e)); }));
+    if (refresh)
+      unawaited(
+        _refreshOptional().catchError((Object e) {
+          ServiceHealth.log('home_refresh', 1, 0, failureKind(e));
+        }),
+      );
   }
 
   Future<void>? _optionalJob;
-  Future<void> _refreshOptional() => _optionalJob ??= _readOptional()
-      .then((_) { ServiceHealth.instance.record('home_refresh', null); })
-      .whenComplete(() => _optionalJob = null);
+  Future<void> _refreshOptional() => _optionalJob ??= _readOptional().then((_) {
+        ServiceHealth.instance.record('home_refresh', null);
+      }).whenComplete(() => _optionalJob = null);
   Future<void> _readOptional() async {
     if (!mounted) return;
     final auth = context.read<AuthProvider>();
@@ -566,15 +640,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Each job catches its own failure. No automatic debt deduction/report writes.
     await Future.wait([
       supplemental('profile', auth.checkSession),
-      supplemental('subscription', sub.init, log: (s,e) => ServiceHealth.log(s,1,0,e)),
-      supplemental('settings', settings.loadSettings, log: (s,e) => ServiceHealth.log(s,1,0,e)),
-      supplemental('shift', () => shift.loadActiveShift(auth.currentUser?.authId ?? '')),
+      supplemental(
+        'subscription',
+        sub.init,
+        log: (s, e) => ServiceHealth.log(s, 1, 0, e),
+      ),
+      supplemental(
+        'settings',
+        settings.loadSettings,
+        log: (s, e) => ServiceHealth.log(s, 1, 0, e),
+      ),
+      supplemental(
+        'shift',
+        () => shift.loadActiveShift(auth.currentUser?.authId ?? ''),
+      ),
     ]);
     if (!mounted) return;
     unawaited(supplemental('branch_picker', _checkMultiBranchManager));
     final owner = await PermissionSyncService.instance.getOwnerId();
     if (!mounted) return;
-    final updated = await PermissionSyncService.instance.pullAndSyncToLocal(owner);
+    final updated = await PermissionSyncService.instance.pullAndSyncToLocal(
+      owner,
+    );
     if (updated && mounted) {
       // Local re-render only; do not recursively schedule another remote refresh.
       final ticket = ++_navEpoch;
@@ -583,7 +670,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _selectIndex(int i) {
-    setState(() { _selectedIndex = i.clamp(0, _screens.length - 1); _visited.add(_selectedIndex); });
+    setState(() {
+      _selectedIndex = i.clamp(0, _screens.length - 1);
+      _visited.add(_selectedIndex);
+    });
     // Reload menu when switching to kasir tab (index 0)
     if (i == 0) {
       context.read<MenuProvider>().loadData();
@@ -608,11 +698,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    if (context.watch<AuthProvider>().currentUser == null) return StartupRecoveryView(loading: false,
-      message: 'Sesi perlu diverifikasi kembali. Data tersimpan tetap ada.',
-      retry: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FirebaseLoginScreen())));
-    if (!_loaded) return StartupRecoveryView(loading: _startupError == null,
-      message: _startupError ?? 'Memuat menu lokal…', retry: () { setState(() => _startupError = null); _buildNav(); });
+    if (context.watch<AuthProvider>().currentUser == null)
+      return StartupRecoveryView(
+        loading: false,
+        message: 'Sesi perlu diverifikasi kembali. Data tersimpan tetap ada.',
+        retry: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const FirebaseLoginScreen())),
+      );
+    if (!_loaded)
+      return StartupRecoveryView(
+        loading: _startupError == null,
+        message: _startupError ?? 'Memuat menu lokal…',
+        retry: () {
+          setState(() => _startupError = null);
+          _buildNav();
+        },
+      );
     return _useSideMenu ? _buildSideMenuLayout() : _buildBottomNavLayout();
   }
 
@@ -637,22 +739,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     return Scaffold(
       // AppBar dengan hamburger menu
       appBar: AppBar(
-        backgroundColor: const Color(0xFF00796B),
+        backgroundColor: AppTheme.primary,
         leading: Builder(
           builder: (ctx) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
+            icon: const Icon(Icons.menu, color: AppTheme.onAction),
             onPressed: () => Scaffold.of(ctx).openDrawer(),
             tooltip: 'Menu',
           ),
         ),
         title: Row(
           children: [
-            Icon(currentItem.icon, color: Colors.white, size: 20),
+            Icon(currentItem.icon, color: AppTheme.onAction, size: 20),
             const SizedBox(width: 8),
             Text(
               currentItem.label,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppTheme.onAction,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -673,21 +775,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       onTap: () => _checkMultiBranchManager(force: true),
                       child: Container(
                         width: double.infinity,
-                        color: const Color(0xFF00695C),
+                        color: AppTheme.primaryDark,
                         padding: const EdgeInsets.symmetric(vertical: 5),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Icon(
                               Icons.store,
-                              color: Colors.white,
+                              color: AppTheme.onAction,
                               size: 13,
                             ),
                             const SizedBox(width: 5),
                             Text(
                               branchName.isEmpty ? 'Semua Cabang' : branchName,
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -695,7 +797,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             const SizedBox(width: 5),
                             const Icon(
                               Icons.swap_horiz,
-                              color: Colors.white,
+                              color: AppTheme.onAction,
                               size: 13,
                             ),
                           ],
@@ -709,7 +811,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         actions: [
           // Toggle layout button
           IconButton(
-            icon: const Icon(Icons.swap_horiz, color: Colors.white),
+            icon: const Icon(Icons.swap_horiz, color: AppTheme.onAction),
             tooltip: 'Ganti ke menu bawah',
             onPressed: () {
               setState(() => _useSideMenu = false);
@@ -724,7 +826,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       body: ZelaPage(
         child: IndexedStack(
           index: _selectedIndex.clamp(0, _screens.length - 1),
-          children: List.generate(_screens.length, (i) => _visited.contains(i) ? TickerMode(enabled: i == _selectedIndex, child: _screens[i]) : const SizedBox.shrink()),
+          children: List.generate(
+            _screens.length,
+            (i) => _visited.contains(i)
+                ? TickerMode(enabled: i == _selectedIndex, child: _screens[i])
+                : const SizedBox.shrink(),
+          ),
         ),
       ),
     );
@@ -750,7 +857,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   16,
                   20,
                 ),
-                decoration: const BoxDecoration(color: const Color(0xFF00796B)),
+                decoration: const BoxDecoration(color: AppTheme.primary),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -759,9 +866,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       width: 56,
                       height: 56,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.25),
+                        color: AppTheme.onAction.withOpacity(0.25),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
+                        border: Border.all(color: AppTheme.onAction, width: 2),
                       ),
                       child: Center(
                         child: Text(
@@ -769,7 +876,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               ? user.name[0].toUpperCase()
                               : '?',
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppTheme.onAction,
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
@@ -794,7 +901,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             Text(
                               displayName,
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -806,13 +913,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 vertical: 3,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: AppTheme.onAction.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
                                 _roleLabel(displayRole),
                                 style: const TextStyle(
-                                  color: Colors.white,
+                                  color: AppTheme.onAction,
                                   fontSize: 12,
                                 ),
                               ),
@@ -824,14 +931,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 children: [
                                   const Icon(
                                     Icons.store,
-                                    color: Colors.white,
+                                    color: AppTheme.onAction,
                                     size: 12,
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
                                     displayBranch,
                                     style: const TextStyle(
-                                      color: Colors.white,
+                                      color: AppTheme.onAction,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -863,13 +970,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             ),
                             decoration: BoxDecoration(
                               color: sub.isLocked
-                                  ? Colors.red.withOpacity(0.25)
-                                  : Colors.white.withOpacity(0.15),
+                                  ? AppTheme.danger.withOpacity(0.25)
+                                  : AppTheme.onAction.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                 color: sub.isLocked
-                                    ? Colors.red.withOpacity(0.5)
-                                    : Colors.white.withOpacity(0.2),
+                                    ? AppTheme.danger.withOpacity(0.5)
+                                    : AppTheme.onAction.withOpacity(0.2),
                               ),
                             ),
                             child: Row(
@@ -879,8 +986,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                       ? Icons.lock
                                       : Icons.account_balance_wallet,
                                   color: sub.isLocked
-                                      ? Colors.redAccent
-                                      : Colors.white,
+                                      ? AppTheme.danger
+                                      : AppTheme.onAction,
                                   size: 16,
                                 ),
                                 const SizedBox(width: 8),
@@ -892,18 +999,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                       Text(
                                         'Saldo',
                                         style: TextStyle(
-                                          color: Colors.white.withOpacity(0.7),
+                                          color: AppTheme.onAction.withOpacity(
+                                            0.7,
+                                          ),
                                           fontSize: 12,
                                         ),
                                       ),
                                       Text(
                                         sub.isLocked
-                                            ? '🔒 Habis'
+                                            ? 'Habis'
                                             : AppUtils.formatCurrency(
                                                 sub.balance,
                                               ),
                                         style: const TextStyle(
-                                          color: Colors.white,
+                                          color: AppTheme.onAction,
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -914,7 +1023,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 Text(
                                   '${sub.remainingTrx} trx',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
+                                    color: AppTheme.onAction.withOpacity(0.7),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -945,17 +1054,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               margin: const EdgeInsets.only(top: 8),
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: Colors.orange.withOpacity(0.25),
+                                color: AppTheme.warningInk.withOpacity(0.25),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: Colors.orange.withOpacity(0.5),
+                                  color: AppTheme.warningInk.withOpacity(0.5),
                                 ),
                               ),
                               child: Row(
                                 children: [
                                   const Icon(
                                     Icons.pending_actions,
-                                    color: Colors.orange,
+                                    color: AppTheme.warningInk,
                                     size: 18,
                                   ),
                                   const SizedBox(width: 8),
@@ -963,7 +1072,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     child: Text(
                                       '$count pendaftaran menunggu persetujuan',
                                       style: const TextStyle(
-                                        color: Colors.orange,
+                                        color: AppTheme.warningInk,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -972,13 +1081,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   Container(
                                     padding: const EdgeInsets.all(4),
                                     decoration: const BoxDecoration(
-                                      color: Colors.orange,
+                                      color: AppTheme.warningInk,
                                       shape: BoxShape.circle,
                                     ),
                                     child: Text(
                                       '$count',
                                       style: const TextStyle(
-                                        color: Colors.white,
+                                        color: AppTheme.onAction,
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -1013,9 +1122,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '🍽️ POS Kasir',
+                      'POS Kasir',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: AppTheme.onAction.withOpacity(0.7),
                         fontSize: 14,
                       ),
                     ),
@@ -1070,14 +1179,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         Icon(
                           Icons.swap_vert,
                           size: 20,
-                          color: const Color(0xFF62736F),
+                          color: AppTheme.textSecondary,
                         ),
                         const SizedBox(width: 10),
                         Text(
                           'Ganti ke menu bawah',
                           style: TextStyle(
                             fontSize: 14,
-                            color: const Color(0xFF62736F),
+                            color: AppTheme.textSecondary,
                           ),
                         ),
                       ],
@@ -1096,11 +1205,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.logout, size: 20, color: Colors.red),
+                        const Icon(
+                          Icons.logout,
+                          size: 20,
+                          color: AppTheme.danger,
+                        ),
                         const SizedBox(width: 10),
                         const Text(
                           'Keluar / Ganti Kasir',
-                          style: TextStyle(fontSize: 14, color: Colors.red),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppTheme.danger,
+                          ),
                         ),
                       ],
                     ),
@@ -1117,176 +1233,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   // ─── Bottom Nav Layout — Cureva Pill Style ────────────────
   Widget _buildBottomNavLayout() {
-    // Tampilkan max 4 item di pill nav; sisanya via FAB/overflow
-    final visibleItems = _navItems.length > 5
-        ? _navItems.sublist(0, 4)
-        : _navItems;
-    final visibleScreens = _navItems.length > 5
-        ? _screens.sublist(0, 4)
-        : _screens;
     final clampedIdx = _selectedIndex.clamp(0, _screens.length - 1);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: AppTheme.surfaceLight,
       body: ZelaPage(
-        child: Stack(
-          children: [
-            IndexedStack(index: clampedIdx, children: List.generate(_screens.length, (i) => _visited.contains(i) ? TickerMode(enabled: i == clampedIdx, child: _screens[i]) : const SizedBox.shrink())),
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 8,
-              right: 12,
-              child: GestureDetector(
-                onTap: () {
-                  setState(() => _useSideMenu = true);
-                  _saveMenuPref(true);
-                },
-                child: Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFFDEE7E3)),
-                    boxShadow: const <BoxShadow>[],
-                  ),
-                  child: const Icon(
-                    Icons.menu_rounded,
-                    size: 15,
-                    color: Color(0xFF62736F),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      // Cureva pill bottom nav
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          color: const Color(0xFFF7F9F8),
-          padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: const Color(0xFFDEE7E3)),
-              boxShadow: const <BoxShadow>[],
-            ),
-            child: LayoutBuilder(
-              builder: (ctx, constraints) {
-                final total = _navItems.length;
-                const maxShow = 5;
-                final showMore = total > maxShow;
-                final visCount = showMore ? maxShow - 1 : total;
-                final slotCount = showMore ? maxShow : total;
-                final slotW = constraints.maxWidth / slotCount;
-                return Row(
-                  children: [
-                    ...List.generate(visCount, (i) {
-                      final item = _navItems[i];
-                      final isSel = clampedIdx == i;
-                      return SizedBox(
-                        width: slotW,
-                        child: GestureDetector(
-                          onTap: () => _selectIndex(i),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 2,
-                              vertical: 2,
-                            ),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 7,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSel
-                                  ? const Color(0xFF00796B)
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(22),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  item.icon,
-                                  size: 18,
-                                  color: isSel
-                                      ? Colors.white
-                                      : const Color(0xFF62736F),
-                                ),
-                                if (isSel) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    item.label,
-                                    overflow: TextOverflow.clip,
-                                    maxLines: 1,
-                                    softWrap: false,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                    if (showMore)
-                      SizedBox(
-                        width: slotW,
-                        child: GestureDetector(
-                          onTap: _showNavOverflowSheet,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 2,
-                              vertical: 2,
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 7),
-                            decoration: BoxDecoration(
-                              color: clampedIdx >= visCount
-                                  ? const Color(0xFF00796B)
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(22),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.apps_rounded,
-                                  size: 18,
-                                  color: clampedIdx >= visCount
-                                      ? Colors.white
-                                      : const Color(0xFF62736F),
-                                ),
-                                if (clampedIdx >= visCount) ...[
-                                  const SizedBox(height: 2),
-                                  const Text(
-                                    'Lainnya',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                );
-              },
-            ),
+        child: IndexedStack(
+          index: clampedIdx,
+          children: List.generate(
+            _screens.length,
+            (i) => _visited.contains(i)
+                ? TickerMode(enabled: i == clampedIdx, child: _screens[i])
+                : const SizedBox.shrink(),
           ),
         ),
+      ),
+      bottomNavigationBar: ZelaNavigation(
+        selectedIndex: clampedIdx,
+        onSelected: _selectIndex,
+        onOverflow: _showNavOverflowSheet,
+        destinations: [
+          for (final item in _navItems)
+            NavigationDestination(
+              icon: Icon(item.icon),
+              label: item.label == 'KASIR ZL' ? 'Kasir' : item.label,
+            ),
+        ],
       ),
     );
   }
@@ -1309,89 +1281,45 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _showNavOverflowSheet() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.onAction,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(ctx).height * .85,
+        ),
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.all(16),
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEAF5F1),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+            const ListTile(
+              title: Text('Semua menu', style: AppTheme.headingLg),
+            ),
+            ListTile(
+                leading: const Icon(Icons.menu),
+                title: const Text('Menu samping'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  setState(() => _useSideMenu = true);
+                  _saveMenuPref(true);
+                }),
+            for (final entry in _navItems.asMap().entries)
+              ListTile(
+                selected: _selectedIndex == entry.key,
+                selectedTileColor: AppTheme.primarySurface,
+                leading: Icon(entry.value.icon),
+                title: Text(entry.value.label),
+                trailing: _selectedIndex == entry.key
+                    ? const Icon(Icons.check)
+                    : null,
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _selectIndex(entry.key);
+                },
               ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Semua Menu',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF172B2A),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _navItems.asMap().entries.map((entry) {
-                final i = entry.key;
-                final item = entry.value;
-                final isSel = _selectedIndex == i;
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _selectIndex(i);
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 9,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isSel
-                          ? const Color(0xFF00796B)
-                          : const Color(0xFFF7F9F8),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSel
-                            ? const Color(0xFF00796B)
-                            : const Color(0xFFDEE7E3),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          item.icon,
-                          size: 16,
-                          color: isSel ? Colors.white : item.color,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          item.label,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: isSel
-                                ? Colors.white
-                                : const Color(0xFF172B2A),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
           ],
         ),
       ),
@@ -1412,9 +1340,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF00796B),
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
             onPressed: () {
               // Stop shift timer sebelum logout agar tidak query SQLite
               // di background setelah user keluar
@@ -1425,7 +1351,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 (route) => false,
               );
             },
-            child: const Text('Keluar', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Keluar',
+              style: TextStyle(color: AppTheme.onAction),
+            ),
           ),
         ],
       ),
@@ -1454,7 +1383,8 @@ class _DailyMotivationCard extends StatefulWidget {
   State<_DailyMotivationCard> createState() => _DailyMotivationCardState();
 }
 
-class _DailyMotivationCardState extends State<_DailyMotivationCard> with VisibleClock<_DailyMotivationCard> {
+class _DailyMotivationCardState extends State<_DailyMotivationCard>
+    with VisibleClock<_DailyMotivationCard> {
   late String _time;
   late String _date;
 
@@ -1524,7 +1454,7 @@ class _DailyMotivationCardState extends State<_DailyMotivationCard> with Visible
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.13),
+        color: AppTheme.onAction.withOpacity(0.13),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -1533,7 +1463,7 @@ class _DailyMotivationCardState extends State<_DailyMotivationCard> with Visible
           Text(
             _time,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppTheme.onAction,
               fontSize: 28,
               fontWeight: FontWeight.bold,
               letterSpacing: 2,
@@ -1541,16 +1471,16 @@ class _DailyMotivationCardState extends State<_DailyMotivationCard> with Visible
           ),
           Text(
             _date,
-            style: const TextStyle(color: Colors.white, fontSize: 12),
+            style: const TextStyle(color: AppTheme.onAction, fontSize: 12),
           ),
           const SizedBox(height: 8),
-          const Divider(color: Colors.white24, height: 1),
+          const Divider(color: AppTheme.onActionMuted, height: 1),
           const SizedBox(height: 8),
           Text(
             _todayQuote,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppTheme.onAction,
               fontSize: 12,
               fontStyle: FontStyle.italic,
               height: 1.4,
@@ -1573,12 +1503,12 @@ class _ShiftStatMini extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white54, fontSize: 12),
+          style: const TextStyle(color: AppTheme.onActionMuted, fontSize: 12),
         ),
         Text(
           value,
           style: const TextStyle(
-            color: Colors.white,
+            color: AppTheme.onAction,
             fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
@@ -1611,7 +1541,7 @@ class _DrawerMenuItem extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF00796B).withOpacity(0.1) : null,
+          color: isSelected ? AppTheme.primary.withOpacity(0.1) : null,
           borderRadius: BorderRadius.circular(10),
         ),
         child: ListTile(
@@ -1623,15 +1553,13 @@ class _DrawerMenuItem extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: isSelected
-                  ? const Color(0xFF00796B)
-                  : color.withOpacity(0.12),
+              color: isSelected ? AppTheme.primary : color.withOpacity(0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
               size: 18,
-              color: isSelected ? Colors.white : color,
+              color: isSelected ? AppTheme.onAction : color,
             ),
           ),
           title: Text(
@@ -1639,9 +1567,7 @@ class _DrawerMenuItem extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected
-                  ? const Color(0xFF00796B)
-                  : const Color(0xFF1E293B),
+              color: isSelected ? AppTheme.primary : AppTheme.textPrimary,
             ),
           ),
           trailing: isSelected
@@ -1649,7 +1575,7 @@ class _DrawerMenuItem extends StatelessWidget {
                   width: 4,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF00796B),
+                    color: AppTheme.primary,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 )

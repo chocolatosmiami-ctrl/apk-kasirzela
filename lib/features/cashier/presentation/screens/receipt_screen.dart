@@ -37,11 +37,11 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
 
   Color get _platformColor {
     final pm = widget.order.paymentMethod ?? '';
-    if (pm == 'online_shopee') return const Color(0xFFEE4D2D);
-    if (pm == 'online_grab') return const Color(0xFF00B14F);
-    if (pm == 'online_internal') return Colors.teal;
-    if (pm == 'online_rusak') return Colors.brown;
-    return const Color(0xFF00AA13);
+    if (pm == 'online_shopee') return AppTheme.deliveryShopee;
+    if (pm == 'online_grab') return AppTheme.deliveryGrab;
+    if (pm == 'online_internal') return AppTheme.primary;
+    if (pm == 'online_rusak') return AppTheme.warningInk;
+    return AppTheme.deliveryGojek;
   }
 
   @override
@@ -90,7 +90,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                       ? '⚠️ Printer dapur belum diatur di Pengaturan'
                       : '❌ Auto-print dapur gagal: ${result.name}',
                 ),
-                backgroundColor: Colors.orange,
+                backgroundColor: AppTheme.warningInk,
                 duration: const Duration(seconds: 3),
               ),
             );
@@ -104,7 +104,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: Colors.green,
+        backgroundColor: AppTheme.primary,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -131,19 +131,19 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     final order = widget.order;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
-        backgroundColor: _isOnlineOrder ? _platformColor : Colors.white,
+        backgroundColor: _isOnlineOrder ? _platformColor : AppTheme.onAction,
         foregroundColor: _isOnlineOrder
-            ? Colors.white
-            : const Color(0xFF172B2A),
+            ? AppTheme.onAction
+            : AppTheme.textPrimary,
         elevation: 0,
-        surfaceTintColor: Colors.transparent,
+        surfaceTintColor: AppTheme.transparent,
         title: Text(
           _isOnlineOrder ? 'Order $_platformName' : 'Struk Transaksi',
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: _isOnlineOrder ? Colors.white : const Color(0xFF172B2A),
+            color: _isOnlineOrder ? AppTheme.onAction : AppTheme.textPrimary,
           ),
         ),
         automaticallyImplyLeading: false,
@@ -185,7 +185,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 16,
-                            color: Color(0xFF172B2A),
+                            color: AppTheme.textPrimary,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -194,7 +194,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                           Text(
                             settings.effectiveStoreAddress,
                             style: const TextStyle(
-                              color: Color(0xFF62736F),
+                              color: AppTheme.textSecondary,
                               fontSize: 14,
                             ),
                             textAlign: TextAlign.center,
@@ -204,7 +204,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                           Text(
                             'Telp: ${settings.effectiveStorePhone}',
                             style: const TextStyle(
-                              color: Color(0xFF62736F),
+                              color: AppTheme.textSecondary,
                               fontSize: 14,
                             ),
                           ),
@@ -258,7 +258,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                   style: TextStyle(
                                     color: _isOnlineOrder
                                         ? _platformColor
-                                        : const Color(0xFF00796B),
+                                        : AppTheme.primary,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),
@@ -281,7 +281,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                           '📝 ${item.note}',
                                           style: const TextStyle(
                                             fontSize: 12,
-                                            color: Color(0xFF62736F),
+                                            color: AppTheme.textSecondary,
                                           ),
                                         ),
                                     ],
@@ -294,7 +294,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: _isOnlineOrder
-                                        ? const Color(0xFF62736F)
+                                        ? AppTheme.textSecondary
                                         : null,
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -310,7 +310,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                           _row(
                             'Total Menu',
                             AppUtils.formatCurrency(order.subtotal),
-                            color: const Color(0xFF62736F),
+                            color: AppTheme.textSecondary,
                           ),
                           Container(
                             margin: const EdgeInsets.only(top: 8),
@@ -358,7 +358,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                   ? '🎉 ${settings.branchDiskonLabel}'
                                   : 'Diskon',
                               '- ${AppUtils.formatCurrency(order.discountAmount)}',
-                              color: const Color(0xFF00796B),
+                              color: AppTheme.primary,
                             ),
                           ],
                           if (order.taxAmount > 0)
@@ -389,7 +389,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                               return _row(
                                 'Pembulatan',
                                 '${roundDiff >= 0 ? '+' : ''}${AppUtils.formatCurrency(roundDiff)}',
-                                color: const Color(0xFF62736F),
+                                color: AppTheme.textSecondary,
                               );
                             },
                           ),
@@ -400,10 +400,10 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                               vertical: 10,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEAF5F1),
+                              color: AppTheme.primarySurface,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: const Color(0xFFDEE7E3),
+                                color: AppTheme.borderLight,
                               ),
                             ),
                             child: Row(
@@ -414,7 +414,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 14,
-                                    color: Color(0xFF172B2A),
+                                    color: AppTheme.textPrimary,
                                   ),
                                 ),
                                 Text(
@@ -422,7 +422,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w900,
                                     fontSize: 20,
-                                    color: Color(0xFF00796B),
+                                    color: AppTheme.primary,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -438,7 +438,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                             _row(
                               'Kembalian',
                               AppUtils.formatCurrency(order.changeAmount),
-                              color: const Color(0xFF00796B),
+                              color: AppTheme.primary,
                             ),
                           ],
                         ],
@@ -465,7 +465,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                             fontWeight: FontWeight.w600,
                             color: _isOnlineOrder
                                 ? _platformColor
-                                : const Color(0xFF00796B),
+                                : AppTheme.primary,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -485,8 +485,8 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                 MediaQuery.of(context).padding.bottom + 10,
               ),
               decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Color(0xFFDEE7E3))),
+                color: AppTheme.onAction,
+                border: Border(top: BorderSide(color: AppTheme.borderLight)),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -500,19 +500,19 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                             onPressed: () => _showPrintOptions(context),
                             icon: const Icon(
                               Icons.print_outlined,
-                              color: Color(0xFF00796B),
+                              color: AppTheme.primary,
                               size: 18,
                             ),
                             label: const Text(
                               'Cetak\nCustomer',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: Color(0xFF00796B),
+                                color: AppTheme.primary,
                                 fontSize: 14,
                               ),
                             ),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFF00796B)),
+                              side: const BorderSide(color: AppTheme.primary),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -526,19 +526,19 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                             onPressed: () => _printKitchen(context),
                             icon: const Icon(
                               Icons.soup_kitchen,
-                              color: Colors.orange,
+                              color: AppTheme.warningInk,
                               size: 18,
                             ),
                             label: const Text(
                               'Cetak\nDapur',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: Colors.orange,
+                                color: AppTheme.warningInk,
                                 fontSize: 14,
                               ),
                             ),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Colors.orange),
+                              side: const BorderSide(color: AppTheme.warningInk),
                               padding: const EdgeInsets.symmetric(vertical: 8),
                             ),
                           ),
@@ -549,19 +549,19 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                             onPressed: () => _shareWhatsApp(context),
                             icon: const Icon(
                               Icons.share,
-                              color: Color(0xFF00796B),
+                              color: AppTheme.primary,
                               size: 18,
                             ),
                             label: const Text(
                               'Share\nWA',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: Color(0xFF00796B),
+                                color: AppTheme.primary,
                                 fontSize: 14,
                               ),
                             ),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFF00796B)),
+                              side: const BorderSide(color: AppTheme.primary),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -579,16 +579,16 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                     child: ElevatedButton.icon(
                       icon: const Icon(
                         Icons.add_shopping_cart,
-                        color: Colors.white,
+                        color: AppTheme.onAction,
                       ),
                       label: const Text(
                         'Transaksi Baru',
-                        style: TextStyle(color: Colors.white, fontSize: 15),
+                        style: TextStyle(color: AppTheme.onAction, fontSize: 15),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _isOnlineOrder
                             ? _platformColor
-                            : const Color(0xFF1E293B),
+                            : AppTheme.textPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -612,15 +612,15 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      decoration: BoxDecoration(color: const Color(0xFF00796B)),
+      decoration: BoxDecoration(color: AppTheme.primary),
       child: Column(
         children: [
-          const Text('🛵', style: TextStyle(fontSize: 40)),
+          const Icon(Icons.delivery_dining_outlined, size: 40, color: AppTheme.textSecondary),
           const SizedBox(height: 8),
           Text(
             'Order $_platformName Tercatat!',
             style: const TextStyle(
-              color: Colors.white,
+              color: AppTheme.onAction,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -630,12 +630,12 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: AppTheme.onAction.withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Text(
               'Order tersimpan di HP. Periksa status sinkronisasi di bawah.',
-              style: TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(color: AppTheme.onAction, fontSize: 14),
             ),
           ),
         ],
@@ -648,15 +648,15 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 20),
-      decoration: const BoxDecoration(color: Color(0xFF00796B)),
+      decoration: const BoxDecoration(color: AppTheme.primary),
       child: Column(
         children: [
-          const Icon(Icons.check_circle_outline, color: Colors.white, size: 60),
+          const Icon(Icons.check_circle_outline, color: AppTheme.onAction, size: 60),
           const SizedBox(height: 8),
           const Text(
             'Tersimpan di HP',
             style: TextStyle(
-              color: Colors.white,
+              color: AppTheme.onAction,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
@@ -664,7 +664,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
           Text(
             AppUtils.formatCurrency(order.total),
             style: const TextStyle(
-              color: Colors.white,
+              color: AppTheme.onAction,
               fontSize: 30,
               fontWeight: FontWeight.bold,
             ),
@@ -675,13 +675,13 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
               margin: const EdgeInsets.only(top: 6),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: AppTheme.onAction.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 'Kembalian: ${AppUtils.formatCurrency(order.changeAmount)}',
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.onAction,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -699,13 +699,13 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(color: Color(0xFF62736F), fontSize: 14),
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
           ),
           Text(
             value,
             style: TextStyle(
               fontWeight: FontWeight.w600,
-              color: color ?? const Color(0xFF172B2A),
+              color: color ?? AppTheme.textPrimary,
               fontSize: 14,
             ),
           ),
@@ -735,10 +735,10 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.green[50],
+                  color: AppTheme.primarySurface,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.share, color: Colors.green),
+                child: const Icon(Icons.share, color: AppTheme.primary),
               ),
               title: const Text('Bagikan PDF / WhatsApp'),
               subtitle: const Text('Struk dikirim sebagai file PDF'),
@@ -751,7 +751,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Gagal: $e'),
-                        backgroundColor: Colors.red,
+                        backgroundColor: AppTheme.danger,
                       ),
                     );
                   }
@@ -762,10 +762,10 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.orange[50],
+                  color: AppTheme.warningSurface,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.print, color: Colors.orange[700]),
+                child: Icon(Icons.print, color: AppTheme.warningInk),
               ),
               title: const Text('Cetak ke Printer'),
               subtitle: const Text('Cetak langsung via sistem print'),
@@ -778,7 +778,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('Print gagal: $e'),
-                        backgroundColor: Colors.red,
+                        backgroundColor: AppTheme.danger,
                       ),
                     );
                   }
@@ -789,10 +789,10 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.teal[50],
+                  color: AppTheme.primarySurface,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.bluetooth, color: Colors.teal),
+                child: const Icon(Icons.bluetooth, color: AppTheme.primary),
               ),
               title: const Text('Bluetooth Printer (Thermal)'),
               subtitle: const Text('58mm / 80mm — hubungkan di Pengaturan'),
@@ -809,10 +809,10 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                           content: const Text(
                             'Belum ada printer. Buka Pengaturan → Printer',
                           ),
-                          backgroundColor: Colors.orange,
+                          backgroundColor: AppTheme.warningInk,
                           action: SnackBarAction(
                             label: 'Buka',
-                            textColor: Colors.white,
+                            textColor: AppTheme.onAction,
                             onPressed: () => Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -841,7 +841,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                           content: Text(
                             'Gagal connect. Pastikan printer menyala.',
                           ),
-                          backgroundColor: Colors.red,
+                          backgroundColor: AppTheme.danger,
                         ),
                       );
                     }
@@ -860,8 +860,8 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                               : '❌ Gagal cetak: ${result.name}',
                         ),
                         backgroundColor: result == PrintResult.success
-                            ? Colors.green
-                            : Colors.red,
+                            ? AppTheme.primary
+                            : AppTheme.danger,
                       ),
                     );
                   }
@@ -886,10 +886,10 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
           content: const Text(
             'Belum ada printer dapur. Buka Pengaturan → Printer Dapur',
           ),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppTheme.warningInk,
           action: SnackBarAction(
             label: 'Buka',
-            textColor: Colors.white,
+            textColor: AppTheme.onAction,
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const PrinterSettingsScreen()),
@@ -909,7 +909,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
               width: 18,
               height: 18,
               child: CircularProgressIndicator(
-                color: Colors.white,
+                color: AppTheme.onAction,
                 strokeWidth: 2,
               ),
             ),
@@ -918,7 +918,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
           ],
         ),
         duration: const Duration(seconds: 5),
-        backgroundColor: Colors.orange[700],
+        backgroundColor: AppTheme.warningInk,
       ),
     );
 
@@ -936,8 +936,8 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
               : '❌ Gagal cetak dapur: ${result.name}',
         ),
         backgroundColor: result == PrintResult.success
-            ? Colors.green
-            : Colors.red,
+            ? AppTheme.primary
+            : AppTheme.danger,
         duration: const Duration(seconds: 3),
       ),
     );
@@ -952,10 +952,11 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     final phone = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
+ scrollable: true,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Row(
           children: [
-            Text('📱', style: TextStyle(fontSize: 24)),
+            Icon(Icons.smartphone_outlined, size: 24, color: AppTheme.textSecondary),
             SizedBox(width: 8),
             Text('Kirim Struk via WA', style: TextStyle(fontSize: 16)),
           ],
@@ -981,7 +982,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
             const SizedBox(height: 8),
             Text(
               'Tidak perlu simpan kontak — langsung terkirim ke nomor ini',
-              style: TextStyle(fontSize: 12, color: const Color(0xFF62736F)),
+              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
             ),
           ],
         ),
@@ -1001,7 +1002,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Gagal: $e'),
-                      backgroundColor: Colors.red,
+                      backgroundColor: AppTheme.danger,
                     ),
                   );
                 }
@@ -1011,10 +1012,10 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
           ),
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF25D366),
+              backgroundColor: AppTheme.whatsApp,
             ),
-            icon: const Icon(Icons.send, size: 16, color: Colors.white),
-            label: const Text('Kirim', style: TextStyle(color: Colors.white)),
+            icon: const Icon(Icons.send, size: 16, color: AppTheme.onAction),
+            label: const Text('Kirim', style: TextStyle(color: AppTheme.onAction)),
             onPressed: () {
               final raw = phoneCtrl.text.trim();
               if (raw.isEmpty) return;
@@ -1099,7 +1100,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal buka WhatsApp: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.danger,
           ),
         );
       }

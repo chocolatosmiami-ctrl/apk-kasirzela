@@ -38,20 +38,20 @@ class _OrdersScreenState extends State<OrdersScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: AppTheme.surfaceLight,
       // ── AppBar Cureva style ──────────────────────────────
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF172B2A),
+        backgroundColor: AppTheme.onAction,
+        foregroundColor: AppTheme.textPrimary,
         elevation: 0,
-        surfaceTintColor: Colors.transparent,
+        surfaceTintColor: AppTheme.transparent,
         title: const Text(
           'Riwayat Pesanan',
           style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.sync, color: Color(0xFF00796B)),
+            icon: const Icon(Icons.sync, color: AppTheme.primary),
             tooltip: 'Sinkronkan Data',
             onPressed: () async {
               final prov = context.read<OrdersProvider>();
@@ -61,7 +61,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: const Text('✅ Data berhasil disinkronkan'),
-                    backgroundColor: const Color(0xFF00796B),
+                    backgroundColor: AppTheme.primary,
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -77,30 +77,30 @@ class _OrdersScreenState extends State<OrdersScreen>
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: Container(
-            color: Colors.white,
+            color: AppTheme.onAction,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: const Color(0xFFF7F9F8),
+                color: AppTheme.surfaceLight,
                 borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: const Color(0xFFDEE7E3)),
+                border: Border.all(color: AppTheme.borderLight),
               ),
               child: TabBar(
                 controller: _tabCtrl,
                 indicator: BoxDecoration(
-                  color: const Color(0xFF00796B),
+                  color: AppTheme.primary,
                   borderRadius: BorderRadius.circular(26),
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
-                labelColor: Colors.white,
-                unselectedLabelColor: const Color(0xFF62736F),
+                labelColor: AppTheme.onAction,
+                unselectedLabelColor: AppTheme.textSecondary,
                 labelStyle: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                 ),
                 unselectedLabelStyle: const TextStyle(fontSize: 14),
-                dividerColor: Colors.transparent,
+                dividerColor: AppTheme.transparent,
                 tabs: const [
                   Tab(text: 'Aktif'),
                   Tab(text: 'Riwayat'),
@@ -132,7 +132,7 @@ class _ActiveOrdersTab extends StatelessWidget {
         if (ordProv.isLoading)
           return const Center(child: CircularProgressIndicator());
         return RefreshIndicator(
-          color: const Color(0xFF00796B),
+          color: AppTheme.primary,
           onRefresh: () => ordProv.loadActiveOrders(),
           child: orders.isEmpty
               ? Center(
@@ -143,7 +143,7 @@ class _ActiveOrdersTab extends StatelessWidget {
                         width: 80,
                         height: 80,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEAF5F1),
+                          color: AppTheme.primarySurface,
                           shape: BoxShape.circle,
                         ),
                         child: const Center(
@@ -154,7 +154,7 @@ class _ActiveOrdersTab extends StatelessWidget {
                       const Text(
                         'Tidak ada pesanan aktif',
                         style: TextStyle(
-                          color: Color(0xFF62736F),
+                          color: AppTheme.textSecondary,
                           fontSize: 15,
                         ),
                       ),
@@ -189,6 +189,7 @@ class _ActiveOrdersTab extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
+ scrollable: true,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Text(
           'Batalkan Pesanan',
@@ -212,7 +213,7 @@ class _ActiveOrdersTab extends StatelessWidget {
               controller: pinCtrl,
               decoration: InputDecoration(
                 labelText: 'PIN Admin',
-                prefixIcon: const Icon(Icons.lock, color: Color(0xFF00796B)),
+                prefixIcon: const Icon(Icons.lock, color: AppTheme.primary),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -229,7 +230,7 @@ class _ActiveOrdersTab extends StatelessWidget {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: AppTheme.danger,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -247,7 +248,7 @@ class _ActiveOrdersTab extends StatelessWidget {
                     content: Text(
                       ok ? 'Pesanan dibatalkan' : 'PIN Admin salah',
                     ),
-                    backgroundColor: ok ? const Color(0xFF00796B) : Colors.red,
+                    backgroundColor: ok ? AppTheme.primary : AppTheme.danger,
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -258,7 +259,7 @@ class _ActiveOrdersTab extends StatelessWidget {
             },
             child: const Text(
               'Batalkan',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: AppTheme.onAction),
             ),
           ),
         ],
@@ -284,7 +285,7 @@ class _HistoryTabState extends State<_HistoryTab> {
           children: [
             // ── Filter bar Cureva style ──────────────────
             Container(
-              color: Colors.white,
+              color: AppTheme.onAction,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Row(
                 children: [
@@ -327,12 +328,12 @@ class _HistoryTabState extends State<_HistoryTab> {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEAF5F1),
+                        color: AppTheme.primarySurface,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
                         Icons.date_range,
-                        color: Color(0xFF00796B),
+                        color: AppTheme.primary,
                         size: 20,
                       ),
                     ),
@@ -344,13 +345,13 @@ class _HistoryTabState extends State<_HistoryTab> {
             // Date range bar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: const Color(0xFFF7F9F8),
+              color: AppTheme.surfaceLight,
               child: Row(
                 children: [
                   const Icon(
                     Icons.calendar_today,
                     size: 13,
-                    color: Color(0xFF62736F),
+                    color: AppTheme.textSecondary,
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -359,7 +360,7 @@ class _HistoryTabState extends State<_HistoryTab> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Color(0xFF62736F),
+                        color: AppTheme.textSecondary,
                         fontSize: 14,
                       ),
                     ),
@@ -371,13 +372,13 @@ class _HistoryTabState extends State<_HistoryTab> {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEAF5F1),
+                      color: AppTheme.primarySurface,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       '${ordProv.orders.length} transaksi',
                       style: const TextStyle(
-                        color: Color(0xFF00796B),
+                        color: AppTheme.primary,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -386,23 +387,23 @@ class _HistoryTabState extends State<_HistoryTab> {
                 ],
               ),
             ),
-            const Divider(height: 1, color: Color(0xFFDEE7E3)),
+            const Divider(height: 1, color: AppTheme.borderLight),
 
             Expanded(
               child: ordProv.isLoading
                   ? const Center(
                       child: CircularProgressIndicator(
-                        color: Color(0xFF00796B),
+                        color: AppTheme.primary,
                       ),
                     )
                   : RefreshIndicator(
-                      color: const Color(0xFF00796B),
+                      color: AppTheme.primary,
                       onRefresh: () => ordProv.loadOrders(),
                       child: ordProv.orders.isEmpty
                           ? const Center(
                               child: Text(
                                 'Belum ada transaksi',
-                                style: TextStyle(color: Color(0xFF62736F)),
+                                style: TextStyle(color: AppTheme.textSecondary),
                               ),
                             )
                           : ListView.builder(
@@ -442,7 +443,7 @@ class _HistoryTabState extends State<_HistoryTab> {
       ),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: const ColorScheme.light(primary: Color(0xFF00796B)),
+          colorScheme: const ColorScheme.light(primary: AppTheme.primary),
         ),
         child: child!,
       ),
@@ -468,16 +469,16 @@ Widget _CurevaChip(
       margin: const EdgeInsets.only(right: 7),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF00796B) : Colors.white,
+        color: isSelected ? AppTheme.primary : AppTheme.onAction,
         borderRadius: BorderRadius.circular(30),
         border: Border.all(
-          color: isSelected ? const Color(0xFF00796B) : const Color(0xFFDEE7E3),
+          color: isSelected ? AppTheme.primary : AppTheme.borderLight,
         ),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: isSelected ? Colors.white : const Color(0xFF62736F),
+          color: isSelected ? AppTheme.onAction : AppTheme.textSecondary,
           fontSize: 14,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
         ),
@@ -503,19 +504,19 @@ class _OrderCard extends StatelessWidget {
   Color _statusColor(String status) {
     switch (status) {
       case 'new':
-        return const Color(0xFF3B82F6);
+        return AppTheme.information;
       case 'processing':
-        return const Color(0xFFF59E0B);
+        return AppTheme.warningInk;
       case 'done':
-        return const Color(0xFF00796B);
+        return AppTheme.primary;
       case 'paid':
-        return const Color(0xFF00796B);
+        return AppTheme.primary;
       case 'completed':
-        return const Color(0xFF00796B);
+        return AppTheme.primary;
       case 'cancelled':
-        return const Color(0xFFBA3A3A);
+        return AppTheme.danger;
       default:
-        return const Color(0xFF62736F);
+        return AppTheme.textSecondary;
     }
   }
 
@@ -544,9 +545,9 @@ class _OrderCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.onAction,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFDEE7E3)),
+        border: Border.all(color: AppTheme.borderLight),
       ),
       child: Column(
         children: [
@@ -580,7 +581,7 @@ class _OrderCard extends StatelessWidget {
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
-                          color: Color(0xFF172B2A),
+                          color: AppTheme.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -589,7 +590,7 @@ class _OrderCard extends StatelessWidget {
                           const Icon(
                             Icons.access_time,
                             size: 11,
-                            color: Color(0xFF62736F),
+                            color: AppTheme.textSecondary,
                           ),
                           const SizedBox(width: 3),
                           Text(
@@ -597,7 +598,7 @@ class _OrderCard extends StatelessWidget {
                               AppUtils.safeParseDate(order.createdAt),
                             ),
                             style: const TextStyle(
-                              color: Color(0xFF62736F),
+                              color: AppTheme.textSecondary,
                               fontSize: 12,
                             ),
                           ),
@@ -609,13 +610,13 @@ class _OrderCard extends StatelessWidget {
                                 vertical: 1,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFEAF5F1),
+                                color: AppTheme.primarySurface,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 'Meja ${order.tableNumber}',
                                 style: const TextStyle(
-                                  color: Color(0xFF00796B),
+                                  color: AppTheme.primary,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -656,7 +657,7 @@ class _OrderCard extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 14),
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFF7F9F8),
+              color: AppTheme.surfaceLight,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
@@ -664,7 +665,7 @@ class _OrderCard extends StatelessWidget {
                 const Icon(
                   Icons.receipt_outlined,
                   size: 14,
-                  color: Color(0xFF62736F),
+                  color: AppTheme.textSecondary,
                 ),
                 const SizedBox(width: 6),
                 Expanded(
@@ -683,7 +684,7 @@ class _OrderCard extends StatelessWidget {
                         })
                         .join(', '),
                     style: const TextStyle(
-                      color: Color(0xFF62736F),
+                      color: AppTheme.textSecondary,
                       fontSize: 14,
                     ),
                     maxLines: 2,
@@ -705,13 +706,13 @@ class _OrderCard extends StatelessWidget {
                       const Icon(
                         Icons.person_outline,
                         size: 13,
-                        color: Color(0xFF62736F),
+                        color: AppTheme.textSecondary,
                       ),
                       const SizedBox(width: 3),
                       Text(
                         order.cashierName!,
                         style: const TextStyle(
-                          color: Color(0xFF62736F),
+                          color: AppTheme.textSecondary,
                           fontSize: 12,
                         ),
                       ),
@@ -723,7 +724,7 @@ class _OrderCard extends StatelessWidget {
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 16,
-                    color: Color(0xFF00796B),
+                    color: AppTheme.primary,
                   ),
                 ),
               ],
@@ -739,18 +740,18 @@ class _OrderCard extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.07),
+                  color: AppTheme.danger.withOpacity(0.07),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, size: 13, color: Colors.red),
+                    const Icon(Icons.info_outline, size: 13, color: AppTheme.danger),
                     const SizedBox(width: 5),
                     Expanded(
                       child: Text(
                         'Alasan batal: ${order.cancelReason}',
                         style: const TextStyle(
-                          color: Colors.red,
+                          color: AppTheme.danger,
                           fontSize: 12,
                         ),
                       ),
@@ -772,7 +773,7 @@ class _OrderCard extends StatelessWidget {
                         child: _CurevaActionBtn(
                           label: 'Proses',
                           icon: Icons.restaurant,
-                          color: const Color(0xFFF59E0B),
+                          color: AppTheme.warningInk,
                           onTap: () => onStatusChange?.call('processing'),
                         ),
                       ),
@@ -781,7 +782,7 @@ class _OrderCard extends StatelessWidget {
                         child: _CurevaActionBtn(
                           label: 'Selesai',
                           icon: Icons.check_circle_outline,
-                          color: const Color(0xFF00796B),
+                          color: AppTheme.primary,
                           onTap: () => onStatusChange?.call('done'),
                         ),
                       ),
@@ -790,7 +791,7 @@ class _OrderCard extends StatelessWidget {
                         child: _CurevaActionBtn(
                           label: 'Bayar',
                           icon: Icons.payment,
-                          color: const Color(0xFF00796B),
+                          color: AppTheme.primary,
                           onTap: () => onStatusChange?.call('paid'),
                         ),
                       ),
@@ -798,7 +799,7 @@ class _OrderCard extends StatelessWidget {
                     _CurevaActionBtn(
                       label: 'Batal',
                       icon: Icons.cancel_outlined,
-                      color: Colors.red,
+                      color: AppTheme.danger,
                       onTap: () => onCancel?.call(),
                       outlined: true,
                     ),
@@ -835,19 +836,19 @@ class _CurevaActionBtn extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 9),
         decoration: BoxDecoration(
-          color: outlined ? Colors.transparent : color,
+          color: outlined ? AppTheme.transparent : color,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: color, width: outlined ? 1.5 : 0),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 15, color: outlined ? color : Colors.white),
+            Icon(icon, size: 15, color: outlined ? color : AppTheme.onAction),
             const SizedBox(width: 5),
             Text(
               label,
               style: TextStyle(
-                color: outlined ? color : Colors.white,
+                color: outlined ? color : AppTheme.onAction,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),

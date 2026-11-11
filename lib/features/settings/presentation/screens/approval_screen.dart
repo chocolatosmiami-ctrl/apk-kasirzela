@@ -28,11 +28,11 @@ class ApprovalScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('✅', style: TextStyle(fontSize: 56)),
+                    Icon(Icons.check_circle_outline, size: 40, color: AppTheme.textSecondary),
                     SizedBox(height: 12),
                     Text(
                       'Tidak ada pendaftaran yang menunggu',
-                      style: TextStyle(color: Colors.grey, fontSize: 15),
+                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 15),
                     ),
                   ],
                 ),
@@ -72,7 +72,7 @@ class _ApprovalCardState extends State<_ApprovalCard> {
           content: Text(
             ok ? '✅ ${widget.approval.name} disetujui' : 'Gagal menyetujui',
           ),
-          backgroundColor: ok ? Colors.green : Colors.red,
+          backgroundColor: ok ? AppTheme.primary : AppTheme.danger,
         ),
       );
     }
@@ -90,9 +90,9 @@ class _ApprovalCardState extends State<_ApprovalCard> {
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Tolak', style: TextStyle(color: Colors.white)),
+            child: const Text('Tolak', style: TextStyle(color: AppTheme.onAction)),
           ),
         ],
       ),
@@ -106,7 +106,7 @@ class _ApprovalCardState extends State<_ApprovalCard> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(ok ? '❌ ${widget.approval.name} ditolak' : 'Gagal'),
-          backgroundColor: ok ? Colors.orange : Colors.red,
+          backgroundColor: ok ? AppTheme.warningInk : AppTheme.danger,
         ),
       );
     }
@@ -115,10 +115,10 @@ class _ApprovalCardState extends State<_ApprovalCard> {
   @override
   Widget build(BuildContext context) {
     final roleColor = widget.approval.role == 'admin'
-        ? Colors.red
+        ? AppTheme.danger
         : widget.approval.role == 'manajer'
-        ? Colors.green
-        : Colors.teal;
+        ? AppTheme.primary
+        : AppTheme.primary;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -157,7 +157,7 @@ class _ApprovalCardState extends State<_ApprovalCard> {
                       Text(
                         widget.approval.email,
                         style: TextStyle(
-                          color: const Color(0xFF62736F),
+                          color: AppTheme.textSecondary,
                           fontSize: 14,
                         ),
                       ),
@@ -188,12 +188,12 @@ class _ApprovalCardState extends State<_ApprovalCard> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF7F9F8),
+                color: AppTheme.surfaceLight,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.store, size: 16, color: Colors.grey),
+                  const Icon(Icons.store, size: 16, color: AppTheme.textSecondary),
                   const SizedBox(width: 8),
                   Text(
                     'Cabang: ${widget.approval.branchId}',
@@ -205,7 +205,7 @@ class _ApprovalCardState extends State<_ApprovalCard> {
                       widget.approval.createdAt,
                       style: TextStyle(
                         fontSize: 12,
-                        color: const Color(0xFF62736F),
+                        color: AppTheme.textSecondary,
                       ),
                     ),
                 ],
@@ -221,14 +221,14 @@ class _ApprovalCardState extends State<_ApprovalCard> {
                           icon: const Icon(
                             Icons.close,
                             size: 16,
-                            color: Colors.red,
+                            color: AppTheme.danger,
                           ),
                           label: const Text(
                             'Tolak',
-                            style: TextStyle(color: Colors.red),
+                            style: TextStyle(color: AppTheme.danger),
                           ),
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Colors.red),
+                            side: const BorderSide(color: AppTheme.danger),
                             padding: const EdgeInsets.symmetric(vertical: 10),
                           ),
                           onPressed: _reject,
@@ -241,14 +241,14 @@ class _ApprovalCardState extends State<_ApprovalCard> {
                           icon: const Icon(
                             Icons.check,
                             size: 16,
-                            color: Colors.white,
+                            color: AppTheme.onAction,
                           ),
                           label: const Text(
                             'Setujui',
-                            style: TextStyle(color: Colors.white),
+                            style: TextStyle(color: AppTheme.onAction),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
+                            backgroundColor: AppTheme.primary,
                             padding: const EdgeInsets.symmetric(vertical: 10),
                           ),
                           onPressed: _approve,
