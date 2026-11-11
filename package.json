@@ -4,6 +4,7 @@
   "private": true,
   "description": "Isolated backend regression tests; this repository supplies Flutter source overlays, not a Node app.",
   "scripts": {
+    "test:session-sql": "node --test test/security_session_sql.test.mjs",
     "test": "node test/security_hardening.test.mjs && node test/ai_chat_proxy.test.mjs && node test/midtrans_webhook.test.mjs && node test/staff_maintenance.test.mjs && node test/legacy_staff_login.test.mjs"
   },
   "devDependencies": {

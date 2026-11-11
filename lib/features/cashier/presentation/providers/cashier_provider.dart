@@ -1,4 +1,6 @@
 import '../../../../core/services/checkout_gate.dart';
+import '../../../../core/services/cart_session.dart';
+import 'package:sqflite/sqflite.dart';
 import '../../../../core/services/checkout_diagnostic.dart';
 import '../../../../core/utils/app_constants.dart';
 import 'package:flutter/foundation.dart';
@@ -12,12 +14,45 @@ import '../../../../core/database/database_helper.dart';
 import '../../../../core/utils/app_utils.dart';
 import '../../../inventory/data/stock_availability_service.dart';
 
-class CashierProvider extends ChangeNotifier {
+class CashierProvider extends ChangeNotifier with SessionBoundCart {
+  final Future<dynamic> Function(String, Map<String, dynamic>)? _tableRpcOverride;
+  CashierProvider({Future<dynamic> Function(String, Map<String, dynamic>)? tableRpc})
+      : _tableRpcOverride = tableRpc;
+
+  Future<dynamic> _runTableRpc(String method, CartScope scope, Map<String, dynamic> params) async {
+    final call = _tableRpcOverride;
+    if (call != null) return await call(method, params);
+    if (SupabaseConfig.client.auth.currentUser?.id != scope.accountId) {
+      throw StateError('Akun meja telah berubah.');
+    }
+    return await SupabaseConfig.client.rpc(method, params: params);
+  }
+  @override
+  void clearSessionState() {
+    _lastCheckoutDiagnostic = null;
+    clearCart(detachTable: true);
+  }
+
+  Future<Map<int, double>> _scopedMenuStock(Transaction txn,
+      List<CartItem> items, CartScope scope) async {
+    final stock = <int, double>{};
+    for (final item in items) {
+      if (item.menuItem.id == null) continue;
+      final rows = await txn.query('menu_items',
+        where: 'id = ? AND (branch_id = ? OR branch_id IS NULL)',
+        whereArgs: [item.menuItem.id, scope.branchId]);
+      if (rows.isEmpty) throw StateError('Menu tidak tersedia di cabang aktif. Muat ulang menu.');
+      stock[item.menuItem.id!] = (rows.first['stock'] as num?)?.toDouble() ?? 0;
+    }
+    return stock;
+  }
+
   CheckoutDiagnostic? _lastCheckoutDiagnostic;
   CheckoutDiagnostic? get lastCheckoutDiagnostic => _lastCheckoutDiagnostic;
 
   Future<void> _captureCheckoutDiagnostic(Object error, String stage,
-      {bool receiptSaved = false, String? orderNumber}) async {
+      {bool receiptSaved = false, String? orderNumber, int? sessionEpoch}) async {
+    if (sessionEpoch != null && sessionEpoch != cartSessionEpoch) return;
     String summary;
     try {
       final db = DatabaseHelper.instance;
@@ -36,12 +71,14 @@ class CashierProvider extends ChangeNotifier {
     } catch (probeError) {
       summary = 'Tidak dapat dibaca: ' + CheckoutDiagnostic.sanitize(probeError.toString());
     }
+    if (sessionEpoch != null && sessionEpoch != cartSessionEpoch) return;
     _lastCheckoutDiagnostic = CheckoutDiagnostic.fromError(error,
       stage: stage, receiptSaved: receiptSaved, orderNumber: orderNumber,
       databaseSummary: summary);
     debugPrint(_lastCheckoutDiagnostic!.report);
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (sessionEpoch != null && sessionEpoch != cartSessionEpoch) return;
       await prefs.setString('last_checkout_diagnostic', _lastCheckoutDiagnostic!.report);
     } catch (_) { /* Diagnostic persistence must not replace the original error. */ }
   }
@@ -162,13 +199,18 @@ class CashierProvider extends ChangeNotifier {
   }
 
   // ── Cart operations ───────────────────────────────────────────────────────
+  int _tableLoadEpoch = 0;
+  bool _tableCartReady = true;
+  bool get tableCartReady => _tableCartReady;
   int? _currentTableId; // meja aktif — kalau ada, tiap perubahan cart auto-save
 
   /// Panggil ini saat masuk ke meja tertentu (CashierScreen/TableOrderSummaryScreen).
   /// Setelah ini, SETIAP addItem/removeItem/deleteItem/setItemNote otomatis
   /// tersimpan ke SQLite (table_carts) secara synchronous — tidak fire-and-forget.
   void setCurrentTable(int? tableId) {
+    _tableLoadEpoch++;
     _currentTableId = tableId;
+    _tableCartReady = true;
   }
 
   Future<void> _autoSaveIfTableActive() async {
@@ -178,6 +220,12 @@ class CashierProvider extends ChangeNotifier {
   }
 
   Future<void> addItem(MenuItemModel item) async {
+    final scope = await prepareSession();
+    if (scope == null || !isActiveCartScope(scope)) return;
+    if (!_tableCartReady) throw StateError('Pesanan meja belum dimuat. Coba lagi.');
+    if (item.branchId?.isNotEmpty == true && item.branchId != scope.branchId) {
+      throw StateError('Menu berasal dari cabang lain. Muat ulang menu.');
+    }
     final idx = _cartItems.indexWhere((c) => c.menuItem.id == item.id);
     if (idx >= 0) {
       _cartItems[idx] = _cartItems[idx].copyWith(qty: _cartItems[idx].qty + 1);
@@ -189,6 +237,9 @@ class CashierProvider extends ChangeNotifier {
   }
 
   Future<void> removeItem(int menuItemId) async {
+    final scope = await prepareSession();
+    if (scope == null || !isActiveCartScope(scope)) return;
+    if (!_tableCartReady) throw StateError('Pesanan meja belum dimuat. Coba lagi.');
     final idx = _cartItems.indexWhere((c) => c.menuItem.id == menuItemId);
     if (idx >= 0) {
       if (_cartItems[idx].qty > 1) {
@@ -202,12 +253,18 @@ class CashierProvider extends ChangeNotifier {
   }
 
   Future<void> deleteItem(int menuItemId) async {
+    final scope = await prepareSession();
+    if (scope == null || !isActiveCartScope(scope)) return;
+    if (!_tableCartReady) throw StateError('Pesanan meja belum dimuat. Coba lagi.');
     _cartItems.removeWhere((c) => c.menuItem.id == menuItemId);
     notifyListeners();
     await _autoSaveIfTableActive();
   }
 
   Future<void> setItemNote(int menuItemId, String note) async {
+    final scope = await prepareSession();
+    if (scope == null || !isActiveCartScope(scope)) return;
+    if (!_tableCartReady) throw StateError('Pesanan meja belum dimuat. Coba lagi.');
     final idx = _cartItems.indexWhere((c) => c.menuItem.id == menuItemId);
     if (idx >= 0) {
       _cartItems[idx] =
@@ -233,7 +290,9 @@ class CashierProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void clearCart() {
+  void clearCart({bool detachTable = false}) {
+    if (detachTable) { _currentTableId = null; _tableCartReady = true; }
+    _tableLoadEpoch++;
     _cartItems = [];
     _orderType = 'dine_in';
     _tableNumber = null;
@@ -243,20 +302,28 @@ class CashierProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> clearDraft() async {
+    final scope = await prepareSession();
+    if (scope == null || !isActiveCartScope(scope)) return;
+    if (!_tableCartReady) throw StateError('Pesanan meja belum dimuat. Coba lagi.');
+    clearCart();
+    await _autoSaveIfTableActive();
+  }
+
   // ═══ CART PER MEJA (held order) — DISIMPAN DI SUPABASE (CLOUD) ═════════
   // Data cart disimpan pakai NAMA MENU (bukan ID), karena ID menu di SQLite
   // lokal HP berbeda dari ID di Supabase — nama yang konsisten di kedua sisi.
 
-  Future<String> _getBranchIdForCart() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(AppConstants.keyBranchId) ?? '';
-  }
-
   /// Simpan isi cart SEKARANG ke Supabase, ditandai untuk meja [tableId].
   /// Pakai nama menu + harga sebagai identifier (bukan ID).
   Future<void> saveTableCart(int tableId) async {
+    final scope = cartScope;
+    final epoch = cartSessionEpoch;
+    if (scope == null || !isActiveCartScope(scope) || !_tableCartReady) return;
     try {
-      final branchId = await _getBranchIdForCart();
+      final prefs = await SharedPreferences.getInstance();
+      requireCurrentSession(scope, epoch, prefs);
+      final branchId = scope.branchId;
       if (branchId.isEmpty) {
         debugPrint('🪑 [CART] saveTableCart: branchId kosong, skip');
         return;
@@ -272,7 +339,7 @@ class CashierProvider extends ChangeNotifier {
       })
           .toList();
 
-      await SupabaseConfig.client.rpc('save_table_cart', params: {
+      await _runTableRpc('save_table_cart', scope, {
         'p_branch_id': branchId,
         'p_table_id': tableId,
         'p_items': itemsJson,
@@ -286,18 +353,27 @@ class CashierProvider extends ChangeNotifier {
 
   /// Load cart TERSIMPAN milik meja [tableId] dari Supabase, reconstruct
   /// dari [allMenuItems] dengan pencocokan NAMA MENU (bukan ID).
-  Future<void> loadTableCart(int tableId, List<MenuItemModel> allMenuItems) async {
+  Future<bool> loadTableCart(int tableId, List<MenuItemModel> allMenuItems) async {
+    final scope = await prepareSession();
+    if (scope == null || !isActiveCartScope(scope)) return false;
+    clearCart(detachTable: true);
     _currentTableId = tableId;
+    _tableCartReady = false;
+    final tableEpoch = ++_tableLoadEpoch;
+    final epoch = cartSessionEpoch;
+    notifyListeners();
     try {
-      final branchId = await _getBranchIdForCart();
+      final prefs = await SharedPreferences.getInstance();
+      requireCurrentSession(scope, epoch, prefs);
+      final branchId = scope.branchId;
       if (branchId.isEmpty) {
         debugPrint('🪑 [CART] loadTableCart: branchId kosong, cart dikosongkan');
         _cartItems = [];
         notifyListeners();
-        return;
+        return false;
       }
 
-      final result = await SupabaseConfig.client.rpc('get_table_cart', params: {
+      final result = await _runTableRpc('get_table_cart', scope, {
         'p_branch_id': branchId,
         'p_table_id': tableId,
       });
@@ -314,7 +390,8 @@ class CashierProvider extends ChangeNotifier {
         // Cari menu di allMenuItems by nama (case-insensitive)
         MenuItemModel? menuItem;
         for (final m in allMenuItems) {
-          if (m.name.toLowerCase() == menuName.toLowerCase()) {
+          if ((m.branchId == null || m.branchId == scope.branchId) &&
+              m.name.toLowerCase() == menuName.toLowerCase()) {
             menuItem = m;
             break;
           }
@@ -340,21 +417,34 @@ class CashierProvider extends ChangeNotifier {
           ));
         }
       }
+      if (!isCurrentSession(scope, epoch, prefs) || tableEpoch != _tableLoadEpoch) return false;
+      _tableCartReady = true;
       _cartItems = loaded;
       debugPrint('🪑 [CART] loaded ${_cartItems.length} item dari meja $tableId (Supabase)');
       notifyListeners();
+      return isCurrentSession(scope, epoch, prefs);
     } catch (e) {
+      if (isActiveCartScope(scope) && epoch == cartSessionEpoch && tableEpoch == _tableLoadEpoch) {
+        _tableCartReady = false;
+        notifyListeners();
+      }
       debugPrint('🪑 [CART] loadTableCart error: $e');
+      return false;
     }
   }
 
   /// Hapus cart tersimpan milik meja [tableId] di Supabase — dipanggil
   /// setelah checkout SUKSES (order sudah final/dibayar) atau meja dikosongkan.
   Future<void> clearTableCart(int tableId) async {
+    final scope = cartScope;
+    final epoch = cartSessionEpoch;
+    if (scope == null || !isActiveCartScope(scope)) return;
     try {
-      final branchId = await _getBranchIdForCart();
+      final prefs = await SharedPreferences.getInstance();
+      requireCurrentSession(scope, epoch, prefs);
+      final branchId = scope.branchId;
       if (branchId.isEmpty) return;
-      await SupabaseConfig.client.rpc('clear_table_cart', params: {
+      await _runTableRpc('clear_table_cart', scope, {
         'p_branch_id': branchId,
         'p_table_id': tableId,
       });
@@ -402,6 +492,7 @@ class CashierProvider extends ChangeNotifier {
         detail: 'Checkout lain masih berjalan', timestamp: DateTime.now().toUtc().toIso8601String());
       return null;
     }
+    final requestEpoch = cartSessionEpoch;
     _lastCheckoutDiagnostic = null;
     var stage = 'session';
     var receiptSaved = false;
@@ -409,10 +500,18 @@ class CashierProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final scope = await prepareSession();
+      if (scope == null || requestEpoch != cartSessionEpoch || scope.branchId.isEmpty || _cartItems.isEmpty) {
+        throw StateError('Pilih cabang dan isi ulang keranjang pada akun aktif.');
+      }
+      final epoch = cartSessionEpoch;
       final prefs = await SharedPreferences.getInstance();
-      final branchIdForOrder = prefs.getString(AppConstants.keyBranchId) ?? '';
-      final receiptAccountId = SupabaseConfig.client.auth.currentUser?.id ??
-          prefs.getString(AppConstants.keyUid) ?? '';
+      requireCurrentSession(scope, epoch, prefs);
+      if (cashierId != scope.accountId || SupabaseConfig.client.auth.currentUser?.id != scope.accountId) {
+        throw StateError('Akun kasir telah berubah.');
+      }
+      final branchIdForOrder = scope.branchId;
+      final receiptAccountId = scope.accountId;
 
       stage = 'ingredient_availability';
       final availability = await StockAvailabilityService.load(branchIdForOrder);
@@ -432,6 +531,7 @@ class CashierProvider extends ChangeNotifier {
       savedOrderNumber = orderNumber;
       final paymentMethod = 'online_$platform';
 
+      requireCurrentSession(scope, epoch, prefs);
       final cartSnapshot = List<CartItem>.from(_cartItems);
       final subtotalSnapshot = subtotal;
 
@@ -482,6 +582,9 @@ class CashierProvider extends ChangeNotifier {
 
       stage = 'local_order';
       await db.runTransaction((txn) async {
+        requireCurrentSession(scope, epoch, prefs);
+        final scopedStock = await _scopedMenuStock(txn, cartSnapshot, scope);
+        requireCurrentSession(scope, epoch, prefs);
         try {
           orderId = await txn.rawInsert('''
             INSERT INTO orders (
@@ -555,9 +658,11 @@ class CashierProvider extends ChangeNotifier {
 
           if (cartItem.menuItem.hasStock) {
             final newStock =
-            (cartItem.menuItem.stock - cartItem.qty).clamp(0, 99999);
-            await txn.update('menu_items', {'stock': newStock},
-                where: 'id = ?', whereArgs: [cartItem.menuItem.id]);
+            (scopedStock[cartItem.menuItem.id]! - cartItem.qty).clamp(0, 99999);
+            final changed = await txn.update('menu_items', {'stock': newStock},
+                where: 'id = ? AND (branch_id = ? OR branch_id IS NULL)',
+                whereArgs: [cartItem.menuItem.id, scope.branchId]);
+            if (changed != 1) throw StateError('Cakupan stok menu berubah.');
           }
 
           stage = 'local_ingredients';
@@ -592,6 +697,7 @@ class CashierProvider extends ChangeNotifier {
             'price': item.price, 'subtotal': item.subtotal, 'unit': item.unit,
           }).toList(),
         );
+        requireCurrentSession(scope, epoch, prefs);
       });
 
       receiptSaved = true;
@@ -601,7 +707,7 @@ class CashierProvider extends ChangeNotifier {
       final result = OrderModel.fromMap(resultMap, items: savedItems);
 
       stage = 'after_local_save';
-      clearCart();
+      if (isCurrentSession(scope, epoch, prefs)) clearCart(detachTable: true);
       notifyListeners();
 
       OfflineOrderSyncService.instance.kick();
@@ -609,7 +715,7 @@ class CashierProvider extends ChangeNotifier {
       return result;
     } catch (e, stackTrace) {
       await _captureCheckoutDiagnostic(e, stage,
-        receiptSaved: receiptSaved, orderNumber: savedOrderNumber);
+        receiptSaved: receiptSaved, orderNumber: savedOrderNumber, sessionEpoch: requestEpoch);
       debugPrint('🌐 [ONLINE] ❌ ERROR: $e\n$stackTrace');
       notifyListeners();
       return null;
@@ -663,6 +769,7 @@ class CashierProvider extends ChangeNotifier {
       debugPrint('checkout: ⚠️ Checkout sedang berjalan, request diabaikan');
       return null;
     }
+    final requestEpoch = cartSessionEpoch;
     _lastCheckoutDiagnostic = null;
     var stage = 'session';
     var receiptSaved = false;
@@ -676,17 +783,28 @@ class CashierProvider extends ChangeNotifier {
     debugPrint('🛒 [CHECKOUT] payment=$paymentMethod paid=$paidAmount');
 
     try {
+      final scope = await prepareSession();
+      if (scope == null || requestEpoch != cartSessionEpoch || scope.branchId.isEmpty || _cartItems.isEmpty) {
+        throw StateError('Pilih cabang dan isi ulang keranjang pada akun aktif.');
+      }
+      final epoch = cartSessionEpoch;
       final prefs = await SharedPreferences.getInstance();
-      final branchIdForOrder = prefs.getString(AppConstants.keyBranchId) ?? '';
-      final receiptAccountId = SupabaseConfig.client.auth.currentUser?.id ??
-          prefs.getString(AppConstants.keyUid) ?? '';
+      requireCurrentSession(scope, epoch, prefs);
+      if (cashierId != scope.accountId || SupabaseConfig.client.auth.currentUser?.id != scope.accountId) {
+        throw StateError('Akun kasir telah berubah.');
+      }
+      final branchIdForOrder = scope.branchId;
+      final receiptAccountId = scope.accountId;
 
       stage = 'local_menu_stock';
       // Re-validasi stok item
       for (final cartItem in _cartItems) {
         if (cartItem.menuItem.hasStock) {
           final rows = await DatabaseHelper.instance.query('menu_items',
-              where: 'id = ?', whereArgs: [cartItem.menuItem.id]);
+              where: 'id = ? AND (branch_id = ? OR branch_id IS NULL)',
+              whereArgs: [cartItem.menuItem.id, scope.branchId]);
+          requireCurrentSession(scope, epoch, prefs);
+          if (rows.isEmpty) throw StateError('Menu tidak tersedia di cabang aktif.');
           if (rows.isNotEmpty) {
             final currentStock = (rows.first['stock'] as num?)?.toDouble() ?? 0;
             if (currentStock < cartItem.qty) {
@@ -728,6 +846,7 @@ class CashierProvider extends ChangeNotifier {
           : 0.0;
 
       // Snapshot semua nilai sebelum clearCart
+      requireCurrentSession(scope, epoch, prefs);
       final cartSnapshot = List<CartItem>.from(_cartItems);
       final subtotalSnapshot = subtotal;
       final totalDiscountSnapshot = totalDiscountAmount; // manual + branch
@@ -786,6 +905,9 @@ class CashierProvider extends ChangeNotifier {
 
       stage = 'local_order';
       await db.runTransaction((txn) async {
+        requireCurrentSession(scope, epoch, prefs);
+        final scopedStock = await _scopedMenuStock(txn, cartSnapshot, scope);
+        requireCurrentSession(scope, epoch, prefs);
         try {
           orderId = await txn.rawInsert('''
             INSERT INTO orders (
@@ -858,9 +980,11 @@ class CashierProvider extends ChangeNotifier {
 
           if (cartItem.menuItem.hasStock) {
             final newStock =
-            (cartItem.menuItem.stock - cartItem.qty).clamp(0, 99999);
-            await txn.update('menu_items', {'stock': newStock},
-                where: 'id = ?', whereArgs: [cartItem.menuItem.id]);
+            (scopedStock[cartItem.menuItem.id]! - cartItem.qty).clamp(0, 99999);
+            final changed = await txn.update('menu_items', {'stock': newStock},
+                where: 'id = ? AND (branch_id = ? OR branch_id IS NULL)',
+                whereArgs: [cartItem.menuItem.id, scope.branchId]);
+            if (changed != 1) throw StateError('Cakupan stok menu berubah.');
           }
 
           stage = 'local_ingredients';
@@ -897,6 +1021,7 @@ class CashierProvider extends ChangeNotifier {
             'price': item.price, 'subtotal': item.subtotal, 'unit': item.unit,
           }).toList(),
         );
+        requireCurrentSession(scope, epoch, prefs);
       });
 
       receiptSaved = true;
@@ -906,7 +1031,7 @@ class CashierProvider extends ChangeNotifier {
       final result = OrderModel.fromMap(resultMap, items: savedItems);
 
       stage = 'after_local_save';
-      clearCart();
+      if (isCurrentSession(scope, epoch, prefs)) clearCart(detachTable: true);
       notifyListeners();
 
       debugPrint(
@@ -916,10 +1041,11 @@ class CashierProvider extends ChangeNotifier {
 
       return result;
     } on MenuStockHabisException {
+      if (requestEpoch != cartSessionEpoch) return null;
       rethrow;
     } catch (e, stackTrace) {
       await _captureCheckoutDiagnostic(e, stage,
-        receiptSaved: receiptSaved, orderNumber: savedOrderNumber);
+        receiptSaved: receiptSaved, orderNumber: savedOrderNumber, sessionEpoch: requestEpoch);
       debugPrint('🛒 [CHECKOUT] ❌ ERROR: $e\n$stackTrace');
       notifyListeners();
       return null;

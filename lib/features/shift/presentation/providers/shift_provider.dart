@@ -8,6 +8,26 @@ import '../../data/models/shift_model.dart';
 import '../../../../core/database/database_helper.dart';
 
 class ShiftProvider extends ChangeNotifier {
+  String _accountId = '';
+  int _loadGeneration = 0;
+  bool _activeLoading = false;
+  bool _activeLoadFailed = false;
+  bool get activeLoading => _activeLoading;
+  bool get activeLoadFailed => _activeLoadFailed;
+
+  void bindAccount(String accountId) {
+    if (_accountId == accountId) return;
+    _accountId = accountId;
+    _loadGeneration++;
+    _activeLoading = false;
+    _activeLoadFailed = false;
+    _activeShift = null;
+    _history = [];
+    _isLoading = false;
+    stopAutoRefresh();
+    notifyListeners();
+  }
+
   ShiftModel? _activeShift;
   List<ShiftModel> _history = [];
   bool _isLoading = false;
@@ -21,10 +41,10 @@ class ShiftProvider extends ChangeNotifier {
   }
   bool _tableChecked = false; // ← flag agar _ensureShiftsTableCorrect hanya jalan sekali
 
-  ShiftModel? get activeShift => _activeShift;
-  List<ShiftModel> get history => _history;
+  ShiftModel? get activeShift => _activeShift?.userId == _accountId ? _activeShift : null;
+  List<ShiftModel> get history => _history.where((s) => s.userId == _accountId).toList(growable: false);
   bool get isLoading => _isLoading;
-  bool get hasActiveShift => _activeShift != null;
+  bool get hasActiveShift => activeShift != null;
 
   void startAutoRefresh(String userId) {
     _refreshTimer?.cancel();
@@ -130,31 +150,48 @@ class ShiftProvider extends ChangeNotifier {
   }
 
   Future<void> loadActiveShift(String userId) async {
-    final prefs    = await SharedPreferences.getInstance();
-    final email    = prefs.getString(AppConstants.keyEmail) ?? '';
-    final keyUid   = prefs.getString(AppConstants.keyUid) ?? '';
-    final branchId = prefs.getString(AppConstants.keyBranchId) ?? '';
-
-    final effectiveUserId = await resolveShiftUserId(userId);
-
-    if (effectiveUserId.isEmpty) {
-      if (const bool.fromEnvironment('KASIR_REMOTE_DIAGNOSTICS')) try {
-        await SupabaseConfig.client.rpc('log_debug', params: {
-          'p_email': email, 'p_key_uid': keyUid,
-          'p_key_branch_id': branchId, 'p_shift_user_id': effectiveUserId,
-          'p_shift_found': false, 'p_shift_id': 0,
-          'p_notes': 'userId KOSONG saat loadActiveShift',
-        });
-      } catch (_) {}
-      _activeShift = null;
-      notifyListeners();
-      return;
-    }
-
-    // Auto-fix tabel shifts tanpa perlu command manual
-    await _ensureShiftsTableCorrect();
-
+    final generation = ++_loadGeneration;
+    final accountId = _accountId;
+    _activeLoading = true;
+    _activeLoadFailed = false;
+    notifyListeners();
     try {
+      if (_activeShift?.userId != accountId) {
+        _activeShift = null;
+        stopAutoRefresh();
+        notifyListeners();
+      }
+      final prefs    = await SharedPreferences.getInstance();
+      final email    = prefs.getString(AppConstants.keyEmail) ?? '';
+      final keyUid   = prefs.getString(AppConstants.keyUid) ?? '';
+      final branchId = prefs.getString(AppConstants.keyBranchId) ?? '';
+
+      final effectiveUserId = await resolveShiftUserId(userId);
+      if (generation != _loadGeneration) return;
+      if (accountId.isEmpty || effectiveUserId != accountId) {
+        _activeShift = null;
+        stopAutoRefresh();
+        notifyListeners();
+        throw StateError('Identitas shift tidak cocok dengan akun aktif.');
+      }
+
+      if (effectiveUserId.isEmpty) {
+        if (const bool.fromEnvironment('KASIR_REMOTE_DIAGNOSTICS')) try {
+          await SupabaseConfig.client.rpc('log_debug', params: {
+            'p_email': email, 'p_key_uid': keyUid,
+            'p_key_branch_id': branchId, 'p_shift_user_id': effectiveUserId,
+            'p_shift_found': false, 'p_shift_id': 0,
+            'p_notes': 'userId KOSONG saat loadActiveShift',
+          });
+        } catch (_) {}
+        _activeShift = null;
+        notifyListeners();
+        return;
+      }
+
+      // Auto-fix tabel shifts tanpa perlu command manual
+      await _ensureShiftsTableCorrect();
+
       final now = DateTime.now();
       final y = now.year.toString().padLeft(4, '0');
       final m = now.month.toString().padLeft(2, '0');
@@ -184,10 +221,12 @@ class ShiftProvider extends ChangeNotifier {
         });
       } catch (_) {}
 
+      if (generation != _loadGeneration || accountId != _accountId) return;
       if (results.isNotEmpty) {
         _activeShift = ShiftModel.fromMap(results.first);
         debugPrint('🔵 [SHIFT] Active shift id=${_activeShift!.id} opened=${_activeShift!.openedAt}');
         await refreshLiveSales();
+        if (generation != _loadGeneration || accountId != _accountId) return;
         startAutoRefresh(effectiveUserId);
       } else {
         _activeShift = null;
@@ -196,6 +235,7 @@ class ShiftProvider extends ChangeNotifier {
 
       // ── 2. Auto-close shift hari lalu SETELAH cek active shift ──
       // Ini hanya menutup shift lain yang bukan active shift saat ini
+      if (generation != _loadGeneration || accountId != _accountId) return;
       await DatabaseHelper.instance.rawUpdate(
         "UPDATE shifts SET status = 'closed', closed_at = ? "
             "WHERE user_id = ? AND status = 'open' AND DATE(opened_at) < ? "
@@ -206,7 +246,19 @@ class ShiftProvider extends ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
+      if (generation == _loadGeneration) {
+        _activeLoadFailed = true;
+        _activeShift = null;
+        stopAutoRefresh();
+        notifyListeners();
+      }
       debugPrint('🔴 [SHIFT] loadActiveShift error: $e');
+      rethrow;
+    } finally {
+      if (generation == _loadGeneration) {
+        _activeLoading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -273,22 +325,7 @@ class ShiftProvider extends ChangeNotifier {
     } catch (e) {}
   }
 
-  Future<void> loadAnyActiveShift() async {
-    try {
-      final results = await DatabaseHelper.instance.rawQuery('''
-        SELECT s.*, COALESCE(u.name, s.user_name) as user_name FROM shifts s
-        LEFT JOIN users u ON u.auth_id = s.user_id
-        WHERE s.status = 'open' ORDER BY s.opened_at DESC LIMIT 1
-      ''');
-      if (results.isNotEmpty) {
-        _activeShift = ShiftModel.fromMap(results.first);
-        await refreshLiveSales();
-      } else {
-        _activeShift = null;
-      }
-      notifyListeners();
-    } catch (e) {}
-  }
+  Future<void> loadAnyActiveShift() => loadActiveShift(_accountId);
 
   Future<ShiftModel?> openShift({
     required String userId,
@@ -296,6 +333,8 @@ class ShiftProvider extends ChangeNotifier {
     required double openingCash,
     String? notes,
   }) async {
+    final generation = _loadGeneration;
+    if (_accountId.isEmpty || userId != _accountId) return null;
     userId = await resolveShiftUserId(userId);
     if (userId.isEmpty) {
       debugPrint('🔴 [SHIFT] openShift dibatalkan: identitas user kosong');
@@ -326,10 +365,12 @@ class ShiftProvider extends ChangeNotifier {
         [userId],
       );
 
+      if (generation != _loadGeneration || userId != _accountId) return null;
       if (existing.isNotEmpty) {
         final eid = existing.first['id'];
         _activeShift = ShiftModel.fromMap(existing.first);
         await refreshLiveSales();
+        if (generation != _loadGeneration || userId != _accountId) return null;
         startAutoRefresh(userId);
         notifyListeners();
         return _activeShift;
@@ -344,6 +385,7 @@ class ShiftProvider extends ChangeNotifier {
 
       final id       = await DatabaseHelper.instance.insert('shifts', shift.toMap());
       final newShift = shift.copyWith(id: id);
+      if (generation != _loadGeneration || userId != _accountId) return null;
       _activeShift   = newShift;
 
       try {
@@ -356,6 +398,7 @@ class ShiftProvider extends ChangeNotifier {
         });
       } catch (_) {}
 
+      if (generation != _loadGeneration || userId != _accountId) return null;
       startAutoRefresh(userId);
       notifyListeners();
       return newShift;
@@ -368,10 +411,14 @@ class ShiftProvider extends ChangeNotifier {
     required double closingCash,
     String? notes,
   }) async {
-    if (_activeShift == null) return null;
+    final initial = activeShift;
+    if (initial == null) return null;
+    final generation = _loadGeneration;
+    final accountId = _accountId;
     try {
       await refreshLiveSales();
-      final shift          = _activeShift!;
+      if (generation != _loadGeneration || accountId != _accountId || activeShift?.id != initial.id) return null;
+      final shift          = activeShift!;
       final now            = DateTime.now().toUtc().toIso8601String();
       final expectedCash   = shift.openingCash + shift.totalCash - shift.totalExpenses;
       final cashDifference = closingCash - expectedCash;
@@ -381,7 +428,10 @@ class ShiftProvider extends ChangeNotifier {
         expectedCash: expectedCash, cashDifference: cashDifference,
         notes: notes ?? shift.notes, status: 'closed',
       );
-      await DatabaseHelper.instance.update('shifts', updated.toMap(), 'id = ?', [shift.id]);
+      final changed = await DatabaseHelper.instance.update('shifts', updated.toMap(),
+        'id = ? AND user_id = ?', [shift.id, accountId]);
+      if (changed != 1) return null;
+      if (generation != _loadGeneration || accountId != _accountId) return updated;
       _activeShift = null;
       stopAutoRefresh();
       notifyListeners();
@@ -392,10 +442,20 @@ class ShiftProvider extends ChangeNotifier {
   }
 
   Future<void> loadHistory({int limit = 30}) async {
+    final generation = _loadGeneration;
+    final accountId = _accountId;
     _isLoading = true;
     notifyListeners();
     try {
       final currentUserId = await resolveShiftUserId();
+      if (accountId.isEmpty || currentUserId != accountId || generation != _loadGeneration) {
+        if (generation == _loadGeneration) {
+          _history = [];
+          _isLoading = false;
+          notifyListeners();
+        }
+        return;
+      }
 
       List<Map<String, dynamic>> results;
       if (currentUserId.isNotEmpty) {
@@ -411,8 +471,10 @@ class ShiftProvider extends ChangeNotifier {
           ORDER BY s.opened_at DESC LIMIT ?
         ''', [limit]);
       }
+      if (generation != _loadGeneration || accountId != _accountId) return;
       _history = results.map((r) => ShiftModel.fromMap(r)).toList();
     } catch (e) {}
+    if (generation != _loadGeneration || accountId != _accountId) return;
     _isLoading = false;
     notifyListeners();
   }

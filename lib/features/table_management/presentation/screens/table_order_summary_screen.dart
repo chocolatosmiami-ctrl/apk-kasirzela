@@ -22,6 +22,7 @@ class TableOrderSummaryScreen extends StatefulWidget {
 
 class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
   bool _loading = true;
+  bool _loadError = false;
 
   @override
   void initState() {
@@ -31,16 +32,25 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
 
   Future<void> _load() async {
     if (!mounted) return;
-    final menuProv = context.read<MenuProvider>();
-    if (menuProv.menuItems.isEmpty) await menuProv.loadData();
-    if (!mounted) return;
-
-    final cashier = context.read<CashierProvider>();
-    await cashier.loadTableCart(widget.table.id!, menuProv.menuItems);
-    if (!mounted) return;
-    cashier.setTableNumber(widget.table.name);
-
-    if (mounted) setState(() => _loading = false);
+    setState(() { _loading = true; _loadError = false; });
+    try {
+      final cashier = context.read<CashierProvider>();
+      final scope = await cashier.prepareSession();
+      if (scope == null) throw StateError('Login diperlukan');
+      if (!mounted) return;
+      final menuProv = context.read<MenuProvider>();
+      if (menuProv.menuItems.isEmpty) await menuProv.loadData();
+      if (!mounted) return;
+      if (!cashier.isActiveCartScope(scope)) throw StateError('Akun atau cabang berubah');
+      final loaded = await cashier.loadTableCart(widget.table.id!, menuProv.menuItems);
+      if (!mounted) return;
+      if (!loaded || !cashier.isActiveCartScope(scope)) throw StateError('Pesanan meja belum dimuat');
+      cashier.setTableNumber(widget.table.name);
+    } catch (_) {
+      _loadError = true;
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Future<void> _goTambahPesanan() async {
@@ -94,6 +104,12 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
       body: ZelaPage(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
+            : _loadError
+            ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                const Text('Pesanan meja belum dapat dimuat.'),
+                const SizedBox(height: 12),
+                FilledButton(onPressed: _load, child: const Text('Coba lagi')),
+              ]))
             : cashier.isEmpty
             ? Center(
                 child: Column(
@@ -202,7 +218,7 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: _loading ? null : _goTambahPesanan,
+                      onPressed: _loading || _loadError ? null : _goTambahPesanan,
                       icon: const Icon(Icons.add_shopping_cart, size: 18),
                       label: const Text('Tambah Pesanan'),
                       style: OutlinedButton.styleFrom(
@@ -218,7 +234,7 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: (_loading || cashier.isEmpty)
+                      onPressed: (_loading || _loadError || cashier.isEmpty)
                           ? null
                           : _goBayar,
                       icon: const Icon(

@@ -43,10 +43,50 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
 
   Future<void> _processPayment() async {
     if (_processing) return;
+    setState(() => _processing = true);
+    try {
+      await _processPaymentOnce();
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pembayaran belum selesai. Periksa status transaksi sebelum mencoba lagi.')));
+    } finally {
+      if (mounted) setState(() => _processing = false);
+    }
+  }
 
+  Future<void> _processPaymentOnce() async {
+    final retail = context.read<RetailProvider>();
+    final auth = context.read<AuthProvider>();
+    final paymentScope = retail.cartScope;
+    final paymentEpoch = retail.cartSessionEpoch;
+    final String cashierId = auth.currentUser?.authId ?? '';
+    if (retail.cartEmpty || !_total.isFinite || _total <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Keranjang atau total pembayaran tidak valid.')));
+      return;
+    }
+    final paid = double.tryParse(_paidCtrl.text.replaceAll('.', '')) ?? _total;
+    if (!paid.isFinite || (_paymentMethod == 'cash' && paid < _total)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Uang kurang ${AppUtils.formatCurrency(_total - paid)}',
+          ),
+          backgroundColor: AppTheme.warningInk,
+        ),
+      );
+      return;
+    }
+
+    // Cek saldo hanya setelah input pembayaran diterima.
     // Cek saldo dengan grace period offline
     final sub = context.read<SubscriptionProvider>();
     final permission = await sub.checkAndDeduct();
+    if (!mounted) return;
+    if (paymentEpoch != retail.cartSessionEpoch ||
+        !identical(paymentScope, retail.cartScope) ||
+        cashierId != (auth.currentUser?.authId ?? '')) {
+      throw StateError('Akun atau cabang berubah selama pembayaran.');
+    }
 
     if (!permission.allowed) {
       if (!mounted) return;
@@ -72,25 +112,6 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
         ),
       );
     }
-
-    final paid = double.tryParse(_paidCtrl.text.replaceAll('.', '')) ?? _total;
-    if (_paymentMethod == 'cash' && paid < _total) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Uang kurang ${AppUtils.formatCurrency(_total - paid)}',
-          ),
-          backgroundColor: AppTheme.warningInk,
-        ),
-      );
-      return;
-    }
-
-    setState(() => _processing = true);
-
-    final retail = context.read<RetailProvider>();
-    final auth = context.read<AuthProvider>();
-    final String cashierId = auth.currentUser?.authId ?? '';
 
     // Simpan cart snapshot SEBELUM checkout (checkout akan clearCart)
     final cartSnapshot = retail.cart.toList();

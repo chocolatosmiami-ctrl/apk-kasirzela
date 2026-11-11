@@ -8,6 +8,56 @@ const hash = createHash("sha256").update(pass).digest("hex");
 const req = (password = pass) => new Request("https://example.invalid", {
   method: "POST", body: JSON.stringify({ email, password }),
 });
+
+test('oversized stream is cancelled before later chunks or account services', async () => {
+  let pulls = 0;
+  let cancelled = false;
+  let serviceCalls = 0;
+  const stream = new ReadableStream({
+    pull(controller) {
+      pulls++;
+      if (pulls === 1) controller.enqueue(new Uint8Array(16385));
+      else if (pulls === 2) controller.enqueue(new Uint8Array(16));
+      else controller.close();
+    },
+    cancel() { cancelled = true; },
+  }, { highWaterMark: 0 });
+  const request = new Request('https://example.invalid', {
+    method: 'POST', body: stream, duplex: 'half',
+  });
+  const result = await handleLegacyLogin(request, {
+    async prepare() { serviceCalls++; throw new Error('must not be reached'); },
+  });
+  assert.equal(result.status, 413);
+  assert.equal(pulls, 1);
+  assert.equal(cancelled, true);
+  assert.equal(serviceCalls, 0);
+});
+
+test('bounded reader preserves valid Unicode credentials and service error mapping', async () => {
+  const unicodePassword = '測'.repeat(1024);
+  let prepared = false;
+  const response = await handleLegacyLogin(new Request('https://example.invalid', {
+    method: 'POST', body: JSON.stringify({ email, password: unicodePassword }),
+  }), {
+    async prepare() { prepared = true; return { status: 'invalid' }; },
+  });
+  assert.equal(prepared, true);
+  assert.equal(response.status, 401);
+  const errorResponse = await handleLegacyLogin(req(), {
+    async prepare() { throw new Error('BODY_TOO_LARGE'); },
+  });
+  assert.equal(errorResponse.status, 503);
+});
+
+test('empty POST remains a bad request without invoking account services', async () => {
+  let calls = 0;
+  const response = await handleLegacyLogin(new Request('https://example.invalid', { method: 'POST' }), {
+    async prepare() { calls++; throw new Error('must not be reached'); },
+  });
+  assert.equal(response.status, 400);
+  assert.equal(calls, 0);
+});
 function fixture(options = {}) {
   const calls = [];
   let created = options.existing ?? false;

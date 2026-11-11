@@ -41,10 +41,10 @@ class _ShiftScreenState extends State<ShiftScreen>
       );
       final resolved = await ShiftProvider.resolveShiftUserId(uid);
       if (resolved.isNotEmpty) {
-        prov.loadActiveShift(resolved);
+        await prov.loadActiveShift(resolved).catchError((Object _) {});
       } else {
         debugPrint('🖥️ [SHIFT] ⚠️ uid empty! currentUser=${auth.currentUser}');
-        prov.loadAnyActiveShift();
+        await prov.loadAnyActiveShift().catchError((Object _) {});
       }
       prov.loadHistory();
     });
@@ -90,6 +90,17 @@ class _ActiveShiftTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final prov = context.watch<ShiftProvider>();
     final auth = context.read<AuthProvider>();
+    if (prov.activeLoading) return const Center(child: CircularProgressIndicator());
+    if (prov.activeLoadFailed) return Center(child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Text('Shift belum dapat dimuat. Coba lagi sebelum membuka atau menutup shift.', textAlign: TextAlign.center),
+        const SizedBox(height: 16),
+        FilledButton(onPressed: () async {
+          try { await prov.loadActiveShift(auth.currentUser?.authId ?? ''); } catch (_) {}
+        }, child: const Text('Coba lagi')),
+      ]),
+    ));
     debugPrint(
       '🖥️ [SHIFT] _ActiveShiftTab build: hasShift=${prov.hasActiveShift} user=${auth.currentUser?.name}',
     );

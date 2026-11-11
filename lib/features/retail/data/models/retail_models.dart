@@ -1,6 +1,7 @@
 // ── Retail Product Model ──────────────────────────────────
 class RetailProduct {
   final int? id;
+  final String? branchId;
   final String name;
   final String sku;
   final String? barcode;
@@ -20,6 +21,7 @@ class RetailProduct {
 
   const RetailProduct({
     this.id,
+    this.branchId,
     required this.name,
     required this.sku,
     this.barcode,
@@ -44,6 +46,7 @@ class RetailProduct {
   factory RetailProduct.fromMap(Map<String, dynamic> map) {
     return RetailProduct(
       id: map['id'] as int?,
+      branchId: map['branch_id'] as String?,
       name: map['name'] as String? ?? '',
       sku: map['sku'] as String? ?? '',
       barcode: map['barcode'] as String?,
@@ -62,6 +65,7 @@ class RetailProduct {
 
   Map<String, dynamic> toMap() => {
     if (id != null) 'id': id,
+    if (branchId != null) 'branch_id': branchId,
     'name': name,
     'sku': sku,
     'barcode': barcode,
@@ -83,7 +87,7 @@ class RetailProduct {
     double? hpp,
     bool? isActive,
   }) => RetailProduct(
-    id: id, name: name, sku: sku, barcode: barcode,
+    id: id, branchId: branchId, name: name, sku: sku, barcode: barcode,
     category: category,
     sellPrice: sellPrice ?? this.sellPrice,
     hpp: hpp ?? this.hpp,

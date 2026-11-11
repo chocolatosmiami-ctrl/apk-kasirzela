@@ -1,3 +1,4 @@
+import '../../../../core/theme/startup_recovery_view.dart';
 import '../../../../core/theme/zela_product_grid.dart';
 import '../widgets/checkout_failure_dialog.dart';
 import '../../../../core/theme/minimal_ui.dart';
@@ -52,12 +53,15 @@ class _CashierScreenState extends State<CashierScreen>
   bool _foreground = true;
   bool _pollingEnabled = false;
   int _seenStockRevision = 0;
+  bool _openingTable = false;
+  bool _tableLoadFailed = false;
   bool _balanceChecked = false;
   bool _balanceSufficient = true;
 
   @override
   void initState() {
     super.initState();
+    _openingTable = widget.tableId != null;
     WidgetsBinding.instance.addObserver(this);
     _foreground = WidgetsBinding.instance.lifecycleState == null ||
         WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
@@ -68,27 +72,53 @@ class _CashierScreenState extends State<CashierScreen>
     );
     _profileFuture = Future.value(context.read<AuthProvider>().currentUser);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await context.read<MenuProvider>().loadData();
-      _loadSettings();
+      try {
 
-      if (!mounted) return;
-      final cashier = context.read<CashierProvider>();
-
-      if (widget.tableId != null) {
-        // Meja tertentu → restore cart tersimpan + tandai sebagai meja aktif.
-        // Setelah ini, addItem/removeItem/dll di CashierProvider OTOMATIS
-        // auto-save synchronous ke SQLite (table_carts) — tidak perlu listener
-        // manual lagi, jadi tidak ada celah race condition kalau app di-kill.
-        final menuProv = context.read<MenuProvider>();
-        await cashier.loadTableCart(widget.tableId!, menuProv.menuItems);
         if (!mounted) return;
-        if (widget.tableName != null) cashier.setTableNumber(widget.tableName);
-      } else if (widget.tableName != null) {
-        cashier.setTableNumber(widget.tableName);
-      }
+        final sessionCart = context.read<CashierProvider>();
+        final openingScope = await sessionCart.prepareSession();
+        if (openingScope == null) { if (mounted && widget.tableId != null) _tableLoadFailed = true; return; }
+        if (!mounted) return;
+        await context.read<MenuProvider>().loadData();
+        if (!mounted || !sessionCart.isActiveCartScope(openingScope)) {
+          if (mounted && widget.tableId != null) _tableLoadFailed = true;
+          return;
+        }
+        if (widget.tableId != null) {
+          await _loadSettings();
+        } else {
+          unawaited(_loadSettings());
+        }
+        if (!mounted || !sessionCart.isActiveCartScope(openingScope)) {
+          if (mounted && widget.tableId != null) _tableLoadFailed = true;
+          return;
+        }
 
-      _refreshIngredientAvailability();
-      _checkBalance();
+        if (!mounted) return;
+        final cashier = context.read<CashierProvider>();
+
+        if (widget.tableId != null) {
+          // Meja tertentu → restore cart tersimpan + tandai sebagai meja aktif.
+          // Setelah ini, addItem/removeItem/dll di CashierProvider OTOMATIS
+          // auto-save synchronous ke SQLite (table_carts) — tidak perlu listener
+          // manual lagi, jadi tidak ada celah race condition kalau app di-kill.
+          final menuProv = context.read<MenuProvider>();
+          final loaded = await cashier.loadTableCart(widget.tableId!, menuProv.menuItems);
+          if (!mounted) return;
+          if (!loaded || !cashier.isActiveCartScope(openingScope)) { _tableLoadFailed = true; return; }
+          if (widget.tableName != null) cashier.setTableNumber(widget.tableName);
+        } else if (widget.tableName != null) {
+          cashier.setTableNumber(widget.tableName);
+        }
+
+        _refreshIngredientAvailability();
+        _checkBalance();
+      } catch (_) {
+        if (widget.tableId == null) rethrow;
+        _tableLoadFailed = true;
+      } finally {
+        if (mounted) setState(() => _openingTable = false);
+      }
     });
   }
 
@@ -170,6 +200,10 @@ class _CashierScreenState extends State<CashierScreen>
   // ── PATCH: load setting cabang (diskon, rounding, PPN, SC per-cabang) ──
   Future<void> _loadSettings() async {
     if (!mounted) return;
+    final sessionCart = context.read<CashierProvider>();
+    final scope = sessionCart.cartScope;
+    if (scope == null) return;
+    final epoch = sessionCart.cartSessionEpoch;
     final settings = context.read<SettingsProvider>();
     if (!settings.loaded) await settings.loadSettings();
 
@@ -179,7 +213,7 @@ class _CashierScreenState extends State<CashierScreen>
       await settings.loadBranchSettings(branchId);
     }
 
-    if (!mounted) return;
+    if (!mounted || !sessionCart.isCurrentSession(scope, epoch, prefs)) return;
     final cashier = context.read<CashierProvider>();
 
     cashier.setBranchConfig(
@@ -585,6 +619,12 @@ class _CashierScreenState extends State<CashierScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_openingTable || _tableLoadFailed) return StartupRecoveryView(
+      loading: _openingTable,
+      message: _openingTable ? 'Memuat pesanan meja…' : 'Pesanan meja belum dapat dimuat. Coba lagi sebelum mengubah pesanan.',
+      retry: () => Navigator.of(context).pushReplacement(MaterialPageRoute(
+        builder: (_) => CashierScreen(tableId: widget.tableId, tableName: widget.tableName))),
+    );
     final isWide = MediaQuery.of(context).size.width > 600;
 
     return Scaffold(
@@ -1484,9 +1524,10 @@ class _CashierScreenState extends State<CashierScreen>
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
-            onPressed: () {
+            onPressed: () async {
+              final cashier = context.read<CashierProvider>();
               Navigator.pop(context);
-              context.read<CashierProvider>().clearCart();
+              await cashier.clearDraft();
             },
             child: const Text(
               'Kosongkan',

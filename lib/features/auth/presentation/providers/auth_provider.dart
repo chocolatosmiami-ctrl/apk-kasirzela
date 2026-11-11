@@ -1,4 +1,5 @@
 import '../../../../core/services/pin_secret.dart';
+import '../../../../core/services/pin_attempt_limiter.dart';
 import '../../../../core/utils/app_constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +9,12 @@ import '../../../../core/config/supabase_config.dart';
 import '../../../../core/database/database_helper.dart';
 
 class AuthProvider extends ChangeNotifier {
+  final Future<AppUserProfile?> Function() _sessionReader;
+  final Future<void> Function() _signOutAction;
+  AuthProvider({Future<AppUserProfile?> Function()? sessionReader,
+      Future<void> Function()? signOut})
+      : _sessionReader = sessionReader ?? SupabaseAuthService.instance.getSession,
+        _signOutAction = signOut ?? SupabaseAuthService.instance.logout;
   AppUserProfile? _currentUser;
   bool _loading = true;
 
@@ -29,14 +36,25 @@ class AuthProvider extends ChangeNotifier {
   bool get isRetailMode => branchMode == 'retail';
 
   Future<void>? _sessionCheck;
+  Future<void>? _logoutJob;
   int _sessionEpoch = 0;
-  Future<void> checkSession() => _sessionCheck ??= _checkSession().whenComplete(() => _sessionCheck = null);
+  Future<void> checkSession() {
+    if (_logoutJob != null) return Future<void>.value();
+    final existing = _sessionCheck;
+    if (existing != null) return existing;
+    late final Future<void> job;
+    job = _checkSession().whenComplete(() {
+      if (identical(_sessionCheck, job)) _sessionCheck = null;
+    });
+    _sessionCheck = job;
+    return job;
+  }
   Future<void> _checkSession() async {
     final ticket = ++_sessionEpoch;
     _loading = true;
     notifyListeners();
     try {
-      final profile = await SupabaseAuthService.instance.getSession();
+      final profile = await _sessionReader();
       if (ticket == _sessionEpoch) _currentUser = profile;
     } finally {
       if (ticket == _sessionEpoch) { _loading = false; notifyListeners(); }
@@ -46,6 +64,8 @@ class AuthProvider extends ChangeNotifier {
   // login called
   Future<AuthResult> login({
     required String email, required String password}) async {
+    final pendingLogout = _logoutJob;
+    if (pendingLogout != null) { try { await pendingLogout; } catch (_) {} }
     final result = await SupabaseAuthService.instance.login(
         email: email, password: password);
     if (result.success) {
@@ -58,6 +78,8 @@ class AuthProvider extends ChangeNotifier {
   Future<AuthResult> register({
     required String name, required String email,
     required String password, required String businessName}) async {
+    final pendingLogout = _logoutJob;
+    if (pendingLogout != null) { try { await pendingLogout; } catch (_) {} }
     final result = await SupabaseAuthService.instance.registerOwner(
       name: name, email: email,
       password: password, businessName: businessName,
@@ -69,11 +91,31 @@ class AuthProvider extends ChangeNotifier {
     return result;
   }
 
-  Future<void> logout() async {
+  Future<void> logout() {
+    final existing = _logoutJob;
+    if (existing != null) return existing;
+    late final Future<void> job;
+    job = _logoutOnce().whenComplete(() {
+      if (identical(_logoutJob, job)) _logoutJob = null;
+    });
+    _logoutJob = job;
+    return job;
+  }
+
+  Future<void> _logoutOnce() async {
     _sessionEpoch++;
-    await SupabaseAuthService.instance.logout();
+    _sessionCheck = null;
     _currentUser = null;
+    _loading = false;
     notifyListeners();
+    try { await _signOutAction(); }
+    finally {
+      _sessionEpoch++;
+      _sessionCheck = null;
+      _currentUser = null;
+      _loading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> savePin(String pin) async {
@@ -97,6 +139,17 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<bool> verifyPin(String pin) async {
+    return PinAttemptLimiter.instance.verify(() async {
+      final accountId = _currentUser?.authId;
+      final valid = await _verifyPinOnce(pin);
+      if (accountId != null && accountId != _currentUser?.authId) {
+        throw StateError('Akun berubah selama verifikasi PIN');
+      }
+      return valid;
+    });
+  }
+
+  Future<bool> _verifyPinOnce(String pin) async {
     if (pin.isEmpty) return false;
     final verifiedHash = _currentUser?.pin;
     if (verifiedHash != null && verifiedHash.isNotEmpty) {

@@ -69,6 +69,7 @@ class ZelaBrand extends StatelessWidget {
 class ZelaPinPanel extends StatelessWidget {
   final String title, subtitle, name, pin, error, actionLabel;
   final bool busy;
+  final bool enabled;
   final ValueChanged<String> onDigit;
   final VoidCallback onErase;
   final VoidCallback? onSubmit;
@@ -84,6 +85,7 @@ class ZelaPinPanel extends StatelessWidget {
     required this.onSubmit,
     this.error = '',
     this.busy = false,
+    this.enabled = true,
     this.actionLabel = 'Lanjutkan',
     this.footer,
   });
@@ -203,7 +205,7 @@ class ZelaPinPanel extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
-                                  onPressed: busy
+                                  onPressed: busy || !enabled
                                       ? null
                                       : digit == 'erase'
                                           ? onErase
@@ -230,7 +232,7 @@ class ZelaPinPanel extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: busy ? null : onSubmit,
+                onPressed: busy || !enabled ? null : onSubmit,
                 child: busy
                     ? const SizedBox(
                         width: 22,

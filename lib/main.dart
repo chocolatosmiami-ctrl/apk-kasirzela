@@ -140,14 +140,27 @@ class POSApp extends StatelessWidget {
         ChangeNotifierProvider<SettingsProvider>(create: (_) => settingsProvider),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => MenuProvider()),
-        ChangeNotifierProvider(create: (_) => CashierProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, CashierProvider>(
+          create: (_) => CashierProvider(),
+          update: (_, auth, cart) => cart!..bindAccount(
+            auth.currentUser?.authId ?? '', auth.currentUser?.ownerId ?? '',
+            branchId: auth.currentUser?.branchId ?? '', role: auth.currentUser?.role ?? ''),
+        ),
         ChangeNotifierProvider(create: (_) => OrdersProvider()),
         ChangeNotifierProvider(create: (_) => ExpensesProvider()),
         ChangeNotifierProvider(create: (_) => InventoryProvider()),
-        ChangeNotifierProvider(create: (_) => ShiftProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, ShiftProvider>(
+          create: (_) => ShiftProvider(),
+          update: (_, auth, shift) => shift!..bindAccount(auth.currentUser?.authId ?? ''),
+        ),
         ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
         ChangeNotifierProvider(create: (_) => PrinterStationProvider()),
-        ChangeNotifierProvider(create: (_) => RetailProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, RetailProvider>(
+          create: (_) => RetailProvider(),
+          update: (_, auth, cart) => cart!..bindAccount(
+            auth.currentUser?.authId ?? '', auth.currentUser?.ownerId ?? '',
+            branchId: auth.currentUser?.branchId ?? '', role: auth.currentUser?.role ?? ''),
+        ),
         ChangeNotifierProvider(create: (_) => TableProvider()),
       ],
       child: Consumer<SettingsProvider>(

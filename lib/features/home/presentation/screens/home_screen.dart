@@ -20,6 +20,7 @@ import '../../../cashier/presentation/screens/cashier_screen.dart';
 import '../../../retail/presentation/screens/retail_cashier_screen.dart';
 import '../../../retail/presentation/screens/retail_product_list_screen.dart';
 import '../../../retail/presentation/providers/retail_provider.dart';
+import '../../../cashier/presentation/providers/cashier_provider.dart';
 import '../../../retail/data/models/retail_models.dart';
 import '../../../table_management/presentation/screens/table_management_screen.dart';
 import '../../../menu/presentation/screens/menu_screen.dart';
@@ -198,6 +199,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     final selectedName = b['name'] as String;
                     final selectedMode = b['mode'] as String? ?? 'food';
 
+                    if (!mounted) return;
+                    context.read<CashierProvider>().invalidateSession();
+                    context.read<RetailProvider>().invalidateSession();
                     await prefs.setString(AppConstants.keyBranchId, selectedId);
                     await prefs.setString(
                       AppConstants.keyBranchName,
@@ -688,7 +692,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (i == shiftIdx && shiftIdx >= 0) {
       final auth = context.read<AuthProvider>();
       final uid = auth.currentUser?.authId ?? '';
-      context.read<ShiftProvider>().loadActiveShift(uid);
+      context.read<ShiftProvider>().loadActiveShift(uid).catchError((Object _) {});
     }
     // Close drawer if open
     if (_useSideMenu && Navigator.canPop(context)) {
@@ -1341,11 +1345,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
-            onPressed: () {
+            onPressed: () async {
               // Stop shift timer sebelum logout agar tidak query SQLite
               // di background setelah user keluar
               context.read<ShiftProvider>().stopAutoRefresh();
-              context.read<AuthProvider>().logout();
+              try { await context.read<AuthProvider>().logout(); } catch (_) {}
+              if (!context.mounted) return;
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (_) => const FirebaseLoginScreen()),
                 (route) => false,
