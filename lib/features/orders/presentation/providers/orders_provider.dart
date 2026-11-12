@@ -68,7 +68,7 @@ class OrdersProvider extends ChangeNotifier {
         args.addAll([sqlUserId, sqlUserId]);
       }
       final results = await DatabaseHelper.instance.rawQuery('''
-        SELECT o.*, u.name as cashier_name
+        SELECT o.*, u.name as cashier_name, $orderReceiptMemberSql
         FROM orders o
         LEFT JOIN users u ON o.cashier_id = u.auth_id
         WHERE $whereClause
@@ -143,6 +143,8 @@ class OrdersProvider extends ChangeNotifier {
             'payment_method': row['payment_method'] ?? '',
             'paid_amount': (row['paid_amount'] as num?)?.toDouble() ?? 0,
             'change_amount': (row['change_amount'] as num?)?.toDouble() ?? 0,
+            'member_name': row['member_name'],
+            'member_number': row['member_number'],
             'cashier_name': row['cashier_name'] ?? '',
             'cashier_id': row['cashier_id']?.toString() ?? '',
             'created_at': row['created_at']?.toString() ?? '',
@@ -161,7 +163,7 @@ class OrdersProvider extends ChangeNotifier {
     }
     for (final o in sbOrders) {
       final key = o.orderNumber.isNotEmpty ? o.orderNumber : 'sb_${o.id ?? sbOrders.indexOf(o)}';
-      merged.putIfAbsent(key, () => o);
+      merged.update(key, (local) => local.withReceiptMemberFrom(o), ifAbsent: () => o);
     }
     if (!await _historyCurrent(key, scope)) return;
     _orders = merged.values.toList()
@@ -194,7 +196,7 @@ class OrdersProvider extends ChangeNotifier {
       List<Map<String,dynamic>> results;
       if (allUserId.isNotEmpty) {
         results = await DatabaseHelper.instance.rawQuery('''
-          SELECT o.*, u.name as cashier_name
+          SELECT o.*, u.name as cashier_name, $orderReceiptMemberSql
           FROM orders o
           LEFT JOIN users u ON o.cashier_id = u.auth_id
           WHERE o.cashier_id = ? OR EXISTS
@@ -204,7 +206,7 @@ class OrdersProvider extends ChangeNotifier {
         ''', [allUserId, allUserId]);
       } else {
         results = await DatabaseHelper.instance.rawQuery('''
-          SELECT o.*, u.name as cashier_name
+          SELECT o.*, u.name as cashier_name, $orderReceiptMemberSql
           FROM orders o
           LEFT JOIN users u ON o.cashier_id = u.auth_id
           ORDER BY o.created_at DESC
@@ -286,6 +288,8 @@ class OrdersProvider extends ChangeNotifier {
             'payment_method': row['payment_method'] ?? '',
             'paid_amount': (row['paid_amount'] as num?)?.toDouble() ?? 0,
             'change_amount': (row['change_amount'] as num?)?.toDouble() ?? 0,
+            'member_name': row['member_name'],
+            'member_number': row['member_number'],
             'cashier_name': row['cashier_name'] ?? '',
             'cashier_id': row['cashier_id']?.toString() ?? '',
             'created_at': row['created_at']?.toString() ?? '',
@@ -301,7 +305,7 @@ class OrdersProvider extends ChangeNotifier {
       merged[o.orderNumber] = o;
     }
     for (final o in sbOrders) {
-      merged.putIfAbsent(o.orderNumber, () => o);
+      merged.update(o.orderNumber, (local) => local.withReceiptMemberFrom(o), ifAbsent: () => o);
     }
     if (!await _historyCurrent(key, scope)) return;
     _orders = merged.values.toList()
@@ -320,7 +324,7 @@ class OrdersProvider extends ChangeNotifier {
   Future<void> loadActiveOrders() async {
     try {
       final results = await DatabaseHelper.instance.rawQuery('''
-        SELECT o.*, u.name as cashier_name
+        SELECT o.*, u.name as cashier_name, $orderReceiptMemberSql
         FROM orders o
         LEFT JOIN users u ON o.cashier_id = u.id
         WHERE o.status IN ('new', 'processing', 'done')

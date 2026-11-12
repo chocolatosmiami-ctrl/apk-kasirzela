@@ -1,3 +1,4 @@
+import '../../../../core/database/order_queries.dart';
 import '../../../../core/services/checkout_member.dart';
 import '../../../../core/widgets/checkout_member_field.dart';
 import '../../../../core/theme/minimal_ui.dart';
@@ -5,8 +6,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../../cashier/presentation/screens/receipt_screen.dart';
 import '../../../../features/orders/data/models/order_models.dart';
-import '../../../../features/reports/data/services/pdf_service.dart';
-import '../../../../features/settings/presentation/providers/settings_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -145,6 +144,9 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
     );
 
     if (!mounted) return;
+    if (paymentEpoch != retail.cartSessionEpoch ||
+        !identical(paymentScope, retail.cartScope) ||
+        cashierId != (auth.currentUser?.authId ?? '')) return;
     setState(() => _processing = false);
 
     if (ok) {
@@ -155,7 +157,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
 
       // Navigate ke ReceiptScreen (sama seperti kasir makanan)
       if (!mounted) return;
-      await _navigateToReceipt(paid, cartUnitMap);
+      await _navigateToReceipt(retail.lastCheckoutId, retail.lastCheckoutNumber, cartUnitMap);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -166,285 +168,66 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
     }
   }
 
-  Future<void> _navigateToReceipt(
-    double paid, [
-    Map<String, String> cartUnitMap = const {},
-  ]) async {
+  Future<void> _navigateToReceipt(int? savedId, String? savedNumber,
+      Map<String, String> cartUnitMap) async {
+    final retail = context.read<RetailProvider>();
+    final scope = retail.cartScope;
+    final epoch = retail.cartSessionEpoch;
+    final cashierId = context.read<AuthProvider>().currentUser?.authId ?? '';
     try {
-      final auth = context.read<AuthProvider>();
-      final settings = context.read<SettingsProvider>();
-      if (!settings.loaded) await settings.loadSettings();
-      final retail = context.read<RetailProvider>();
-
-      // Ambil order terakhir dari SQLite
-      final orders = await DatabaseHelper.instance.rawQuery(
-        "SELECT * FROM orders WHERE cashier_id = ? ORDER BY id DESC LIMIT 1",
-        [auth.currentUser?.authId ?? ''],
-      );
-
-      debugPrint('[RETAIL-NAV] unitMap=' + cartUnitMap.toString());
-
-      OrderModel order;
-      if (orders.isNotEmpty) {
-        final row = orders.first;
-        final orderId = row['id'] as int;
-        final itemRows = await DatabaseHelper.instance.rawQuery(
-          "SELECT * FROM order_items WHERE order_id = ?",
-          [orderId],
-        );
-        final items = itemRows.map((i) {
-          final name = i['name']?.toString() ?? '';
-          // Ambil unit dari SQLite, fallback ke cartUnitMap
-          final unit = (i['unit'] as String?)?.isNotEmpty == true
-              ? i['unit'] as String
-              : cartUnitMap[name];
-          debugPrint(
-            '[RETAIL-ITEM] name=' +
-                name +
-                ' qty=' +
-                (i['qty']?.toString() ?? '?') +
-                ' unit=' +
-                (unit ?? 'NULL'),
-          );
-          return OrderItemModel(
-            id: i['id'] as int?,
-            orderId: orderId,
-            menuItemId: (i['menu_item_id'] as num?)?.toInt() ?? 0,
-            name: name,
-            price: (i['price'] as num?)?.toDouble() ?? 0,
-            qty:
-                ((i['qty_real'] as num?) ?? (i['qty'] as num?))?.toDouble() ??
-                1.0,
-            unit: unit,
-            subtotal: (i['subtotal'] as num?)?.toDouble() ?? 0,
-          );
-        }).toList();
-
-        order = OrderModel.fromMap(row, items: items);
-      } else {
-        // Fallback: buat dari data cart
-        order = OrderModel(
-          orderNumber: 'RT-${DateTime.now().millisecondsSinceEpoch}',
-          orderType: 'retail',
-          status: 'completed',
-          subtotal: _total + _discount,
-          discountAmount: _discount,
-          total: _total,
-          paymentMethod: _paymentMethod,
-          paidAmount: paid,
-          changeAmount: (paid - _total).clamp(0, double.infinity),
-          cashierId: auth.currentUser?.authId,
-          cashierName: auth.currentUser?.name ?? '',
-          createdAt: DateTime.now().toIso8601String(),
-          updatedAt: DateTime.now().toIso8601String(),
-          items: retail.cart.map((item) {
-            debugPrint(
-              '[RETAIL-DEBUG] item=' +
-                  item.product.name +
-                  ' qty=' +
-                  item.qty.toString() +
-                  ' unit=' +
-                  item.selectedUnit +
-                  ' price=' +
-                  item.unitPrice.toString(),
-            );
-            return OrderItemModel(
-              orderId: 0,
-              menuItemId: item.product.id ?? 0,
-              name: item.product.name,
-              price: item.unitPrice,
-              qty: item.qty.toDouble(),
-              unit: item.selectedUnit,
-              subtotal: item.subtotal,
-            );
-          }).toList(),
-        );
+      if (savedId == null || savedNumber == null || scope == null) {
+        throw StateError('Identitas struk tidak tersedia.');
       }
-
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => ReceiptScreen(order: order)),
+      final orders = await DatabaseHelper.instance.rawQuery(
+        '''SELECT o.*, $orderReceiptMemberSql FROM orders o
+        WHERE o.id = ? AND o.order_number = ? AND o.cashier_id = ? AND o.branch_id = ?''',
+        [savedId, savedNumber, cashierId, scope.branchId],
       );
-    } catch (e) {
-      debugPrint('_navigateToReceipt error: $e');
-      // Fallback ke dialog lama
-      if (mounted) _showSuccessDialog(paid);
-    }
-  }
+      if (orders.isEmpty) throw StateError('Struk tersimpan belum tersedia.');
+      final row = orders.first;
+      final orderId = savedId;
+      final itemRows = await DatabaseHelper.instance.rawQuery(
+        'SELECT * FROM order_items WHERE order_id = ?', [orderId]);
+      final items = itemRows.map((i) {
+        final name = i['name']?.toString() ?? '';
+        // Ambil unit dari SQLite, fallback ke cartUnitMap
+        final unit = (i['unit'] as String?)?.isNotEmpty == true
+            ? i['unit'] as String
+            : cartUnitMap[name];
+        debugPrint(
+          '[RETAIL-ITEM] name=' +
+              name +
+              ' qty=' +
+              (i['qty']?.toString() ?? '?') +
+              ' unit=' +
+              (unit ?? 'NULL'),
+        );
+        return OrderItemModel(
+          id: i['id'] as int?,
+          orderId: orderId,
+          menuItemId: (i['menu_item_id'] as num?)?.toInt() ?? 0,
+          name: name,
+          price: (i['price'] as num?)?.toDouble() ?? 0,
+          qty:
+              ((i['qty_real'] as num?) ?? (i['qty'] as num?))?.toDouble() ??
+              1.0,
+          unit: unit,
+          subtotal: (i['subtotal'] as num?)?.toDouble() ?? 0,
+        );
+      }).toList();
 
-  void _showSuccessDialog(double paid) {
-    final change = paid - _total;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
- scrollable: true,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: AppTheme.primarySurface,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_circle,
-                color: AppTheme.primary,
-                size: 44,
-              ),
-            ),
-            const SizedBox(height: 14),
-            const Text(
-              'Transaksi Berhasil!',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Total: ${AppUtils.formatCurrency(_total)}',
-              style: const TextStyle(fontSize: 14),
-            ),
-            if (_paymentMethod == 'cash' && change > 0)
-              Text(
-                'Kembalian: ${AppUtils.formatCurrency(change)}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primary,
-                ),
-              ),
-          ],
-        ),
-        actions: [
-          // Print struk
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              icon: const Icon(Icons.share, size: 16),
-              label: const Text('Bagikan Struk'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.primaryOrange,
-                side: const BorderSide(color: AppTheme.primaryOrange),
-              ),
-              onPressed: () async {
-                // Build temp OrderModel for retail
-                final auth = context.read<AuthProvider>();
-                final settings = context.read<SettingsProvider>();
-                if (!settings.loaded) await settings.loadSettings();
-                final tempOrder = OrderModel(
-                  orderNumber: 'RT-${DateTime.now().millisecondsSinceEpoch}',
-                  orderType: 'retail',
-                  status: 'paid',
-                  subtotal: _total,
-                  total: _total,
-                  discountAmount: _discount,
-                  paymentMethod: _paymentMethod,
-                  paidAmount: paid,
-                  changeAmount: (paid - _total).clamp(0, double.infinity),
-                  cashierId: auth.currentUser?.authId,
-                  cashierName: auth.currentUser?.name ?? '',
-                  createdAt: DateTime.now().toIso8601String(),
-                  updatedAt: DateTime.now().toIso8601String(),
-                  items: context
-                      .read<RetailProvider>()
-                      .cart
-                      .map(
-                        (item) => OrderItemModel(
-                          orderId: 0,
-                          menuItemId: item.product.id ?? 0,
-                          name: item.product.name,
-                          price: item.unitPrice,
-                          qty: item.qty.toDouble(),
-                          unit: item.selectedUnit,
-                          subtotal: item.subtotal,
-                        ),
-                      )
-                      .toList(),
-                );
-                try {
-                  await PdfService.shareReceipt(tempOrder, settings);
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Share gagal: $e'),
-                        backgroundColor: AppTheme.danger,
-                      ),
-                    );
-                  }
-                }
-              },
-            ),
-          ),
-          const SizedBox(height: 6),
-          // Cetak ke printer
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              icon: const Icon(Icons.print, size: 16),
-              label: const Text('Cetak ke Printer'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.primary,
-                side: BorderSide(color: AppTheme.primary!),
-              ),
-              onPressed: () async {
-                final settings = context.read<SettingsProvider>();
-                if (!settings.loaded) await settings.loadSettings();
-                final auth = context.read<AuthProvider>();
-                final tempOrder = OrderModel(
-                  orderNumber: 'RT-${DateTime.now().millisecondsSinceEpoch}',
-                  orderType: 'retail',
-                  status: 'paid',
-                  subtotal: _total,
-                  total: _total,
-                  discountAmount: _discount,
-                  paymentMethod: _paymentMethod,
-                  paidAmount: paid,
-                  changeAmount: (paid - _total).clamp(0, double.infinity),
-                  cashierId: auth.currentUser?.authId,
-                  cashierName: auth.currentUser?.name ?? '',
-                  createdAt: DateTime.now().toIso8601String(),
-                  updatedAt: DateTime.now().toIso8601String(),
-                  items: [],
-                );
-                try {
-                  await PdfService.printReceipt(tempOrder, settings);
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Print gagal: $e'),
-                        backgroundColor: AppTheme.danger,
-                      ),
-                    );
-                  }
-                }
-              },
-            ),
-          ),
-          const SizedBox(height: 6),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryOrange,
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'Transaksi Baru',
-                style: TextStyle(color: AppTheme.onAction),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+      final order = OrderModel.fromMap(row, items: items);
+      if (!mounted || epoch != retail.cartSessionEpoch ||
+          !identical(scope, retail.cartScope) ||
+          cashierId != context.read<AuthProvider>().currentUser?.authId) return;
+      Navigator.pushReplacement(context,
+        MaterialPageRoute(builder: (_) => ReceiptScreen(order: order)));
+    } catch (_) {
+      if (!mounted || epoch != retail.cartSessionEpoch ||
+          !identical(scope, retail.cartScope)) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(
+        'Pembayaran tersimpan. Buka Riwayat untuk mencetak struk.')));
+    }
   }
 
   @override

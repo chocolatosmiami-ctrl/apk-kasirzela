@@ -10,8 +10,13 @@ import '../../../../core/database/database_helper.dart';
 import '../../data/models/retail_models.dart';
 
 class RetailProvider extends ChangeNotifier with SessionBoundCart {
+  int? lastCheckoutId;
+  String? lastCheckoutNumber;
+
   @override
   void clearSessionState() {
+    lastCheckoutId = null;
+    lastCheckoutNumber = null;
     _cart = [];
     _products = [];
     _filtered = [];
@@ -233,6 +238,8 @@ class RetailProvider extends ChangeNotifier with SessionBoundCart {
     double discountTotal = 0,
     CheckoutMember? member,
   }) async {
+    lastCheckoutId = null;
+    lastCheckoutNumber = null;
     if (_cart.isEmpty) return false;
     final requestEpoch = cartSessionEpoch;
     final originScope = cartScope;
@@ -368,6 +375,8 @@ class RetailProvider extends ChangeNotifier with SessionBoundCart {
       }
 
       if (isCurrentSession(scope, epoch, checkoutPrefs)) {
+        lastCheckoutId = orderId;
+        lastCheckoutNumber = orderNumber;
         clearCart();
         await loadProducts();
       }

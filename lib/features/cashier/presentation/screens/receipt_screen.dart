@@ -238,6 +238,9 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                           _row('Meja', 'Meja ${order.tableNumber}'),
                         if (order.cashierName != null)
                           _row('Kasir', order.cashierName!),
+                        for (final field in order.memberReceiptRows)
+                          Align(alignment: Alignment.centerLeft, child: Text(
+                            '${field.key}: ${field.value}')),
                         _row(
                           'Pembayaran',
                           _isOnlineOrder
@@ -1052,6 +1055,9 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     } catch (_) {}
     if (order.cashierName != null && order.cashierName!.isNotEmpty)
       sb.writeln('Kasir: ${order.cashierName}');
+    for (final field in order.memberReceiptRows) {
+      sb.writeln('${field.key}: ${field.value}');
+    }
     sb.writeln('━━━━━━━━━━━━━━━━━━━━');
     for (final item in order.items) {
       sb.writeln('${_fmtQtyUnit(item.qty, item.unit)} ${item.name}');

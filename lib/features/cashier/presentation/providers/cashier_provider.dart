@@ -1032,6 +1032,7 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
       stage = 'receipt_model';
       final resultMap = Map<String, dynamic>.from(orderMap);
       resultMap['id'] = orderId;
+      if (member != null) resultMap.addAll(member.toPayload());
       final result = OrderModel.fromMap(resultMap, items: savedItems);
 
       stage = 'after_local_save';

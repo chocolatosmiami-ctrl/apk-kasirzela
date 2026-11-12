@@ -1,4 +1,5 @@
 import '../../../menu/data/models/menu_models.dart';
+import '../../../../core/services/receipt_member.dart';
 
 class CartItem {
   final MenuItemModel menuItem;
@@ -42,6 +43,9 @@ class OrderModel {
   final double changeAmount;
   final String? cashierId;
   final String? cashierName;
+  final String? memberName, memberNumber;
+  List<MapEntry<String, String>> get memberReceiptRows =>
+      ReceiptMemberData(name: memberName, number: memberNumber).rows;
   final String? note;
   final String? cancelReason;
   final String createdAt;
@@ -68,6 +72,8 @@ class OrderModel {
     this.changeAmount = 0,
     this.cashierId,
     this.cashierName,
+    this.memberName,
+    this.memberNumber,
     this.note,
     this.cancelReason,
     required this.createdAt,
@@ -75,10 +81,34 @@ class OrderModel {
     this.items = const [],
   });
 
+  /// Enrich a local receipt with its matching authorized server snapshot.
+  /// Keep all local totals/items/IDs; these are used by reprint and cancel flows.
+  OrderModel withReceiptMemberFrom(OrderModel server) {
+    if (memberNumber != null || server.memberNumber == null ||
+        orderNumber.isEmpty || orderNumber != server.orderNumber ||
+        cashierId == null || cashierId!.isEmpty || cashierId != server.cashierId) {
+      return this;
+    }
+    return OrderModel(
+      id: id, orderNumber: orderNumber, dailySeq: dailySeq,
+      tableNumber: tableNumber, orderType: orderType, status: status,
+      subtotal: subtotal, discountType: discountType,
+      discountValue: discountValue, discountAmount: discountAmount,
+      taxPercent: taxPercent, taxAmount: taxAmount,
+      serviceChargeAmount: serviceChargeAmount, total: total,
+      paymentMethod: paymentMethod, paidAmount: paidAmount,
+      changeAmount: changeAmount, cashierId: cashierId, cashierName: cashierName,
+      memberName: server.memberName, memberNumber: server.memberNumber,
+      note: note, cancelReason: cancelReason, createdAt: createdAt,
+      updatedAt: updatedAt, items: items,
+    );
+  }
+
   bool get isPaid => status == 'paid';
   bool get isCancelled => status == 'cancelled';
 
   factory OrderModel.fromMap(Map<String, dynamic> map, {List<OrderItemModel>? items}) {
+    final member = ReceiptMemberData.fromRecord(map);
     return OrderModel(
       id: map['id'] as int?,
       orderNumber: map['order_number'] as String? ?? map['id']?.toString() ?? '',
@@ -99,6 +129,8 @@ class OrderModel {
       changeAmount: (map['change_amount'] as num?)?.toDouble() ?? 0,
       cashierId: map['cashier_id']?.toString(),
       cashierName: map['cashier_name'] as String?,
+      memberName: member.name,
+      memberNumber: member.number,
       note: map['note'] as String?,
       cancelReason: map['cancel_reason'] as String?,
       createdAt: map['created_at'] as String? ?? DateTime.now().toIso8601String(),
