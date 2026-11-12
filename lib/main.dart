@@ -137,8 +137,15 @@ class POSApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<SettingsProvider>(create: (_) => settingsProvider),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, SettingsProvider>(
+          create: (_) => settingsProvider,
+          update: (_, auth, settings) {
+            if (!auth.loading) settings!.bindAccount(
+              auth.currentUser?.authId ?? '', auth.currentUser?.ownerId ?? '');
+            return settings!;
+          },
+        ),
         ChangeNotifierProvider(create: (_) => MenuProvider()),
         ChangeNotifierProxyProvider<AuthProvider, CashierProvider>(
           create: (_) => CashierProvider(),

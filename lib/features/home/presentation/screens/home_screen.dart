@@ -213,6 +213,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       selectedMode,
                     );
 
+                    if (!mounted) return;
+                    await context.read<SettingsProvider>().loadSettings();
+                    if (!mounted) return;
+
                     // Clear stok cache MenuProvider agar tidak tampil stok cabang lama
                     if (mounted) {
                       try {
