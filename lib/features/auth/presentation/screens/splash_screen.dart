@@ -32,8 +32,8 @@ class _SplashScreenState extends State<SplashScreen> {
     setState(() { _loading = true; _diagnosticCode = null; _message = 'Memeriksa sesi tersimpan…'; });
     try {
       final auth = context.read<AuthProvider>();
-      // Allow the bounded token refresh (8s) followed by profile read (8s).
-      await auth.checkSession().timeout(const Duration(seconds: 24));
+      // Includes the token refresh and profile read, each separately bounded.
+      await auth.checkSession().timeout(LoginTimeouts.startup);
       if (!mounted || !_epoch.current(ticket)) return;
       ServiceHealth.log('splash', ticket, watch.elapsedMilliseconds, null);
       final profile = auth.currentUser;

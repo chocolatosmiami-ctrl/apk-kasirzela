@@ -3,6 +3,14 @@ import 'dart:io';
 
 enum FailureKind { timeout, network, server, invalidSession, denied, unknown }
 
+/// The outer deadlines leave room for each bounded inner network operation.
+class LoginTimeouts {
+  static const request = Duration(seconds: 30);
+  static const refresh = Duration(seconds: 35);
+  static const profileRead = Duration(seconds: 12);
+  static const startup = Duration(seconds: 50);
+}
+
 FailureKind failureKind(Object error) {
   if (error is TimeoutException) return FailureKind.timeout;
   if (error is SocketException || error is HandshakeException)

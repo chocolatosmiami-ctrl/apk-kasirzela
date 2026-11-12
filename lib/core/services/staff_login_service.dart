@@ -1,11 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
+import 'startup_policy.dart';
 
 class StaffLoginService {
   static Future<Map<String, dynamic>?> findProfile(String email) async {
     final result = await SupabaseConfig.client.rpc('get_staff_by_email',
       params: {'p_email': email.trim().toLowerCase()})
-      .timeout(const Duration(seconds: 10));
+      .timeout(LoginTimeouts.profileRead);
     if (result is Map) return Map<String, dynamic>.from(result);
     if (result is List && result.isNotEmpty && result.first is Map) {
       return Map<String, dynamic>.from(result.first as Map);
@@ -22,7 +23,8 @@ class StaffLoginService {
           body: {'email': email.trim().toLowerCase(), 'password': password});
         final data = result.data;
         if (data is! Map || data['refresh_token'] is! String) {
-          throw const AuthException('Sesi akun kasir belum siap. Coba login kembali.');
+          throw const AuthException('Sesi akun kasir belum siap. Coba login kembali.',
+            code: 'staff_session_not_ready');
         }
         response = await client.auth.setSession(data['refresh_token'] as String);
       } on FunctionException catch (e) {
@@ -33,7 +35,9 @@ class StaffLoginService {
             : code == 'INVALID_CREDENTIALS'
               ? 'Email atau password salah, atau akun tidak aktif.'
               : 'Akun kasir belum dapat dihubungkan ke Auth. Hubungi owner. Kode: ' +
-                (code?.isNotEmpty == true ? code! : 'LOGIN_SERVICE_UNAVAILABLE'));
+                (code?.isNotEmpty == true ? code! : 'LOGIN_SERVICE_UNAVAILABLE'),
+          statusCode: code == 'TOO_MANY_ATTEMPTS' ? '429' : null,
+          code: code == 'INVALID_CREDENTIALS' ? 'invalid_credentials' : 'staff_session_not_ready');
       }
     } else {
       response = await client.auth.signInWithPassword(

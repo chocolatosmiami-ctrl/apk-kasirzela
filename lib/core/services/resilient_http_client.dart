@@ -10,6 +10,7 @@ class ResilientHttpClient extends http.BaseClient {
   final http.Client Function() createClient;
   final http.Client? _shared;
   final Duration deadline;
+  final Duration authenticationDeadline;
   final Future<void> Function(Duration) sleep;
   final double Function() random;
   final void Function(String, int, int, FailureKind?)? diagnostic;
@@ -19,11 +20,14 @@ class ResilientHttpClient extends http.BaseClient {
   ResilientHttpClient({
     http.Client Function()? createClient,
     http.Client? sharedClient,
-    this.deadline = const Duration(seconds: 5),
+    Duration? deadline,
+    Duration? authenticationDeadline,
     Future<void> Function(Duration)? sleep,
     double Function()? random,
     this.diagnostic,
   }) : assert(createClient == null || sharedClient == null),
+       deadline = deadline ?? const Duration(seconds: 5),
+       authenticationDeadline = authenticationDeadline ?? deadline ?? LoginTimeouts.request,
        _shared = sharedClient ?? (createClient == null ? http.Client() : null),
        createClient = createClient ?? http.Client.new,
        sleep = sleep ?? Future<void>.delayed,
@@ -53,10 +57,16 @@ class ResilientHttpClient extends http.BaseClient {
           url.path.startsWith('/rest/v1/rpc/') &&
           readRpcs.contains(url.pathSegments.last));
 
+  Duration deadlineFor(Uri url) =>
+      url.path.startsWith('/auth/v1/') ||
+          url.path == '/functions/v1/legacy-staff-login'
+      ? authenticationDeadline : deadline;
+
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     if (_closed) throw http.ClientException('Transport closed');
-    final bytes = await request.finalize().toBytes().timeout(deadline);
+    final requestDeadline = deadlineFor(request.url);
+    final bytes = await request.finalize().toBytes().timeout(requestDeadline);
     final limit = safeRead(request.method, request.url) ? 2 : 1;
     // Only endpoint family/name, never query parameters, headers or bodies.
     final stage = request.url.path.startsWith('/rest/v1/rpc/')
@@ -85,7 +95,7 @@ class ResilientHttpClient extends http.BaseClient {
         final response = await (() async {
           final streamed = await client.send(clone);
           return http.Response.fromStream(streamed);
-        })().timeout(deadline);
+        })().timeout(requestDeadline);
         final bad = response.statusCode >= 500;
         diagnostic?.call(
           stage,

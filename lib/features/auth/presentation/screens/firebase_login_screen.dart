@@ -1,4 +1,5 @@
 import '../../../../core/services/staff_login_service.dart';
+import '../../../../core/services/supabase_auth_service.dart';
 import '../../../../core/services/login_route.dart';
 import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
@@ -288,7 +289,7 @@ class _FormViewState extends State<_FormView> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = 'Terjadi kesalahan: $e';
+        _error = authenticationErrorMessage(e);
       });
     }
   }
@@ -505,7 +506,7 @@ class _FormViewState extends State<_FormView> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = 'Terjadi kesalahan: $e';
+        _error = authenticationErrorMessage(e);
       });
     }
   }

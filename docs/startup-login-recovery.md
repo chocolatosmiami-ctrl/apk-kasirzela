@@ -6,7 +6,7 @@ Pemeriksaan source menemukan token Auth yang dipulihkan dapat sudah kedaluwarsa,
 
 Perubahan:
 
-- Refresh token yang kedaluwarsa melalui SDK sebelum query profil, dengan deadline 8 detik. Deadline splash 24 detik memberi ruang untuk refresh lalu pembacaan profil yang juga dibatasi 8 detik.
+- Refresh token yang kedaluwarsa melalui SDK sebelum query profil. Setelah laporan timeout login lanjutan, batas transport Auth disesuaikan menjadi 30 detik, refresh 35 detik, query profil 12 detik, dan splash 50 detik. Detail ada pada `docs/login-transport-timeout.md`.
 - Tombol **Login kembali** membuka halaman kredensial tanpa sign-out, menghapus database, atau membuang transaksi/outbox. Navigasi ini membatalkan publikasi hasil profile request lama melalui generation/epoch yang sudah ada.
 - Pesan membedakan sesi yang perlu login, masalah akses, konfigurasi query profil, jaringan, dan kegagalan tak dikenal. Kode diagnostik memakai label tetap; tidak menampilkan body exception, JWT, URL, PIN, atau data pengguna.
 - Pemeriksaan `is_active`, `is_approved`, PIN, TTL cache profil dan otorisasi server tetap berlaku. Tidak ada akses paksa dengan profil yang tidak terverifikasi.

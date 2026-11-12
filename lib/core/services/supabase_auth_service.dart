@@ -9,6 +9,50 @@ import '../config/supabase_config.dart';
 import '../database/database_helper.dart';
 import 'login_route.dart';
 
+/// User-visible errors are fixed text; never echo SDK exceptions or credentials.
+String authenticationErrorMessage(Object error) {
+  final kind = failureKind(error);
+  if (kind == FailureKind.server) {
+    return 'Layanan login sedang bermasalah. Coba lagi nanti. Kode: LOGIN_SERVICE';
+  }
+  if (kind == FailureKind.timeout || kind == FailureKind.network ||
+      error is AuthRetryableFetchException) {
+    return 'Server login belum merespons. Coba lagi nanti. '
+        'Jika tetap gagal di beberapa jaringan, '
+        'pengelola perlu memeriksa status layanan Auth. Kode: LOGIN_CONNECTION';
+  }
+  if (error is AuthException) {
+    final code = error.code;
+    if (code == 'invalid_credentials' ||
+        error.message.contains('Invalid login credentials')) {
+      return 'Email atau password salah';
+    }
+    if (code == 'email_not_confirmed' || error.message.contains('Email not confirmed')) {
+      return 'Email belum dikonfirmasi. Cek inbox email Anda';
+    }
+    if (code == 'over_request_rate_limit' || error.statusCode == '429' ||
+        error.message.contains('Too many requests')) {
+      return 'Terlalu banyak percobaan. Tunggu beberapa saat';
+    }
+    if (code == 'user_already_exists' || error.message.contains('User already registered')) {
+      return 'Email sudah terdaftar';
+    }
+    if (code == 'weak_password' || error.message.contains('weak password')) {
+      return 'Password terlalu lemah';
+    }
+    if (code == 'staff_session_not_ready') {
+      return 'Akun kasir belum dapat dihubungkan ke Auth. Hubungi owner. Kode: STAFF_AUTH_NOT_READY';
+    }
+  }
+  if (kind == FailureKind.invalidSession) {
+    return 'Sesi tidak berlaku. Login kembali dengan email dan password. Kode: LOGIN_SESSION';
+  }
+  if (kind == FailureKind.denied) {
+    return 'Akun belum diizinkan mengakses layanan. Hubungi owner. Kode: LOGIN_ACCESS';
+  }
+  return 'Login belum berhasil. Coba lagi atau hubungi pengelola. Kode: LOGIN_UNKNOWN';
+}
+
 class SupabaseAuthService {
   static final SupabaseAuthService instance = SupabaseAuthService._();
   SupabaseAuthService._();
@@ -103,7 +147,7 @@ class SupabaseAuthService {
       // refresh completes. Do not send that access token to the profile API.
       if (_client.auth.currentSession?.isExpired == true) {
         final response = await _client.auth.refreshSession()
-            .timeout(const Duration(seconds: 8));
+            .timeout(LoginTimeouts.refresh);
         if (!current()) throw StateError('Superseded profile attempt');
         if (response.session == null) {
           throw const AuthException('Sign in required', code: 'session_not_found');
@@ -111,7 +155,7 @@ class SupabaseAuthService {
       }
       final row = await _client.from('users')
         .select('auth_id,email,name,role,owner_id,branch_id,is_active,is_approved,pin_hash,branches(name,mode)')
-        .eq('auth_id', uid).maybeSingle().timeout(const Duration(seconds: 8));
+        .eq('auth_id', uid).maybeSingle().timeout(LoginTimeouts.profileRead);
       if (!current()) throw StateError('Superseded profile attempt');
       if (row == null || row['is_active'] != true || row['is_approved'] != true) {
         await prefs.remove('verified_profile_$uid');
@@ -202,9 +246,9 @@ class SupabaseAuthService {
 
       return AuthResult.success();
     } on AuthException catch (e) {
-      return AuthResult.error(_mapError(e.message));
+      return AuthResult.error(authenticationErrorMessage(e));
     } catch (e) {
-      return AuthResult.error('Terjadi kesalahan: $e');
+      return AuthResult.error(authenticationErrorMessage(e));
     }
   }
 
@@ -259,9 +303,9 @@ class SupabaseAuthService {
 
       return AuthResult.success();
     } on AuthException catch (e) {
-      return AuthResult.error(_mapError(e.message));
+      return AuthResult.error(authenticationErrorMessage(e));
     } catch (e) {
-      return AuthResult.error('Terjadi kesalahan: $e');
+      return AuthResult.error(authenticationErrorMessage(e));
     }
   }
 
@@ -272,7 +316,7 @@ class SupabaseAuthService {
         res = await _client.auth.signInWithPassword(
             email: email, password: password);
       } catch (authErr) {
-        return AuthResult.error(_mapError(authErr.toString()));
+        return AuthResult.error(authenticationErrorMessage(authErr));
       }
 
       if (res.user == null) return AuthResult.error('Login super admin gagal');
@@ -281,7 +325,7 @@ class SupabaseAuthService {
       // Login verifies existing server authority; it never provisions privilege.
       final row = await _client.from('users')
           .select('owner_id,name,email,role,is_active,is_approved')
-          .eq('auth_id', uid).maybeSingle().timeout(const Duration(seconds: 8));
+          .eq('auth_id', uid).maybeSingle().timeout(LoginTimeouts.profileRead);
       if (row == null || row['role'] != 'superadmin' ||
           row['is_active'] != true || row['is_approved'] != true) {
         return AuthResult.error('Akun ini tidak memiliki hak superadmin.');
@@ -292,7 +336,7 @@ class SupabaseAuthService {
 
       return AuthResult.success();
     } catch (e) {
-      return AuthResult.error('Error super admin: $e');
+      return AuthResult.error(authenticationErrorMessage(e));
     }
   }
 
@@ -448,15 +492,6 @@ class SupabaseAuthService {
     await prefs.setString(AppConstants.keyBranchName, branchName);
     await prefs.setString(AppConstants.keyBranchMode, branchMode);
     await prefs.setString(AppConstants.keyKasirName, name);
-  }
-
-  String _mapError(String msg) {
-    if (msg.contains('Invalid login')) return 'Email atau password salah';
-    if (msg.contains('already registered')) return 'Email sudah terdaftar';
-    if (msg.contains('weak password')) return 'Password terlalu lemah';
-    if (msg.contains('Email not confirmed')) return 'Email belum dikonfirmasi';
-    if (msg.contains('network')) return 'Tidak ada koneksi internet';
-    return msg;
   }
 
   Future<bool> deleteBranch(String branchId) async {
