@@ -24,6 +24,13 @@ class SupabaseAuthService {
   String _sessionReadUid = '';
   int _profileGeneration = 0;
 
+  /// Supersede in-flight profile reads without deleting Auth or local receipts.
+  void invalidateSessionRead() {
+    _profileGeneration++;
+    _sessionRead = null;
+    _sessionReadUid = '';
+  }
+
   /// Only call after the server accepted a PIN change. Preserve the original
   /// verification time and access fields; an offline fallback must not revive
   /// the previous PIN or extend cached authorization.
@@ -92,6 +99,16 @@ class SupabaseAuthService {
     final prefs = await SharedPreferences.getInstance();
     bool current() => generation == _profileGeneration && _client.auth.currentUser?.id == uid;
     try {
+      // Initialization can restore an expired session before its background
+      // refresh completes. Do not send that access token to the profile API.
+      if (_client.auth.currentSession?.isExpired == true) {
+        final response = await _client.auth.refreshSession()
+            .timeout(const Duration(seconds: 8));
+        if (!current()) throw StateError('Superseded profile attempt');
+        if (response.session == null) {
+          throw const AuthException('Sign in required', code: 'session_not_found');
+        }
+      }
       final row = await _client.from('users')
         .select('auth_id,email,name,role,owner_id,branch_id,is_active,is_approved,pin_hash,branches(name,mode)')
         .eq('auth_id', uid).maybeSingle().timeout(const Duration(seconds: 8));

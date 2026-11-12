@@ -18,6 +18,7 @@ class _SplashScreenState extends State<SplashScreen> {
   bool _loading = true;
   String _message = 'Memeriksa sesi tersimpan…';
   bool _running = false;
+  String? _diagnosticCode;
   @override
   void initState() {
     super.initState();
@@ -28,10 +29,11 @@ class _SplashScreenState extends State<SplashScreen> {
     _running = true;
     final ticket = _epoch.begin();
     final watch = Stopwatch()..start();
-    setState(() { _loading = true; _message = 'Memeriksa sesi tersimpan…'; });
+    setState(() { _loading = true; _diagnosticCode = null; _message = 'Memeriksa sesi tersimpan…'; });
     try {
       final auth = context.read<AuthProvider>();
-      await auth.checkSession().timeout(const Duration(seconds: 10));
+      // Allow the bounded token refresh (8s) followed by profile read (8s).
+      await auth.checkSession().timeout(const Duration(seconds: 24));
       if (!mounted || !_epoch.current(ticket)) return;
       ServiceHealth.log('splash', ticket, watch.elapsedMilliseconds, null);
       final profile = auth.currentUser;
@@ -42,14 +44,21 @@ class _SplashScreenState extends State<SplashScreen> {
       ServiceHealth.log('splash', ticket, watch.elapsedMilliseconds, failureKind(e));
       if (mounted && _epoch.current(ticket)) setState(() {
         _loading = false;
-        _message = 'Layanan belum dapat dihubungi dan profil tersimpan belum dapat diverifikasi. '
-          'Sesi tetap disimpan. Periksa jaringan lalu coba lagi.';
+        _diagnosticCode = startupFailureCode(e);
+        _message = startupFailureMessage(_diagnosticCode!);
       });
     } finally { _running = false; }
+  }
+  void _openLogin() {
+    _epoch.begin();
+    context.read<AuthProvider>().prepareForReauthentication();
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const FirebaseLoginScreen()));
   }
   @override
   void dispose() { _epoch.dispose(); super.dispose(); }
   @override
   Widget build(BuildContext context) => StartupRecoveryView(
-    loading: _loading, message: _message, retry: _checkAuth);
+    loading: _loading, message: _message, retry: _checkAuth,
+    diagnosticCode: _diagnosticCode, onLogin: _openLogin);
 }

@@ -38,6 +38,17 @@ class AuthProvider extends ChangeNotifier {
   Future<void>? _sessionCheck;
   Future<void>? _logoutJob;
   int _sessionEpoch = 0;
+
+  /// Open credential login without discarding the stored Auth session/outbox.
+  void prepareForReauthentication() {
+    _sessionEpoch++;
+    _sessionCheck = null;
+    SupabaseAuthService.instance.invalidateSessionRead();
+    _currentUser = null;
+    _loading = false;
+    notifyListeners();
+  }
+
   Future<void> checkSession() {
     if (_logoutJob != null) return Future<void>.value();
     final existing = _sessionCheck;
