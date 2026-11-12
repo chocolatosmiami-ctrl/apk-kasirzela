@@ -9,13 +9,14 @@ import 'login_route.dart';
 import '../config/supabase_config.dart';
 import '../database/database_helper.dart';
 import 'order_outbox.dart';
+import 'checkout_member.dart';
 
 class OfflineOrderSyncService extends ChangeNotifier {
   static final instance = OfflineOrderSyncService._();
   OfflineOrderSyncService._() {
     _outbox = OrderOutbox(_SqliteOrderOutbox(), (payload) async {
       final result = await SupabaseConfig.client
-          .rpc('sync_paid_food_order', params: {'p_payload': payload})
+          .rpc(checkoutSyncRpc(payload), params: {'p_payload': payload})
           .timeout(const Duration(seconds: 15));
       if (result is! Map) throw StateError('Respons sinkronisasi tidak valid');
       return Map<String, dynamic>.from(result);
@@ -119,11 +120,16 @@ class OfflineOrderSyncService extends ChangeNotifier {
     required String accountId,
     required Map<String, dynamic> order,
     required List<Map<String, dynamic>> items,
+    CheckoutMember? member,
   }) async {
     if (accountId.isEmpty || (order['branch_id']?.toString() ?? '').isEmpty) {
       throw StateError(
         'Identitas akun/cabang kosong. Login dan pilih cabang dahulu.',
       );
+    }
+    if (member != null && (member.scope.accountId != accountId ||
+        member.scope.branchId != order['branch_id'])) {
+      throw StateError('Sesi member tidak sesuai receipt.');
     }
     final payload = <String, dynamic>{
       'version': 1,
@@ -142,6 +148,9 @@ class OfflineOrderSyncService extends ChangeNotifier {
       'change_amount': order['change_amount'],
       'notes': order['note'],
       'items': items,
+      if (member != null) ...{
+        'order_type': order['order_type'], ...member.toPayload(),
+      },
     };
     await txn.insert('order_sync_outbox', {
       'order_id': orderId,
@@ -167,6 +176,7 @@ class OfflineOrderSyncService extends ChangeNotifier {
     );
     return rows.expand((row) {
       final payload = jsonDecode(row['payload'] as String) as Map;
+      if (payload['order_type'] == 'retail') return <Map<String, dynamic>>[];
       final date = DateTime.parse(payload['created_at'] as String)
           .toUtc()
           .add(const Duration(hours: 7))

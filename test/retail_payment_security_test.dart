@@ -1,3 +1,4 @@
+import '../lib/core/services/checkout_member.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,7 +19,8 @@ class _RetailFixture extends RetailProvider {
       {required String paymentMethod,
       required double paidAmount,
       required String cashierId,
-      double discountTotal = 0}) async {
+      double discountTotal = 0,
+      CheckoutMember? member}) async {
     checkoutCalls++;
     return false;
   }

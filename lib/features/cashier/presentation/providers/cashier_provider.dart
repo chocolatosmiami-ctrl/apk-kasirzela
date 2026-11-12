@@ -1,3 +1,4 @@
+import '../../../../core/services/checkout_member.dart';
 import '../../../../core/services/checkout_gate.dart';
 import '../../../../core/services/cart_session.dart';
 import 'package:sqflite/sqflite.dart';
@@ -756,6 +757,7 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
     required String paymentMethod,
     required double paidAmount,
     required String cashierId,
+    CheckoutMember? member,
   }) async {
     if (_cartItems.isEmpty) {
       _lastCheckoutDiagnostic = CheckoutDiagnostic(code: 'CART_EMPTY', stage: 'cart',
@@ -790,6 +792,7 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
       final epoch = cartSessionEpoch;
       final prefs = await SharedPreferences.getInstance();
       requireCurrentSession(scope, epoch, prefs);
+      if (member != null && !member.matches(scope, epoch)) throw StateError('Member harus diverifikasi pada sesi aktif.');
       if (cashierId != scope.accountId || SupabaseConfig.client.auth.currentUser?.id != scope.accountId) {
         throw StateError('Akun kasir telah berubah.');
       }
@@ -1016,6 +1019,7 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
           orderId: orderId,
           accountId: receiptAccountId,
           order: orderMap,
+          member: member,
           items: savedItems.map((item) => <String, dynamic>{
             'item_name': item.name, 'quantity': item.qty,
             'price': item.price, 'subtotal': item.subtotal, 'unit': item.unit,

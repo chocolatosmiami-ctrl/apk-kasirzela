@@ -1,4 +1,17 @@
 /// Pure Dart retry loop. Persistence and HTTP are supplied by the app.
+String checkoutSyncRpc(Map<String, dynamic> payload) {
+  if (payload.containsKey('member_number') || payload.containsKey('customer_id')) {
+    if (payload['member_number'] is! String ||
+        !RegExp(r'^\d{6}$').hasMatch(payload['member_number'] as String) ||
+        (payload['customer_id']?.toString() ?? '').isEmpty) {
+      throw StateError('Identitas member pada receipt tidak lengkap.');
+    }
+    return payload['order_type'] == 'retail'
+        ? 'zela_member_sync_retail_order' : 'zela_member_sync_food_order';
+  }
+  return 'sync_paid_food_order';
+}
+
 class OutboxReceipt {
   final int localId;
   final String accountId;
@@ -37,11 +50,14 @@ class OrderOutbox {
         // Transport may time out after a server commit. The payload and its
         // stable receipt key must survive unchanged for the next retry.
         final result = await send(receipt.payload);
-        if (result['success'] != true || result['stock_applied'] != true) {
+        if (result['success'] != true || result['stock_applied'] != true ||
+            (receipt.payload.containsKey('member_number') && result['member_linked'] != true)) {
           await store.recordFailure(
             receipt,
             result['error']?.toString() ??
-                'Order/stok belum dikonfirmasi server',
+                (receipt.payload.containsKey('member_number') && result['member_linked'] != true
+                    ? 'Member belum dikonfirmasi server'
+                    : 'Order/stok belum dikonfirmasi server'),
           );
           failed++;
           continue;

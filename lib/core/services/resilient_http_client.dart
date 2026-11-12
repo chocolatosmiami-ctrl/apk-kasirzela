@@ -34,6 +34,7 @@ class ResilientHttpClient extends http.BaseClient {
        random = random ?? Random().nextDouble;
 
   static const readRpcs = {
+    'zela_member_lookup',
     'get_menu_components',
     'get_menu_stock_today',
     'get_role_permissions',

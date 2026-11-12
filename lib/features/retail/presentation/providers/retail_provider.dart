@@ -1,3 +1,5 @@
+import '../../../../core/services/checkout_member.dart';
+import '../../../../core/services/offline_order_sync_service.dart';
 import '../../../../core/services/read_work.dart';
 import '../../../../core/services/cart_session.dart';
 import '../../../../core/utils/app_constants.dart';
@@ -229,6 +231,7 @@ class RetailProvider extends ChangeNotifier with SessionBoundCart {
     required double paidAmount,
     required String cashierId,
     double discountTotal = 0,
+    CheckoutMember? member,
   }) async {
     if (_cart.isEmpty) return false;
     final requestEpoch = cartSessionEpoch;
@@ -238,7 +241,11 @@ class RetailProvider extends ChangeNotifier with SessionBoundCart {
     debugPrint('📊 [RETAIL] cart items: ${_cart.length}');
 
     final db = DatabaseHelper.instance;
-    final now = DateTime.now().toIso8601String();
+    final localNow = DateTime.now();
+    final offset = localNow.timeZoneOffset;
+    final zone = '${offset.isNegative ? '-' : '+'}${offset.inHours.abs().toString().padLeft(2, '0')}:${(offset.inMinutes.abs() % 60).toString().padLeft(2, '0')}';
+    final now = localNow.toIso8601String() + (member == null ? '' : zone);
+    final orderNumber = 'RT-${localNow.millisecondsSinceEpoch}';
 
     try {
       final checkoutPrefs = await SharedPreferences.getInstance();
@@ -247,6 +254,7 @@ class RetailProvider extends ChangeNotifier with SessionBoundCart {
           scope.branchId.isEmpty || _cart.isEmpty || cashierId != scope.accountId) return false;
       final epoch = cartSessionEpoch;
       requireCurrentSession(scope, epoch, checkoutPrefs);
+      if (member != null && !member.matches(scope, epoch)) return false;
       final branchId = scope.branchId;
       final kasirName = checkoutPrefs.getString(AppConstants.keyKasirName) ?? checkoutPrefs.getString(AppConstants.keyName) ?? '';
       final netTotal = cartTotal - discountTotal;
@@ -271,7 +279,7 @@ class RetailProvider extends ChangeNotifier with SessionBoundCart {
             paid_amount, change_amount, note, branch_id, created_at, updated_at
           ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ''', [
-          'RT-${DateTime.now().millisecondsSinceEpoch}',
+          orderNumber,
           cashierId, 'retail', 'paid',
           cartTotal,
           discountTotal > 0 ? 'nominal' : 'none',
@@ -320,12 +328,32 @@ class RetailProvider extends ChangeNotifier with SessionBoundCart {
             item.unitPrice, item.subtotal,
           ]);
         }
+        if (member != null) {
+          await OfflineOrderSyncService.enqueue(txn,
+            orderId: orderId, accountId: cashierId, member: member,
+            order: {
+              'order_number': orderNumber, 'order_type': 'retail',
+              'branch_id': branchId, 'created_at': now, 'cashier_name': kasirName,
+              'subtotal': netTotal + discountTotal, 'discount_amount': discountTotal,
+              'tax_amount': 0, 'service_charge_amount': 0, 'total': netTotal,
+              'payment_method': paymentMethod, 'paid_amount': paidAmount,
+              'change_amount': changeAmount, 'note': 'Retail transaction',
+            },
+            items: cartSnapshot.map((item) => <String, dynamic>{
+              'product_id': item.product.id?.toString() ?? '',
+              'item_name': item.product.name, 'quantity': item.qty,
+              'price': item.unitPrice, 'subtotal': item.subtotal, 'unit': item.selectedUnit,
+            }).toList());
+        }
         requireCurrentSession(scope, epoch, checkoutPrefs);
       });
       // ── Akhir transaction — semua berhasil atau semua rollback ──
 
       debugPrint('📊 [RETAIL] ✅ Order saved locally, orderId=$orderId');
 
+      if (member != null) {
+        OfflineOrderSyncService.instance.kick();
+      } else {
       _syncOrderToSupabase(
         orderId: orderId,
         scope: scope, epoch: epoch, branchId: branchId, kasirName: kasirName,
@@ -337,6 +365,7 @@ class RetailProvider extends ChangeNotifier with SessionBoundCart {
         now: now,
         cartItems: cartSnapshot,
       );
+      }
 
       if (isCurrentSession(scope, epoch, checkoutPrefs)) {
         clearCart();

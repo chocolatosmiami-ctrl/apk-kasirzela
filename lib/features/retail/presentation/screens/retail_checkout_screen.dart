@@ -1,3 +1,5 @@
+import '../../../../core/services/checkout_member.dart';
+import '../../../../core/widgets/checkout_member_field.dart';
 import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/database/database_helper.dart';
@@ -27,9 +29,17 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
   final _paidCtrl = TextEditingController();
   double _discount = 0;
   bool _processing = false;
+  late final CheckoutMemberController _member;
+  void _memberChanged() { if (mounted) setState(() {}); }
+  @override
+  void initState() {
+    super.initState();
+    _member = CheckoutMemberController(cart: context.read<RetailProvider>())..addListener(_memberChanged);
+  }
 
   @override
   void dispose() {
+    _member.dispose();
     _paidCtrl.dispose();
     super.dispose();
   }
@@ -42,7 +52,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
   }
 
   Future<void> _processPayment() async {
-    if (_processing) return;
+    if (_processing || !_member.ready) return;
     setState(() => _processing = true);
     try {
       await _processPaymentOnce();
@@ -57,6 +67,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
   Future<void> _processPaymentOnce() async {
     final retail = context.read<RetailProvider>();
     final auth = context.read<AuthProvider>();
+    final paymentMember = _member.selected;
     final paymentScope = retail.cartScope;
     final paymentEpoch = retail.cartSessionEpoch;
     final String cashierId = auth.currentUser?.authId ?? '';
@@ -130,6 +141,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
       paidAmount: paid,
       cashierId: cashierId,
       discountTotal: _discount,
+      member: paymentMember,
     );
 
     if (!mounted) return;
@@ -527,6 +539,9 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
             ),
             const SizedBox(height: 12),
 
+            CheckoutMemberField(controller: _member, enabled: !_processing),
+            const SizedBox(height: 12),
+
             // Discount
             Card(
               shape: RoundedRectangleBorder(
@@ -719,7 +734,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      onPressed: _processing ? null : _processPayment,
+                      onPressed: _processing || !_member.ready ? null : _processPayment,
                       child: _processing
                           ? const CircularProgressIndicator(
                               color: AppTheme.primaryOrange,

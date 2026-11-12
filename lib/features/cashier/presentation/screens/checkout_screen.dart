@@ -1,3 +1,5 @@
+import '../../../../core/services/checkout_member.dart';
+import '../../../../core/widgets/checkout_member_field.dart';
 import '../widgets/checkout_failure_dialog.dart';
 import '../../../../core/services/checkout_diagnostic.dart';
 import '../../../../core/theme/minimal_ui.dart';
@@ -27,6 +29,8 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
+  late final CheckoutMemberController _member;
+  void _memberChanged() { if (mounted) setState(() {}); }
   String _paymentMethod = 'cash';
   final _paidCtrl = TextEditingController();
   final _promoCtrl = TextEditingController();
@@ -49,6 +53,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     debugPrint('🖥️ [CHECKOUT] initState');
     // Capture all values immediately in initState
     final cashier = context.read<CashierProvider>();
+    _member = CheckoutMemberController(cart: cashier)..addListener(_memberChanged);
     _totalAmount = cashier.total;
     _cartSnapshot = List<CartItem>.from(cashier.cartItems);
     _orderType = cashier.orderType;
@@ -61,6 +66,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     // BUG 38 FIX: Reset _isProcessing saat screen di-dispose.
     // Mencegah tombol bayar macet jika user tap back di tengah proses.
     _isProcessing = false;
+    _member.dispose();
     _paidCtrl.dispose();
     _promoCtrl.dispose();
     super.dispose();
@@ -74,17 +80,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   double get _change => (_paidAmount - _totalAmount).clamp(0, double.infinity);
 
   bool get _canPay {
-    if (_totalAmount <= 0) return false;
+    if (!_member.ready || _totalAmount <= 0) return false;
     if (_paymentMethod == 'cash') return _paidAmount >= _totalAmount;
     return true; // QRIS, Transfer, Card - always can pay
   }
 
   Future<void> _processPayment() async {
-    if (_isProcessing) return;
+    if (_isProcessing || !_member.ready) return;
     // Lock before the first await (balance/grace checks also perform network IO).
     setState(() => _isProcessing = true);
     try {
-      await _processPaymentOnce();
+      await _processPaymentOnce(_member.selected);
     } catch (e) {
       if (mounted) {
         await showCheckoutFailureDialog(context,
@@ -95,7 +101,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
-  Future<void> _processPaymentOnce() async {
+  Future<void> _processPaymentOnce(CheckoutMember? member) async {
 
     // ── Cek saldo minimum (online guard) ───────────────
     final subProv = context.read<SubscriptionProvider>();
@@ -259,6 +265,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         paymentMethod: _paymentMethod,
         paidAmount: paidAmount,
         cashierId: cashierId,
+        member: member,
       );
       savedReceipt = order;
 
@@ -681,6 +688,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+
+              CheckoutMemberField(controller: _member, enabled: !_isProcessing),
               const SizedBox(height: 12),
 
               // ── Kode Promo ─────────────────────────────────────
