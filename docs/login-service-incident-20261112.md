@@ -26,3 +26,15 @@ Belum diketahui apakah penyebab infrastruktur adalah kehabisan memori, CPU/I/O, 
 4. Jika tidak pulih atau berulang, eskalasi ke Supabase Support dengan nama/ref proyek, waktu WIB/UTC, dan status 522/524; jangan menyertakan password/token.
 
 Perubahan client yang disertakan dicatat pada `docs/login-transport-timeout.md`. Source Desktop telah disinkronkan dengan backup enam file. Pengujian runtime/APK belum dilakukan oleh agent; analisis statis tidak menjadi bukti pemulihan layanan. Status akhir insiden: **BELUM PULIH/TERVERIFIKASI — memerlukan tindakan operator backend**.
+
+## Pembaruan: satu restart penuh telah dilakukan
+
+Setelah pengguna meminta pemulihan menyeluruh pada percakapan lanjutan, satu **Restart project** dijalankan melalui dashboard. Ini bukan fast database reboot, pause/restore, reset data, atau resize berbayar. Dashboard sebelum restart secara eksplisit menandai Database, Auth, PostgREST, Realtime dan Storage Unhealthy. Management API mengonfirmasi `RESTARTING` pada **12 November 07:51:53 WIB**.
+
+Dashboard keluar dari tahap restarting sekitar 07:55 WIB. Satu query diagnostik tanpa row bisnis, `SELECT 1`, berhasil pada **07:56:37 WIB**. Pemeriksaan agregat koneksi melalui `pg_stat_activity` berikutnya kembali timeout. Management API `ACTIVE_HEALTHY` dan satu query berhasil tidak dipakai sebagai bukti semua service sudah pulih.
+
+Pengguna kemudian mengonfirmasi masih gagal login dengan error yang sama. Log gateway setelah restart menunjukkan HTTP **521** pada Auth token/health dan endpoint REST. Auth juga mengembalikan **504** dengan event terakhir sekitar **07:59:53 WIB**. Pada **08:01:22 WIB**, health advisor mengembalikan `log_data_api_error_rate_high`: **100% dari 21 request Data API gagal** pada dua periode lima menit berturut-turut. Laporan CPU/memory/IOPS tidak memiliki data, sementara disk throughput, koneksi dan disk usage gagal dimuat.
+
+Pilihan restart lain pada dashboard hanya fast database reboot, yang memulai ulang database saja. Tidak dilakukan restart berulang, pause/restore, perubahan RLS, password, schema, billing, atau ukuran compute secara spekulatif. Penyebab resource/infrastruktur belum terbukti. Status: **BELUM PULIH SETELAH SATU RESTART PENUH — perlu investigasi operator/provider**.
+
+Draf eskalasi non-rahasia untuk Supabase Support disiapkan di workspace privat, bukan dalam Git. Pengiriman draf hanya dapat dilakukan setelah pengguna secara eksplisit mengizinkan komunikasi tersebut. Rujukan remediation dari health advisor: [Supabase troubleshooting](https://supabase.com/docs/guides/platform/troubleshooting).

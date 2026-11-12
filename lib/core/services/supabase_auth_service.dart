@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/supabase_config.dart';
 import '../database/database_helper.dart';
 import 'login_route.dart';
+import 'staff_login_service.dart';
 
 /// User-visible errors are fixed text; never echo SDK exceptions or credentials.
 String authenticationErrorMessage(Object error) {
@@ -116,7 +117,8 @@ class SupabaseAuthService {
       pin: row['pin_hash']?.toString());
   }
 
-  Future<void> _storeProfileContext(AppUserProfile profile, bool Function() current) async {
+  Future<void> _storeProfileContext(AppUserProfile profile, bool Function() current,
+      {String userId = ''}) async {
     final prefs = await SharedPreferences.getInstance();
     final sameOwner = prefs.getString(AppConstants.keyUid) == profile.authId &&
         prefs.getString(AppConstants.keyOwnerId) == profile.ownerId;
@@ -126,6 +128,8 @@ class SupabaseAuthService {
       AppConstants.keyUid: profile.authId, AppConstants.keyEmail: profile.email,
       AppConstants.keyName: profile.name, AppConstants.keyRole: profile.role,
       AppConstants.keyOwnerId: profile.ownerId,
+      AppConstants.keyUsersId: userId,
+      AppConstants.keyKasirName: profile.name,
       if (!selectedBranch) ...{
         AppConstants.keyBranchId: profile.branchId, AppConstants.keyBranchName: profile.branchName,
         AppConstants.keyBranchMode: profile.branchMode,
@@ -134,6 +138,11 @@ class SupabaseAuthService {
     for (final entry in values.entries) {
       if (!current()) return;
       if (prefs.getString(entry.key) != entry.value) await prefs.setString(entry.key, entry.value);
+    }
+    if (!current()) return;
+    final multiBranchManager = profile.branchId.isEmpty && profile.role == 'manajer';
+    if (prefs.getBool('is_multi_branch_manager') != multiBranchManager) {
+      await prefs.setBool('is_multi_branch_manager', multiBranchManager);
     }
   }
 
@@ -154,7 +163,7 @@ class SupabaseAuthService {
         }
       }
       final row = await _client.from('users')
-        .select('auth_id,email,name,role,owner_id,branch_id,is_active,is_approved,pin_hash,branches(name,mode)')
+        .select('id,auth_id,email,name,role,owner_id,branch_id,is_active,is_approved,pin_hash,branches(name,mode)')
         .eq('auth_id', uid).maybeSingle().timeout(LoginTimeouts.profileRead);
       if (!current()) throw StateError('Superseded profile attempt');
       if (row == null || row['is_active'] != true || row['is_approved'] != true) {
@@ -168,7 +177,7 @@ class SupabaseAuthService {
       ServiceHealth.instance.profileCache(false);
       ServiceHealth.log('profile', 1, watch.elapsedMilliseconds, null);
       final profile = _profile(row, uid);
-      await _storeProfileContext(profile, current);
+      await _storeProfileContext(profile, current, userId: row['id']?.toString() ?? '');
       return current() ? profile : null;
     } catch (e) {
       if (!current()) rethrow;
@@ -184,7 +193,7 @@ class SupabaseAuthService {
           if (canUseProfileCache(row, uid, DateTime.tryParse(saved['verified_at'].toString()), DateTime.now().toUtc())) {
             ServiceHealth.instance.profileCache(true);
             final profile = _profile(row, uid);
-            await _storeProfileContext(profile, current);
+            await _storeProfileContext(profile, current, userId: row['id']?.toString() ?? '');
             return current() ? profile : null;
           }
         } catch (_) {}
@@ -263,14 +272,7 @@ class SupabaseAuthService {
         return await _loginSuperAdmin(cleanEmail, password);
       }
 
-      final res = await _client.auth.signInWithPassword(
-        email: cleanEmail,
-        password: password,
-      );
-
-      if (res.user == null) return AuthResult.error('Login gagal');
-
-      final uid = res.user!.id;
+      final uid = await StaffLoginService.signIn(cleanEmail, password);
 
       final userRes = await _client
           .from('users')

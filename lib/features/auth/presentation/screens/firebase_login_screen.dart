@@ -1,20 +1,14 @@
-import '../../../../core/services/staff_login_service.dart';
 import '../../../../core/services/supabase_auth_service.dart';
-import '../../../../core/services/login_route.dart';
 import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/app_constants.dart';
 import '../providers/auth_provider.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import 'pin_verify_screen.dart';
 import 'set_pin_screen.dart';
-import '../../../home/presentation/screens/home_screen.dart';
 
 class FirebaseLoginScreen extends StatefulWidget {
   final String initialEmail;
@@ -273,17 +267,7 @@ class _FormViewState extends State<_FormView> {
       if (_isRegister) {
         await _doRegister(email, pass);
       } else {
-        // Selecting the Owner tile must not send a legacy cashier directly to
-        // Auth, where an account that has not yet migrated cannot exist.
-        final profile = email == SupabaseConfig.superAdminEmail
-            ? null
-            : await StaffLoginService.findProfile(email);
-        if (!mounted) return;
-        if (usesStaffLogin(profile?['role']?.toString())) {
-          await _doStaffLogin(email, pass, knownProfile: profile);
-        } else {
-          await _doOwnerLogin(email, pass);
-        }
+        await _doCredentialLogin(email, pass);
       }
     } catch (e) {
       if (!mounted) return;
@@ -291,11 +275,13 @@ class _FormViewState extends State<_FormView> {
         _loading = false;
         _error = authenticationErrorMessage(e);
       });
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
-  // ── Owner / SuperAdmin Login ──────────────────────────────
-  Future<void> _doOwnerLogin(String email, String pass) async {
+  // ── Credential login; role comes from the authenticated profile ──────────────────────────────
+  Future<void> _doCredentialLogin(String email, String pass) async {
     final auth = context.read<AuthProvider>();
     if (!SupabaseConfig.isInitialized) {
       if (mounted) {
@@ -316,199 +302,25 @@ class _FormViewState extends State<_FormView> {
 
     final result = await auth.login(email: email, password: pass);
     if (!mounted) return;
-    setState(() => _loading = false);
     if (!result.success) {
       setState(() => _error = result.error ?? 'Email atau password salah');
       return;
     }
-    await auth.checkSession();
-    if (!mounted) return;
+    final profile = auth.currentUser;
+    if (profile == null || profile.authId.isEmpty) {
+      setState(() => _error = 'Profil akun belum aktif atau belum disetujui. Hubungi owner.');
+      return;
+    }
     await context.read<SettingsProvider>().reloadForCurrentUser();
-    if (!mounted) return;
+    if (!mounted || auth.currentUser?.authId != profile.authId) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => PinVerifyScreen(
-          userName: auth.currentUser?.name ?? '',
-          userRole: auth.currentUser?.role ?? 'owner',
+          userName: profile.name,
+          userRole: profile.role,
         ),
       ),
     );
-  }
-
-  // ── Staff Login — email + password saja, PIN dikecek terpisah ──
-  Future<void> _doStaffLogin(
-    String email,
-    String pass, {
-    Map<String, dynamic>? knownProfile,
-  }) async {
-    try {
-      debugPrint('🔐 [StaffLogin] START email=$email');
-      final result = knownProfile ?? await StaffLoginService.findProfile(email);
-      debugPrint('🔐 [StaffLogin] Profile response received');
-
-      if (!mounted) return;
-
-      final profile = result;
-
-      debugPrint('🔐 [StaffLogin] Profile response parsed');
-      if (profile == null) {
-        debugPrint(
-          '🔐 [StaffLogin] ❌ Profile NULL - email not found in users table',
-        );
-        setState(() {
-          _loading = false;
-          _error = 'Akun belum terdaftar di sistem.\n'
-              'Minta owner tambahkan akun Anda melalui menu:\n'
-              '"Cabang Saya → Tambah Staff"';
-        });
-        return;
-      }
-
-      // BUG 48 FIX: Cek is_active
-      final isActive = profile['is_active'];
-      if (isActive == false || isActive == 0) {
-        setState(() {
-          _loading = false;
-          _error = 'Akun Anda telah dinonaktifkan. Hubungi owner.';
-        });
-        return;
-      }
-
-      final role = profile['role'] as String? ?? 'kasir';
-
-      // Owner/superadmin harus login via tab owner
-      if (role == 'owner' || role == 'superadmin') {
-        setState(() {
-          _loading = false;
-          _error = 'Akun owner gunakan tombol "Owner / Super Admin"';
-        });
-        return;
-      }
-
-      // A cached password hash is not a Supabase session. The server verifies
-      // legacy credentials and links the real Auth account before returning JWTs.
-      final linkedId = profile['auth_id']?.toString() ?? '';
-      final authId = await StaffLoginService.signIn(
-        email,
-        pass,
-        legacy: linkedId.isEmpty,
-      );
-      if (!mounted) return;
-
-      // Step 3: Simpan session ke SharedPreferences
-      debugPrint(
-        '🔐 [StaffLogin] owner_id: ${profile["owner_id"]}, branch_id: ${profile["branch_id"]}',
-      );
-      final prefs = await SharedPreferences.getInstance();
-      final branchId = profile['branch_id']?.toString() ?? '';
-
-      // Manajer multi-cabang: branch_id kosong/null → mode food default, nama kosong
-      String branchMode = 'food';
-      String branchName = '';
-
-      // Hanya fetch branch data jika branchId tidak kosong
-      if (branchId.isNotEmpty) {
-        try {
-          final branchData = await SupabaseConfig.client
-              .from('branches')
-              .select('name, mode')
-              .eq('id', branchId)
-              .maybeSingle();
-          if (branchData != null) {
-            branchMode = branchData['mode'] as String? ?? 'food';
-            branchName = branchData['name'] as String? ?? '';
-            debugPrint(
-              '🔐 [StaffLogin] branch mode=$branchMode, name=$branchName',
-            );
-          }
-        } catch (e) {
-          debugPrint('🔐 [StaffLogin] branch fetch error: $e');
-        }
-      } else {
-        // Manajer multi-cabang: set flag khusus
-        debugPrint(
-          '🔐 [StaffLogin] ℹ️ branch_id kosong → manajer multi-cabang',
-        );
-        branchName = 'Semua Cabang';
-      }
-
-      final authUid = authId; // Always use the UID from the real Auth session.
-      final usersId = profile['id']?.toString() ?? '';
-
-      debugPrint('🔵 [LOGIN-SAVE] authUid(auth_id)=$authUid');
-      debugPrint('🔵 [LOGIN-SAVE] usersId(users.id)=$usersId');
-      debugPrint('🔵 [LOGIN-SAVE] branchId=$branchId');
-
-      await prefs.setString(AppConstants.keyUid, authUid);
-      await prefs.setString(AppConstants.keyUsersId, usersId);
-      await prefs.setString(
-        AppConstants.keyName,
-        profile['name'] as String? ?? '',
-      );
-      await prefs.setString(AppConstants.keyEmail, email);
-      await prefs.setString(AppConstants.keyRole, role);
-      await prefs.setString(
-        AppConstants.keyOwnerId,
-        profile['owner_id']?.toString() ?? '',
-      );
-      await prefs.setString(AppConstants.keyBranchId, branchId);
-      await prefs.setString(AppConstants.keyBranchName, branchName);
-      await prefs.setString('branch_mode', branchMode);
-      await prefs.setString('kasir_name', profile['name'] as String? ?? '');
-      // Flag manajer multi-cabang
-      await prefs.setBool(
-        'is_multi_branch_manager',
-        branchId.isEmpty && role == 'manajer',
-      );
-
-      if (!mounted) return;
-      await context.read<AuthProvider>().checkSession();
-      if (!mounted) return;
-      await context.read<SettingsProvider>().reloadForCurrentUser();
-      if (!mounted) return;
-      setState(() => _loading = false);
-
-      final name = profile['name'] as String? ?? '';
-      final pinFromServer = (profile['pin_hash']?.toString() ?? '').trim();
-      final pinFromPrefs = (prefs.getString('sb_pin_hash') ?? '').trim();
-      final hasPin = pinFromServer.isNotEmpty || pinFromPrefs.isNotEmpty;
-      debugPrint('📌 [StaffLogin] PIN CHECK: email=$email');
-      debugPrint(
-        '📌 [StaffLogin] pinFromServer=${pinFromServer.isEmpty ? 'EMPTY' : 'SET(${pinFromServer.length}chars)'}',
-      );
-      debugPrint(
-        '📌 [StaffLogin] pinFromPrefs=${pinFromPrefs.isEmpty ? 'EMPTY' : 'SET(${pinFromPrefs.length}chars)'}',
-      );
-      debugPrint(
-        '📌 [StaffLogin] hasPin=$hasPin → ${hasPin ? 'PinVerify' : 'SetPin'}',
-      );
-
-      // Step 4: Cek PIN
-      // Manajer multi-cabang (branch_id kosong) → langsung ke HomeScreen tanpa pilih cabang
-      if (!hasPin) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) =>
-                SetPinScreen(userName: name, userRole: role, userEmail: email),
-          ),
-        );
-      } else {
-        if (pinFromServer.isNotEmpty) {
-          await prefs.setString('sb_pin_hash', pinFromServer);
-        }
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => PinVerifyScreen(userName: name, userRole: role),
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = authenticationErrorMessage(e);
-      });
-    }
   }
 
   // ── Register Owner Baru ───────────────────────────────────
