@@ -216,7 +216,13 @@ class SupabaseAuthService {
       final res = await _client.auth.signUp(
         email: cleanEmail,
         password: password,
-        data: {'name': name, 'role': role},
+        emailRedirectTo: const bool.hasEnvironment('SUPABASE_URL')
+            ? 'https://dashboard.kasirzela.id/complete-registration.html'
+            : null,
+        data: {
+          'name': name, 'full_name': name, 'role': role,
+          'business_name': businessName, 'registration_flow': 'apk_owner',
+        },
       );
 
       if (res.user == null) {
@@ -224,6 +230,12 @@ class SupabaseAuthService {
       }
 
       final uid = res.user!.id;
+
+      if (const bool.hasEnvironment('SUPABASE_URL') &&
+          _client.auth.currentSession == null) {
+        return AuthResult.error(
+            'Akun dibuat. Buka tautan konfirmasi di email Anda untuk menyelesaikan pendaftaran, lalu masuk kembali.');
+      }
 
       if (_client.auth.currentSession == null) {
         try {
@@ -239,7 +251,8 @@ class SupabaseAuthService {
         'p_business_name': businessName,
       });
 
-      if (rpcRes == null || rpcRes['success'] != true) {
+      if (rpcRes == null ||
+          (rpcRes['success'] != true && rpcRes['success'] != 'true')) {
         final errMsg = rpcRes?['error']?.toString() ?? 'Gagal menyimpan data';
         return AuthResult.error(errMsg);
       }
@@ -589,3 +602,4 @@ class BranchOption {
         this.ownerId = ''});
   bool get isRetail => mode == 'retail';
 }
+
