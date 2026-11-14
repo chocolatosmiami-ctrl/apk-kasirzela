@@ -328,10 +328,10 @@ class _SetPinScreenState extends State<SetPinScreen> {
       height: 28,
       decoration: BoxDecoration(
         color: active
-            ? Colors.white
+            ? AppTheme.onAction
             : done
-            ? Colors.white
-            : Colors.white38,
+            ? AppTheme.onAction
+            : AppTheme.onActionMuted,
         shape: BoxShape.circle,
       ),
       child: Center(
@@ -342,7 +342,7 @@ class _SetPinScreenState extends State<SetPinScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: active ? AppTheme.primaryRed : Colors.white,
+                  color: active ? AppTheme.primaryRed : AppTheme.onAction,
                 ),
               ),
       ),
@@ -360,7 +360,7 @@ class _SetPinScreenState extends State<SetPinScreen> {
       width: 72,
       height: 72,
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F9F8),
+        color: AppTheme.surfaceLight,
         shape: BoxShape.circle,
         boxShadow: const <BoxShadow>[],
       ),
@@ -370,7 +370,7 @@ class _SetPinScreenState extends State<SetPinScreen> {
           style: const TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppTheme.textPrimary,
           ),
         ),
       ),
@@ -412,7 +412,7 @@ class _ShiftDialog extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.lock_clock, color: Colors.orange, size: 40),
+              const Icon(Icons.lock_clock, color: AppTheme.warningInk, size: 40),
               const SizedBox(height: 10),
               Text(
                 'Halo $userName!',
@@ -423,7 +423,7 @@ class _ShiftDialog extends StatelessWidget {
               ),
               const Text(
                 'Isi modal awal sebelum mulai berjualan',
-                style: TextStyle(fontSize: 14, color: Colors.grey),
+                style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 14),
@@ -437,7 +437,7 @@ class _ShiftDialog extends StatelessWidget {
                 ),
                 decoration: InputDecoration(
                   prefixText: 'Rp ',
-                  fillColor: Colors.green[50],
+                  fillColor: AppTheme.primarySurface,
                   filled: true,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -456,7 +456,7 @@ class _ShiftDialog extends StatelessWidget {
                             '${a ~/ 1000}rb',
                             style: const TextStyle(fontSize: 12),
                           ),
-                          backgroundColor: Colors.green[50],
+                          backgroundColor: AppTheme.primarySurface,
                         ),
                       ),
                     )
@@ -467,7 +467,7 @@ class _ShiftDialog extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[700],
+                    backgroundColor: AppTheme.primary,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   onPressed: () async {
@@ -495,7 +495,7 @@ class _ShiftDialog extends StatelessWidget {
                   },
                   child: const Text(
                     'Mulai Shift & Masuk',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: AppTheme.onAction),
                   ),
                 ),
               ),

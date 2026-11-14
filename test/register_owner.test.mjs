@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {registerOwner} from '../supabase/functions/register-owner/handler.mjs';
+const body={email:'fixture@example.invalid',password:'synthetic-only-password',name:'Fixture',owner_name:'Fixture',business_name:'Fixture'};
+const req=(value=body)=>new Request('http://fixture.invalid',{method:'POST',body:JSON.stringify(value)});
+let removed=0,created=0;
+const services={createAuth:async()=>{created++;return 'fixture-user';},createBusiness:async()=> 'fixture-owner',removeAuth:async()=>{removed++;}};
+assert.equal((await registerOwner(req({}),services)).status,400);assert.equal(created,0);
+const good=await registerOwner(req(),services);assert.equal(good.status,200);assert.equal((await good.json()).owner_id,'fixture-owner');assert.equal(removed,0);
+const fail=await registerOwner(req(),{...services,createBusiness:async()=>{throw Object.assign(new Error('PRIVATE_DATABASE_ERROR'),{businessRolledBack:true});}});
+assert.equal(fail.status,503);assert.equal(removed,1);assert.ok(!(await fail.text()).includes('PRIVATE_DATABASE_ERROR'));
+assert.equal((await registerOwner(req(),{...services,createBusiness:async()=>null})).status,503);assert.equal(removed,1);
+assert.equal((await registerOwner(req(),{...services,createBusiness:async()=>{throw new Error('TIMEOUT');}})).status,503);assert.equal(removed,1);
+assert.equal((await registerOwner(req(),{...services,createAuth:async()=>{throw new Error('PRIVATE_AUTH_ERROR');}})).status,503);assert.equal(removed,1);
+console.log('PASS register owner: validated input, success, atomic-business failure denied, Auth cleanup, sanitized error');

@@ -450,6 +450,9 @@ class PrinterService {
         ticket.addAll(
             _row('Kasir', order.cashierName!, totalWidth: lineWidth));
 
+      for (final field in order.memberReceiptRows) {
+        ticket.addAll(_line('${field.key}: ${field.value}'));
+      }
       ticket.addAll(_divider(width: lineWidth));
 
       // ── Items ────────────────────────────────────────────────────────────
@@ -596,6 +599,9 @@ class PrinterService {
     sb.writeln('Tgl: ${AppUtils.formatDateTime(AppUtils.safeParseDate(order.createdAt))}');
     if (order.cashierName != null && order.cashierName!.isNotEmpty)
       sb.writeln('Kasir: ${order.cashierName}');
+    for (final field in order.memberReceiptRows) {
+      sb.writeln('${field.key}: ${field.value}');
+    }
     sb.writeln('--------------------------------');
     for (final item in order.items) {
       sb.writeln('${item.qty}x ${item.name}');

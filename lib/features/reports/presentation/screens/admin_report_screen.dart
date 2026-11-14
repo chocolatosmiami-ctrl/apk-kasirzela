@@ -112,7 +112,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.danger),
         );
       }
     }
@@ -138,7 +138,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
     // Double protection - redirect non-admin
     if (!auth.isAdmin) {
       return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.onAction,
         appBar: AppBar(
           title: const Text('Akses Ditolak'),
           backgroundColor: AppTheme.primaryRed,
@@ -148,16 +148,16 @@ class _AdminReportScreenState extends State<AdminReportScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.lock, size: 64, color: Colors.grey),
+                Icon(Icons.lock, size: 64, color: AppTheme.textSecondary),
                 SizedBox(height: 16),
                 Text(
                   'Fitur ini hanya untuk Admin',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                  style: TextStyle(fontSize: 16, color: AppTheme.textSecondary),
                 ),
                 SizedBox(height: 8),
                 Text(
                   'Hubungi admin untuk akses',
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                  style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
                 ),
               ],
             ),
@@ -212,9 +212,9 @@ class _AdminReportScreenState extends State<AdminReportScreen>
         ],
         bottom: TabBar(
           controller: _tabCtrl,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white,
+          indicatorColor: AppTheme.onAction,
+          labelColor: AppTheme.onAction,
+          unselectedLabelColor: AppTheme.onAction,
           isScrollable: true,
           tabs: const [
             Tab(text: 'Ringkasan'),
@@ -230,7 +230,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
           children: [
             // Period selector + internet status
             Container(
-              color: const Color(0xFFF7F9F8),
+              color: AppTheme.surfaceLight,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               child: Row(
                 children: [
@@ -281,7 +281,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                         child: Text(
                           '${_customDateFrom.day}/${_customDateFrom.month} - ${_selectedDate.day}/${_selectedDate.month}',
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppTheme.onAction,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -297,12 +297,12 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: _hasInternet ? Colors.green[50] : Colors.red[50],
+                      color: _hasInternet ? AppTheme.primarySurface : AppTheme.dangerSurface,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: _hasInternet
-                            ? Colors.green[300]!
-                            : Colors.red[300]!,
+                            ? AppTheme.primary!
+                            : AppTheme.danger!,
                       ),
                     ),
                     child: Row(
@@ -310,7 +310,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                         Icon(
                           _hasInternet ? Icons.cloud_done : Icons.cloud_off,
                           size: 14,
-                          color: _hasInternet ? Colors.green[700] : Colors.red,
+                          color: _hasInternet ? AppTheme.primary : AppTheme.danger,
                         ),
                         const SizedBox(width: 4),
                         Text(
@@ -318,8 +318,8 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                           style: TextStyle(
                             fontSize: 12,
                             color: _hasInternet
-                                ? Colors.green[700]
-                                : Colors.red,
+                                ? AppTheme.primary
+                                : AppTheme.danger,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -334,15 +334,15 @@ class _AdminReportScreenState extends State<AdminReportScreen>
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
-                color: Colors.orange[50],
+                color: AppTheme.warningSurface,
                 child: const Row(
                   children: [
-                    Icon(Icons.wifi_off, color: Colors.orange, size: 16),
+                    Icon(Icons.wifi_off, color: AppTheme.warningInk, size: 16),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Tidak ada koneksi internet. Data laporan multi cabang membutuhkan internet.',
-                        style: TextStyle(fontSize: 14, color: Colors.orange),
+                        style: TextStyle(fontSize: 14, color: AppTheme.warningInk),
                       ),
                     ),
                   ],
@@ -359,7 +359,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                           SizedBox(height: 12),
                           Text(
                             'Memuat data semua cabang...',
-                            style: TextStyle(color: Colors.grey),
+                            style: TextStyle(color: AppTheme.textSecondary),
                           ),
                         ],
                       ),
@@ -393,17 +393,17 @@ class _AdminReportScreenState extends State<AdminReportScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
-          color: sel ? AppTheme.primaryRed : Colors.white,
+          color: sel ? AppTheme.primaryRed : AppTheme.onAction,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: sel ? AppTheme.primaryRed : Colors.grey[300]!,
+            color: sel ? AppTheme.primaryRed : AppTheme.fieldBorder!,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 14,
-            color: sel ? Colors.white : const Color(0xFF62736F),
+            color: sel ? AppTheme.onAction : AppTheme.textSecondary,
             fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
@@ -416,23 +416,23 @@ class _AdminReportScreenState extends State<AdminReportScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('🏪', style: TextStyle(fontSize: 48)),
+          const Icon(Icons.storefront_outlined, size: 40, color: AppTheme.textSecondary),
           const SizedBox(height: 12),
           Text(
             _hasInternet
                 ? 'Belum ada data cabang\nuntuk ${AppUtils.formatDate(_selectedDate)}'
                 : 'Butuh internet untuk lihat laporan cabang',
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.grey, fontSize: 14),
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
           ),
           const SizedBox(height: 16),
           if (_hasInternet)
             ElevatedButton.icon(
               onPressed: _loadData,
-              icon: const Icon(Icons.refresh, color: Colors.white),
+              icon: const Icon(Icons.refresh, color: AppTheme.onAction),
               label: const Text(
                 'Muat Ulang',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: AppTheme.onAction),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryRed,
@@ -453,7 +453,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF00796B),
+            color: AppTheme.primary,
             borderRadius: BorderRadius.circular(14),
           ),
           child: Column(
@@ -461,11 +461,11 @@ class _AdminReportScreenState extends State<AdminReportScreen>
             children: [
               Row(
                 children: [
-                  const Icon(Icons.store, color: Colors.white, size: 16),
+                  const Icon(Icons.store, color: AppTheme.onAction, size: 16),
                   const SizedBox(width: 6),
                   Text(
                     '${_branchData.length} Cabang • ${AppUtils.formatDate(_selectedDate)}',
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: const TextStyle(color: AppTheme.onAction, fontSize: 14),
                   ),
                 ],
               ),
@@ -473,31 +473,31 @@ class _AdminReportScreenState extends State<AdminReportScreen>
               Text(
                 AppUtils.formatCurrency(_grandRevenue),
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.onAction,
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const Text(
                 'Total Omset Semua Cabang',
-                style: TextStyle(color: Colors.white, fontSize: 14),
+                style: TextStyle(color: AppTheme.onAction, fontSize: 14),
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
                   _summaryChip(
                     '💼 $_grandOrders Transaksi',
-                    Colors.white.withOpacity(0.2),
+                    AppTheme.onAction.withOpacity(0.2),
                   ),
                   const SizedBox(width: 8),
                   _summaryChip(
                     '💸 ${AppUtils.formatCurrency(_grandExpenses)}',
-                    Colors.white.withOpacity(0.15),
+                    AppTheme.onAction.withOpacity(0.15),
                   ),
                   const SizedBox(width: 8),
                   _summaryChip(
                     '✅ ${AppUtils.formatCurrency(_grandProfit)}',
-                    Colors.green.withOpacity(0.3),
+                    AppTheme.primary.withOpacity(0.3),
                   ),
                 ],
               ),
@@ -532,10 +532,10 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                         height: 32,
                         decoration: BoxDecoration(
                           color: rank == 1
-                              ? Colors.amber[100]
+                              ? AppTheme.warningSurface
                               : rank == 2
-                              ? Colors.grey[200]
-                              : Colors.brown[100],
+                              ? AppTheme.borderLight
+                              : AppTheme.warningSurface,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
@@ -544,10 +544,10 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: rank == 1
-                                  ? Colors.amber[800]
+                                  ? AppTheme.warningInk
                                   : rank == 2
-                                  ? const Color(0xFF62736F)
-                                  : Colors.brown[700],
+                                  ? AppTheme.textSecondary
+                                  : AppTheme.warningInk,
                             ),
                           ),
                         ),
@@ -567,7 +567,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                             Text(
                               '${(b['total_orders'] as num? ?? 0)} transaksi',
                               style: TextStyle(
-                                color: const Color(0xFF62736F),
+                                color: AppTheme.textSecondary,
                                 fontSize: 12,
                               ),
                             ),
@@ -584,14 +584,14 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 15,
-                              color: Colors.green,
+                              color: AppTheme.primary,
                             ),
                           ),
                           Text(
                             '${pct.toStringAsFixed(1)}% dari total',
                             style: TextStyle(
                               fontSize: 12,
-                              color: const Color(0xFF62736F),
+                              color: AppTheme.textSecondary,
                             ),
                           ),
                         ],
@@ -606,7 +606,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                       value: _grandRevenue > 0
                           ? (b['total_revenue'] as num? ?? 0) / _grandRevenue
                           : 0,
-                      backgroundColor: Colors.grey[200],
+                      backgroundColor: AppTheme.borderLight,
                       color: AppTheme.primaryRed,
                       minHeight: 6,
                     ),
@@ -619,14 +619,14 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                         AppUtils.formatCurrency(
                           (b['cash_amount'] as num? ?? 0).toDouble(),
                         ),
-                        Colors.green,
+                        AppTheme.primary,
                       ),
                       _miniStat(
                         'QRIS',
                         AppUtils.formatCurrency(
                           (b['qris_amount'] as num? ?? 0).toDouble(),
                         ),
-                        Colors.teal,
+                        AppTheme.primary,
                       ),
                       _miniStat(
                         'Laba',
@@ -634,8 +634,8 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                           (b['profit'] as num? ?? 0).toDouble(),
                         ),
                         (b['profit'] as num? ?? 0) >= 0
-                            ? Colors.green
-                            : Colors.red,
+                            ? AppTheme.primary
+                            : AppTheme.danger,
                       ),
                     ],
                   ),
@@ -683,7 +683,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                 (b['total_revenue'] as num? ?? 0).toDouble(),
               ),
               style: const TextStyle(
-                color: Colors.green,
+                color: AppTheme.primary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -697,7 +697,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                       AppUtils.formatCurrency(
                         (b['total_revenue'] as num? ?? 0).toDouble(),
                       ),
-                      valueColor: Colors.green,
+                      valueColor: AppTheme.primary,
                     ),
                     _detailRow(
                       'Total Transaksi',
@@ -740,7 +740,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                       AppUtils.formatCurrency(
                         (b['total_expense'] as num? ?? 0).toDouble(),
                       ),
-                      valueColor: Colors.red,
+                      valueColor: AppTheme.danger,
                     ),
                     _detailRow(
                       'Laba Bersih',
@@ -748,8 +748,8 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                         (b['profit'] as num? ?? 0).toDouble(),
                       ),
                       valueColor: (b['profit'] as num? ?? 0) >= 0
-                          ? Colors.green
-                          : Colors.red,
+                          ? AppTheme.primary
+                          : AppTheme.danger,
                       bold: true,
                     ),
                   ],
@@ -797,7 +797,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
       return const Center(
         child: Text(
           'Belum ada data menu',
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(color: AppTheme.textSecondary),
         ),
       );
     }
@@ -854,7 +854,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                         borderRadius: BorderRadius.circular(3),
                         child: LinearProgressIndicator(
                           value: pct,
-                          backgroundColor: Colors.grey[200],
+                          backgroundColor: AppTheme.borderLight,
                           color: AppTheme.primaryRed,
                           minHeight: 4,
                         ),
@@ -877,7 +877,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                       AppUtils.formatCurrency(revenue),
                       style: TextStyle(
                         fontSize: 12,
-                        color: const Color(0xFF62736F),
+                        color: AppTheme.textSecondary,
                       ),
                     ),
                   ],
@@ -926,7 +926,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
       return const Center(
         child: Text(
           'Belum ada data kasir',
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(color: AppTheme.textSecondary),
         ),
       );
     }
@@ -944,14 +944,14 @@ class _AdminReportScreenState extends State<AdminReportScreen>
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
             leading: CircleAvatar(
-              backgroundColor: Colors.teal[50],
+              backgroundColor: AppTheme.primarySurface,
               child: Text(
                 (k['name']?.toString() ?? '?').isNotEmpty
                     ? (k['name']?.toString() ?? '?')[0].toUpperCase()
                     : '?',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF00796B),
+                  color: AppTheme.primary,
                 ),
               ),
             ),
@@ -961,7 +961,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
             ),
             subtitle: Text(
               k['branch'] as String? ?? '',
-              style: TextStyle(color: const Color(0xFF62736F), fontSize: 12),
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
             ),
             trailing: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -971,7 +971,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                   AppUtils.formatCurrency(revenue),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.green,
+                    color: AppTheme.primary,
                     fontSize: 14,
                   ),
                 ),
@@ -979,7 +979,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                   '$orders trx',
                   style: TextStyle(
                     fontSize: 12,
-                    color: const Color(0xFF62736F),
+                    color: AppTheme.textSecondary,
                   ),
                 ),
               ],
@@ -998,7 +998,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
     ),
     child: Text(
       text,
-      style: const TextStyle(color: Colors.white, fontSize: 12),
+      style: const TextStyle(color: AppTheme.onAction, fontSize: 12),
     ),
   );
 
@@ -1007,7 +1007,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
       children: [
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: const Color(0xFF62736F)),
+          style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
         ),
         Text(
           value,
@@ -1034,7 +1034,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
         children: [
           Text(
             label,
-            style: TextStyle(color: const Color(0xFF62736F), fontSize: 14),
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
           ),
           Text(
             value,
@@ -1109,16 +1109,16 @@ class _AdminReportScreenState extends State<AdminReportScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey[300]),
+            Icon(Icons.inventory_2_outlined, size: 48, color: AppTheme.fieldBorder),
             const SizedBox(height: 12),
             const Text(
               'Belum ada data stok bahan',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 8),
             const Text(
               'Tambah bahan di Pengaturan → Stok Bahan Makanan',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+              style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
               textAlign: TextAlign.center,
             ),
           ],
@@ -1159,17 +1159,17 @@ class _AdminReportScreenState extends State<AdminReportScreen>
             child: ExpansionTile(
               leading: CircleAvatar(
                 backgroundColor: outItems > 0
-                    ? Colors.red[50]
+                    ? AppTheme.dangerSurface
                     : lowItems > 0
-                    ? Colors.orange[50]
-                    : Colors.green[50],
+                    ? AppTheme.warningSurface
+                    : AppTheme.primarySurface,
                 child: Icon(
                   Icons.inventory_2,
                   color: outItems > 0
-                      ? Colors.red
+                      ? AppTheme.danger
                       : lowItems > 0
-                      ? Colors.orange
-                      : Colors.green,
+                      ? AppTheme.warningInk
+                      : AppTheme.primary,
                   size: 20,
                 ),
               ),
@@ -1180,28 +1180,28 @@ class _AdminReportScreenState extends State<AdminReportScreen>
               subtitle: Row(
                 children: [
                   if (outItems > 0) ...[
-                    Icon(Icons.circle, size: 8, color: Colors.red[400]),
+                    Icon(Icons.circle, size: 8, color: AppTheme.danger),
                     const SizedBox(width: 4),
                     Text(
                       '$outItems habis  ',
-                      style: TextStyle(fontSize: 12, color: Colors.red[600]),
+                      style: TextStyle(fontSize: 12, color: AppTheme.danger),
                     ),
                   ],
                   if (lowItems > 0) ...[
-                    Icon(Icons.circle, size: 8, color: Colors.orange[400]),
+                    Icon(Icons.circle, size: 8, color: AppTheme.warningInk),
                     const SizedBox(width: 4),
                     Text(
                       '$lowItems menipis  ',
-                      style: TextStyle(fontSize: 12, color: Colors.orange[700]),
+                      style: TextStyle(fontSize: 12, color: AppTheme.warningInk),
                     ),
                   ],
-                  Icon(Icons.circle, size: 8, color: const Color(0xFF62736F)),
+                  Icon(Icons.circle, size: 8, color: AppTheme.textSecondary),
                   const SizedBox(width: 4),
                   Text(
                     '$totalItems bahan',
                     style: TextStyle(
                       fontSize: 12,
-                      color: const Color(0xFF62736F),
+                      color: AppTheme.textSecondary,
                     ),
                   ),
                 ],
@@ -1223,7 +1223,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.grey,
+                                  color: AppTheme.textSecondary,
                                 ),
                               ),
                             ),
@@ -1235,7 +1235,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.grey,
+                                  color: AppTheme.textSecondary,
                                 ),
                               ),
                             ),
@@ -1247,7 +1247,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.grey,
+                                  color: AppTheme.textSecondary,
                                 ),
                               ),
                             ),
@@ -1259,7 +1259,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.grey,
+                                  color: AppTheme.textSecondary,
                                 ),
                               ),
                             ),
@@ -1274,10 +1274,10 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                         final isOut = stock <= 0;
                         final isLow = !isOut && stock < minStock;
                         final statusColor = isOut
-                            ? Colors.red
+                            ? AppTheme.danger
                             : isLow
-                            ? Colors.orange
-                            : Colors.green;
+                            ? AppTheme.warningInk
+                            : AppTheme.primary;
                         final statusLabel = isOut
                             ? 'HABIS'
                             : isLow
@@ -1314,7 +1314,7 @@ class _AdminReportScreenState extends State<AdminReportScreen>
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     fontSize: 14,
-                                    color: Colors.grey,
+                                    color: AppTheme.textSecondary,
                                   ),
                                 ),
                               ),

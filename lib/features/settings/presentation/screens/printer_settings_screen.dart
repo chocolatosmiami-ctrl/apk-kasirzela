@@ -208,7 +208,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
       appBar: AppBar(
         title: const Text('Pengaturan Printer'),
         backgroundColor: AppTheme.primaryRed,
-        foregroundColor: Colors.white,
+        foregroundColor: AppTheme.onAction,
         actions: [
           IconButton(
             icon: _scanning
@@ -217,7 +217,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: AppTheme.onAction,
                     ),
                   )
                 : const Icon(Icons.refresh),
@@ -227,9 +227,9 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
         ],
         bottom: TabBar(
           controller: _tabCtrl,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white,
-          indicatorColor: Colors.white,
+          labelColor: AppTheme.onAction,
+          unselectedLabelColor: AppTheme.onAction,
+          indicatorColor: AppTheme.onAction,
           tabs: const [
             Tab(icon: Icon(Icons.receipt_long), text: 'Printer Customer'),
             Tab(icon: Icon(Icons.soup_kitchen), text: 'Printer Dapur'),
@@ -309,14 +309,14 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: AppTheme.onAction,
                     ),
                   )
                 : const Icon(Icons.print),
             label: Text(_testing ? 'Mencetak...' : 'Test Print Customer'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _connected ? AppTheme.primaryRed : Colors.grey,
-              foregroundColor: Colors.white,
+              backgroundColor: _connected ? AppTheme.primaryRed : AppTheme.textSecondary,
+              foregroundColor: AppTheme.onAction,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -339,21 +339,21 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.orange[50],
+            color: AppTheme.warningSurface,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.orange[200]!),
+            border: Border.all(color: AppTheme.warningSurface!),
           ),
           child: const Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.soup_kitchen, color: Colors.orange, size: 20),
+              Icon(Icons.soup_kitchen, color: AppTheme.warningInk, size: 20),
               SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Printer dapur mencetak nota pesanan untuk dapur — '
                   'tanpa harga, huruf besar, mudah dibaca dari jauh.\n'
                   'Bisa pakai printer Bluetooth berbeda dari printer customer.',
-                  style: TextStyle(fontSize: 14, color: Colors.orange),
+                  style: TextStyle(fontSize: 14, color: AppTheme.warningInk),
                 ),
               ),
             ],
@@ -376,8 +376,8 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
               style: TextStyle(fontSize: 14),
             ),
             value: _autoPrintKitchen,
-            activeColor: const Color(0xFF00796B),
-            secondary: const Icon(Icons.auto_awesome, color: Colors.orange),
+            activeColor: AppTheme.primary,
+            secondary: const Icon(Icons.auto_awesome, color: AppTheme.warningInk),
             onChanged: (v) async {
               await _svc.setAutoPrintKitchen(v);
               setState(() => _autoPrintKitchen = v);
@@ -391,13 +391,13 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: _savedKitchenDevice != null
-                ? Colors.orange[50]
-                : const Color(0xFFF7F9F8),
+                ? AppTheme.warningSurface
+                : AppTheme.surfaceLight,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: _savedKitchenDevice != null
-                  ? Colors.orange[300]!
-                  : Colors.grey[300]!,
+                  ? AppTheme.warningInk!
+                  : AppTheme.fieldBorder!,
             ),
           ),
           child: Row(
@@ -407,8 +407,8 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
                     ? Icons.soup_kitchen
                     : Icons.soup_kitchen_outlined,
                 color: _savedKitchenDevice != null
-                    ? Colors.orange
-                    : Colors.grey,
+                    ? AppTheme.warningInk
+                    : AppTheme.textSecondary,
                 size: 28,
               ),
               const SizedBox(width: 12),
@@ -423,8 +423,8 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: _savedKitchenDevice != null
-                            ? Colors.orange[700]
-                            : const Color(0xFF62736F),
+                            ? AppTheme.warningInk
+                            : AppTheme.textSecondary,
                       ),
                     ),
                     if (_savedKitchenDevice != null)
@@ -440,7 +440,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
                   onPressed: _removeKitchenPrinter,
                   child: const Text(
                     'Hapus',
-                    style: TextStyle(color: Colors.red),
+                    style: TextStyle(color: AppTheme.danger),
                   ),
                 ),
             ],
@@ -488,7 +488,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
         const SizedBox(height: 4),
         Text(
           'Tap perangkat di bawah untuk dijadikan printer dapur',
-          style: TextStyle(fontSize: 14, color: const Color(0xFF62736F)),
+          style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
         ),
         const SizedBox(height: 8),
 
@@ -497,7 +497,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
           savedAddress: _savedKitchenDevice?.address,
           isConnected: _savedKitchenDevice != null,
           connecting: _connectingKitchen,
-          activeColor: const Color(0xFF00796B),
+          activeColor: AppTheme.primary,
           chipLabel: 'Printer Dapur',
         ),
         const SizedBox(height: 20),
@@ -515,16 +515,16 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: AppTheme.onAction,
                     ),
                   )
                 : const Icon(Icons.soup_kitchen),
             label: Text(_testingKitchen ? 'Mencetak...' : 'Test Print Dapur'),
             style: ElevatedButton.styleFrom(
               backgroundColor: _savedKitchenDevice != null
-                  ? Colors.orange[700]
-                  : Colors.grey,
-              foregroundColor: Colors.white,
+                  ? AppTheme.warningInk
+                  : AppTheme.textSecondary,
+              foregroundColor: AppTheme.onAction,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -545,17 +545,17 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: connected ? Colors.green[50] : const Color(0xFFF7F9F8),
+        color: connected ? AppTheme.primarySurface : AppTheme.surfaceLight,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: connected ? Colors.green[300]! : Colors.grey[300]!,
+          color: connected ? AppTheme.primary! : AppTheme.fieldBorder!,
         ),
       ),
       child: Row(
         children: [
           Icon(
             connected ? Icons.bluetooth_connected : Icons.bluetooth_disabled,
-            color: connected ? Colors.green[700] : Colors.grey,
+            color: connected ? AppTheme.primary : AppTheme.textSecondary,
             size: 28,
           ),
           const SizedBox(width: 12),
@@ -568,8 +568,8 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: connected
-                        ? Colors.green[700]
-                        : const Color(0xFF62736F),
+                        ? AppTheme.primary
+                        : AppTheme.textSecondary,
                   ),
                 ),
                 if (savedDevice != null)
@@ -580,7 +580,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
           if (connected)
             TextButton(
               onPressed: onDisconnect,
-              child: const Text('Putus', style: TextStyle(color: Colors.red)),
+              child: const Text('Putus', style: TextStyle(color: AppTheme.danger)),
             ),
         ],
       ),
@@ -592,15 +592,15 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
       padding: const EdgeInsets.all(10),
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: isOk ? Colors.green[50] : Colors.red[50],
+        color: isOk ? AppTheme.primarySurface : AppTheme.dangerSurface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: isOk ? Colors.green[200]! : Colors.red[200]!),
+        border: Border.all(color: isOk ? AppTheme.primarySurface! : AppTheme.danger!),
       ),
       child: Text(
         msg,
         style: TextStyle(
           fontSize: 14,
-          color: isOk ? Colors.green[800] : Colors.red[800],
+          color: isOk ? AppTheme.primary : AppTheme.danger,
         ),
       ),
     );
@@ -620,13 +620,13 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.amber[50],
+          color: AppTheme.warningSurface,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.amber[200]!),
+          border: Border.all(color: AppTheme.warningSurface!),
         ),
         child: const Column(
           children: [
-            Icon(Icons.bluetooth_searching, size: 40, color: Colors.amber),
+            Icon(Icons.bluetooth_searching, size: 40, color: AppTheme.warningInk),
             SizedBox(height: 8),
             Text(
               'Belum ada perangkat ter-pair.\n\n'
@@ -652,14 +652,14 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
             side: BorderSide(
-              color: isSaved ? color : Colors.transparent,
+              color: isSaved ? color : AppTheme.transparent,
               width: isSaved ? 1.5 : 0,
             ),
           ),
           child: ListTile(
             leading: Icon(
               isSaved ? Icons.bluetooth_connected : Icons.bluetooth,
-              color: isSaved ? color : Colors.teal,
+              color: isSaved ? color : AppTheme.primary,
             ),
             title: Text(
               device.name,
@@ -684,14 +684,14 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
                       style: const TextStyle(fontSize: 12),
                     ),
                     backgroundColor: color,
-                    labelStyle: const TextStyle(color: Colors.white),
+                    labelStyle: const TextStyle(color: AppTheme.onAction),
                     padding: EdgeInsets.zero,
                   )
                 : ElevatedButton(
                     onPressed: connecting ? null : () => onConnect(device),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: color,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppTheme.onAction,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 6,
@@ -712,9 +712,9 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.teal[50],
+        color: AppTheme.primarySurface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.teal[200]!),
+        border: Border.all(color: AppTheme.primarySurface!),
       ),
       child: const Text(
         '💡 Tips:\n'
@@ -722,7 +722,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen>
         '• Pastikan printer menyala sebelum checkout\n'
         '• Kompatibel: Xprinter, GOOJPRT, ZJ-5890, '
         'dan thermal printer Bluetooth 58mm/80mm lainnya',
-        style: TextStyle(fontSize: 14, color: Colors.teal),
+        style: TextStyle(fontSize: 14, color: AppTheme.primary),
       ),
     );
   }
@@ -745,16 +745,16 @@ class _PaperBtn extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.primaryRed : const Color(0xFFF7F9F8),
+          color: selected ? AppTheme.primaryRed : AppTheme.surfaceLight,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: selected ? AppTheme.primaryRed : Colors.grey[300]!,
+            color: selected ? AppTheme.primaryRed : AppTheme.fieldBorder!,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : const Color(0xFF62736F),
+            color: selected ? AppTheme.onAction : AppTheme.textSecondary,
             fontWeight: FontWeight.bold,
           ),
         ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../../../../core/services/pin_attempt_limiter.dart';
 import '../../../../core/theme/startup_recovery_view.dart';
 import '../../../../core/services/service_health.dart';
 import '../../../../core/services/startup_policy.dart';
@@ -33,7 +34,7 @@ class PinVerifyScreen extends StatefulWidget {
   State<PinVerifyScreen> createState() => _PinVerifyScreenState();
 }
 
-class _PinVerifyScreenState extends State<PinVerifyScreen> {
+class _PinVerifyScreenState extends State<PinVerifyScreen> with WidgetsBindingObserver {
   String _pin = '';
   bool _isError = false;
   bool _isLoading = false;
@@ -44,14 +45,14 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
   // BUG 24 FIX: Counter dipindah ke SharedPreferences agar tidak reset saat screen dispose.
   // Rotate screen / minimize app / navigate back tidak bisa lagi mereset counter.
   int _attempts = 0;
-  static const int _maxAttempts = 5;
-  static const String _keyAttempts = '_pin_attempts';
-  static const String _keyLockoutUntil = '_pin_lockout_until';
+  static const int _maxAttempts = PinAttemptLimiter.maxAttempts;
+  bool _locked = false;
+  Timer? _lockoutTimer;
 
   // Owner/manajer/admin/superadmin tidak wajib buka shift —
   // langsung ke home tanpa dialog "Buka Shift Terlebih Dahulu"
   bool get _isShiftExempt {
-    final role = widget.userRole.toLowerCase();
+    final role = (context.read<AuthProvider>().currentUser?.role ?? '').toLowerCase();
     return role == 'owner' ||
         role == 'manajer' ||
         role == 'admin' ||
@@ -61,6 +62,7 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final isLocked = await _loadAttempts();
       // Jika sedang dalam lockout, jangan tampilkan PIN screen
@@ -70,53 +72,56 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
     });
   }
 
-  // Returns true if user is currently locked out (too many failed attempts)
   Future<bool> _loadAttempts() async {
-    final prefs = await SharedPreferences.getInstance();
-    final lockoutUntilMs = prefs.getInt(_keyLockoutUntil) ?? 0;
-    final now = DateTime.now().millisecondsSinceEpoch;
-    if (lockoutUntilMs > now) {
-      // Masih dalam masa lockout
-      final remaining = Duration(milliseconds: lockoutUntilMs - now);
-      if (mounted) {
-        setState(() {
-          _isError = true;
-          _checkingPin = false;
-          _errorMsg =
-              'Terlalu banyak percobaan. Coba lagi dalam ${remaining.inMinutes + 1} menit.';
-        });
-      }
-      return true; // sedang locked
-    } else {
-      // Lockout expired, reset counter
-      if (lockoutUntilMs > 0) {
-        await prefs.remove(_keyAttempts);
-        await prefs.remove(_keyLockoutUntil);
-      }
-      _attempts = prefs.getInt(_keyAttempts) ?? 0;
-      return false; // tidak locked
+    PinAttemptStatus status;
+    try {
+      status = await PinAttemptLimiter.instance.status();
+    } catch (_) {
+      if (mounted) setState(() {
+        _locked = true;
+        _checkingPin = false;
+        _pinCheckFailed = true;
+      });
+      return true;
     }
+    _lockoutTimer?.cancel();
+    if (!mounted) return status.locked;
+    final wasLocked = _locked;
+    setState(() {
+      _pinCheckFailed = false;
+      _attempts = status.attempts;
+      _locked = status.locked;
+      if (_locked) {
+        final remaining = status.lockedUntil!.difference(DateTime.now());
+        _pin = '';
+        _isError = true;
+        _checkingPin = false;
+        _errorMsg = 'Terlalu banyak percobaan. Coba lagi dalam ${remaining.inMinutes + 1} menit.';
+      } else if (wasLocked) {
+        _isError = false;
+        _errorMsg = '';
+      }
+    });
+    if (status.locked) {
+      final remaining = status.lockedUntil!.difference(DateTime.now());
+      _lockoutTimer = Timer(remaining.isNegative ? Duration.zero : remaining, _refreshLockout);
+    }
+    return status.locked;
   }
 
-  Future<void> _incrementAttempts() async {
-    _attempts++;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_keyAttempts, _attempts);
-    if (_attempts >= _maxAttempts) {
-      // Lockout selama 30 menit
-      final lockUntil = DateTime.now()
-          .add(const Duration(minutes: 30))
-          .millisecondsSinceEpoch;
-      await prefs.setInt(_keyLockoutUntil, lockUntil);
-      await prefs.remove(_keyAttempts);
-    }
+  Future<void> _refreshLockout() async {
+    if (!mounted) return;
+    if (!await _loadAttempts() && mounted) await _checkHasPin();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(_refreshLockout());
   }
 
   Future<void> _resetAttempts() async {
+    await PinAttemptLimiter.instance.resetAfterSuccess();
     _attempts = 0;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_keyAttempts);
-    await prefs.remove(_keyLockoutUntil);
   }
 
   // Cek apakah user sudah punya PIN sebelum tampilkan layar PIN
@@ -255,6 +260,7 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
   }
 
   void _addDigit(String d) {
+    if (_locked || _isLoading || _checkingPin) return;
     if (_pin.length < 6) {
       setState(() {
         _pin += d;
@@ -264,6 +270,7 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
   }
 
   void _deleteDigit() {
+    if (_locked || _isLoading || _checkingPin) return;
     if (_pin.isNotEmpty) {
       setState(() => _pin = _pin.substring(0, _pin.length - 1));
     }
@@ -283,6 +290,7 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
     }
   }
   Future<void> _confirmPinOnce() async {
+    if (_checkingPin || await _loadAttempts() || !mounted) return;
     if (_pin.length < 4) {
       setState(() {
         _isError = true;
@@ -303,15 +311,20 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
       await auth.checkSession();
     }
 
+    final verifiedAccount = auth.currentUser?.authId ?? '';
+    if (verifiedAccount.isEmpty) throw StateError('Login diperlukan');
+
     // Verify PIN
     bool ok;
     try { ok = await auth.verifyPin(_pin); }
+    on PinLockedException { await _loadAttempts(); return; }
     catch (_) {
       if (mounted) setState(() { _isLoading = false; _isError = true; _errorMsg = 'Verifikasi belum selesai. Coba lagi.'; });
       return;
     }
 
     if (!mounted) return;
+    if (auth.currentUser?.authId != verifiedAccount) throw StateError('Akun berubah');
     if (ok) {
       // Cek shift - pakai keyUid (users.id) bukan authId
       final shiftProv = context.read<ShiftProvider>();
@@ -328,6 +341,8 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
 
       if (!mounted) return;
 
+      if (auth.currentUser?.authId != verifiedAccount) throw StateError('Akun berubah');
+      if (await _loadAttempts() || !mounted) return;
       if (_isShiftExempt || shiftProv.hasActiveShift) {
         await _resetAttempts(); // Berhasil login → reset counter
         _goHome();
@@ -335,7 +350,7 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
         _showOpenShiftRequired(auth.currentUser!.name);
       }
     } else {
-      await _incrementAttempts();
+      await _loadAttempts();
       if (!mounted) return;
       setState(() {
         _isError = true;
@@ -350,7 +365,7 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
         await Future.delayed(const Duration(seconds: 2));
         if (!mounted) return;
         context.read<ShiftProvider>().stopAutoRefresh();
-        await SupabaseAuthService.instance.logout();
+        await context.read<AuthProvider>().logout();
         if (!mounted) return;
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const FirebaseLoginScreen()),
@@ -378,12 +393,14 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
 
   @override
   void dispose() {
+    _lockoutTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   Widget build(BuildContext context) {
     if (_pinCheckFailed) return StartupRecoveryView(loading: false,
-      message: 'Status PIN belum dapat diverifikasi. Sesi tetap disimpan.', retry: _checkHasPin);
+      message: 'Status PIN belum dapat diverifikasi. Sesi tetap disimpan.', retry: _refreshLockout);
     if (_checkingPin)
       return const Scaffold(
         backgroundColor: AppTheme.surfaceLight,
@@ -399,9 +416,10 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
         pin: _pin,
         error: _isError ? _errorMsg : '',
         busy: _isLoading,
+        enabled: !_locked,
         onDigit: _addDigit,
         onErase: _deleteDigit,
-        onSubmit: _pin.length >= 4 ? _confirmPin : null,
+        onSubmit: !_locked && _pin.length >= 4 ? _confirmPin : null,
         footer: Wrap(
           alignment: WrapAlignment.center,
           children: [
@@ -434,10 +452,11 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
+ scrollable: true,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Row(
           children: [
-            Text('🔐 ', style: TextStyle(fontSize: 22)),
+            Icon(Icons.lock_outline, size: 22, color: AppTheme.textSecondary),
             Text('Lupa PIN'),
           ],
         ),
@@ -453,13 +472,13 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
             _forgotOption(
               '1️⃣ Reset lewat Super Admin',
               'Hubungi pemilik aplikasi untuk reset PIN Anda di panel Super Admin.',
-              Colors.teal,
+              AppTheme.primary,
             ),
             const SizedBox(height: 10),
             _forgotOption(
               '2️⃣ Login ulang',
               'Keluar dari akun lalu login kembali dengan email & password. PIN akan di-reset.',
-              Colors.orange,
+              AppTheme.warningInk,
             ),
           ],
         ),
@@ -469,13 +488,13 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
             child: const Text('Batal'),
           ),
           ElevatedButton.icon(
-            icon: const Icon(Icons.logout, size: 16, color: Colors.white),
+            icon: const Icon(Icons.logout, size: 16, color: AppTheme.onAction),
             label: const Text(
               'Logout & Login Ulang',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: AppTheme.onAction),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange[700],
+              backgroundColor: AppTheme.warningInk,
             ),
             onPressed: () async {
               Navigator.pop(context);
@@ -506,12 +525,13 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
           ),
         ),
         const SizedBox(height: 4),
-        Text(desc, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+        Text(desc, style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary)),
       ],
     ),
   );
 
   Future<void> _resetPinAndLogout() async {
+    final auth = context.read<AuthProvider>();
     try {
       // Hapus PIN dari SQLite lokal
       final fbSession = await SupabaseAuthService.instance.getSession();
@@ -529,7 +549,7 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
         } catch (_) {}
       }
       // Logout
-      await SupabaseAuthService.instance.logout();
+      await auth.logout();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const FirebaseLoginScreen()),
@@ -539,7 +559,7 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.danger),
         );
       }
     }
@@ -556,7 +576,7 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
       width: 72,
       height: 72,
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F9F8),
+        color: AppTheme.surfaceLight,
         shape: BoxShape.circle,
         boxShadow: const <BoxShadow>[],
       ),
@@ -566,7 +586,7 @@ class _PinVerifyScreenState extends State<PinVerifyScreen> {
           style: const TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppTheme.textPrimary,
           ),
         ),
       ),
@@ -634,14 +654,14 @@ class _OpenShiftDialogState extends State<_OpenShiftDialog> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.orange[50],
+                  color: AppTheme.warningSurface,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
                     const Icon(
                       Icons.lock_clock,
-                      color: Colors.orange,
+                      color: AppTheme.warningInk,
                       size: 28,
                     ),
                     const SizedBox(width: 12),
@@ -660,7 +680,7 @@ class _OpenShiftDialogState extends State<_OpenShiftDialog> {
                             'Halo ${widget.userName}! Isi modal awal.',
                             style: TextStyle(
                               fontSize: 14,
-                              color: const Color(0xFF62736F),
+                              color: AppTheme.textSecondary,
                             ),
                           ),
                         ],
@@ -676,22 +696,22 @@ class _OpenShiftDialogState extends State<_OpenShiftDialog> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF7F9F8),
+                  color: AppTheme.surfaceLight,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey[200]!),
+                  border: Border.all(color: AppTheme.borderLight!),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.schedule,
-                      color: const Color(0xFF62736F),
+                      color: AppTheme.textSecondary,
                       size: 16,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'Mulai shift: ${_formatNow()}',
                       style: TextStyle(
-                        color: const Color(0xFF62736F),
+                        color: AppTheme.textSecondary,
                         fontSize: 14,
                       ),
                     ),
@@ -704,15 +724,15 @@ class _OpenShiftDialogState extends State<_OpenShiftDialog> {
                 decoration: InputDecoration(
                   labelText: 'Nama Kasir Bertugas *',
                   hintText: 'Contoh: Suci',
-                  prefixIcon: const Icon(Icons.person, color: Colors.green),
-                  fillColor: Colors.green[50],
+                  prefixIcon: const Icon(Icons.person, color: AppTheme.primary),
+                  fillColor: AppTheme.primarySurface,
                   filled: true,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.green[700]!, width: 2),
+                    borderSide: BorderSide(color: AppTheme.primary!, width: 2),
                   ),
                 ),
               ),
@@ -732,14 +752,14 @@ class _OpenShiftDialogState extends State<_OpenShiftDialog> {
                 ),
                 decoration: InputDecoration(
                   prefixText: 'Rp ',
-                  fillColor: Colors.green[50],
+                  fillColor: AppTheme.primarySurface,
                   filled: true,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.green[700]!, width: 2),
+                    borderSide: BorderSide(color: AppTheme.primary!, width: 2),
                   ),
                 ),
               ),
@@ -758,14 +778,14 @@ class _OpenShiftDialogState extends State<_OpenShiftDialog> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.green[50],
+                            color: AppTheme.primarySurface,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.green[300]!),
+                            border: Border.all(color: AppTheme.primary!),
                           ),
                           child: Text(
                             'Rp ${(amt / 1000).toInt()}rb',
                             style: TextStyle(
-                              color: Colors.green[700],
+                              color: AppTheme.primary,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -794,13 +814,13 @@ class _OpenShiftDialogState extends State<_OpenShiftDialog> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  icon: const Icon(Icons.play_arrow, color: Colors.white),
+                  icon: const Icon(Icons.play_arrow, color: AppTheme.onAction),
                   label: const Text(
                     'Mulai Shift & Masuk',
-                    style: TextStyle(color: Colors.white, fontSize: 15),
+                    style: TextStyle(color: AppTheme.onAction, fontSize: 15),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[700],
+                    backgroundColor: AppTheme.primary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

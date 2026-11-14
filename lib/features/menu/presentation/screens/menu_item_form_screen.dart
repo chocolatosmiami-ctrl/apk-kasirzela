@@ -174,7 +174,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Gagal menyimpan menu'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.danger,
           ),
         );
       }
@@ -220,11 +220,13 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (ctx, setS) => AlertDialog(
+ scrollable: true,
           title: const Text('Tambah Bahan Baku'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               DropdownButtonFormField<BahanBakuModel>(
+ isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Pilih Bahan'),
                 value: selected,
                 items: available
@@ -259,7 +261,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00796B),
+                backgroundColor: AppTheme.primary,
               ),
               onPressed: () async {
                 if (selected == null) return;
@@ -296,7 +298,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
               },
               child: const Text(
                 'Tambah',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: AppTheme.onAction),
               ),
             ),
           ],
@@ -317,9 +319,9 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+            child: const Text('Hapus', style: TextStyle(color: AppTheme.onAction)),
           ),
         ],
       ),
@@ -337,7 +339,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(isEdit ? 'Edit Menu' : 'Tambah Menu'),
-        backgroundColor: const Color(0xFF00796B),
+        backgroundColor: AppTheme.primary,
       ),
       body: ZelaPage(
         child: Form(
@@ -352,9 +354,9 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
                 child: Container(
                   height: 160,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF7F9F8),
+                    color: AppTheme.surfaceLight,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!),
+                    border: Border.all(color: AppTheme.fieldBorder!),
                   ),
                   child: _imagePath != null
                       ? ClipRRect(
@@ -370,12 +372,12 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
                             Icon(
                               Icons.add_photo_alternate,
                               size: 40,
-                              color: Colors.grey,
+                              color: AppTheme.textSecondary,
                             ),
                             SizedBox(height: 8),
                             Text(
                               'Tambah Foto Menu',
-                              style: TextStyle(color: Colors.grey),
+                              style: TextStyle(color: AppTheme.textSecondary),
                             ),
                           ],
                         ),
@@ -384,6 +386,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
               const SizedBox(height: 16),
 
               DropdownButtonFormField<int>(
+ isExpanded: true,
                 value: _categoryId,
                 decoration: const InputDecoration(labelText: 'Kategori *'),
                 items: categories
@@ -439,7 +442,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
                           _isActive ? 'Menu tersedia' : 'Menu tidak tersedia',
                         ),
                         value: _isActive,
-                        activeColor: const Color(0xFF00796B),
+                        activeColor: AppTheme.primary,
                         onChanged: (v) => setState(() => _isActive = v),
                       ),
                       const Divider(height: 1),
@@ -447,7 +450,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
                         title: const Text('Kelola Stok Item'),
                         subtitle: const Text('Batasi jumlah item'),
                         value: _hasStock,
-                        activeColor: const Color(0xFF00796B),
+                        activeColor: AppTheme.primary,
                         onChanged: (v) => setState(() => _hasStock = v),
                       ),
                       if (_hasStock) ...[
@@ -483,7 +486,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
                         children: [
                           const Icon(
                             Icons.inventory_2,
-                            color: const Color(0xFF00796B),
+                            color: AppTheme.primary,
                             size: 20,
                           ),
                           const SizedBox(width: 8),
@@ -502,7 +505,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
                                   'Stok bahan otomatis berkurang saat menu ini dipesan',
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey,
+                                    color: AppTheme.textSecondary,
                                   ),
                                 ),
                               ],
@@ -512,7 +515,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
                             icon: const Icon(Icons.add, size: 18),
                             label: const Text('Tambah'),
                             style: TextButton.styleFrom(
-                              foregroundColor: const Color(0xFF00796B),
+                              foregroundColor: AppTheme.primary,
                             ),
                             onPressed: isEdit
                                 ? _showAddIngredientDialog
@@ -530,7 +533,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
                           padding: EdgeInsets.symmetric(vertical: 6),
                           child: Text(
                             'Klik "+ Tambah" — menu akan disimpan otomatis lalu pilih bahan baku.',
-                            style: TextStyle(color: Colors.grey, fontSize: 14),
+                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
                           ),
                         ),
                       if (_loadingIngredients)
@@ -545,7 +548,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
                           padding: EdgeInsets.symmetric(vertical: 8),
                           child: Text(
                             'Belum ada bahan baku yang ditautkan.',
-                            style: TextStyle(color: Colors.grey, fontSize: 14),
+                            style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
                           ),
                         )
                       else
@@ -555,7 +558,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
                             contentPadding: EdgeInsets.zero,
                             leading: const Icon(
                               Icons.grain,
-                              color: Colors.brown,
+                              color: AppTheme.warningInk,
                               size: 20,
                             ),
                             title: Text(link.ingredientName),
@@ -565,7 +568,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
                             trailing: IconButton(
                               icon: const Icon(
                                 Icons.remove_circle_outline,
-                                color: Colors.red,
+                                color: AppTheme.danger,
                                 size: 20,
                               ),
                               onPressed: () => _removeIngredient(link),
@@ -583,14 +586,14 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
                 onPressed: _saving ? null : _save,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  backgroundColor: const Color(0xFF00796B),
+                  backgroundColor: AppTheme.primary,
                 ),
                 child: _saving
                     ? const SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
+                          color: AppTheme.onAction,
                           strokeWidth: 2,
                         ),
                       )
@@ -598,7 +601,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
                         isEdit ? 'Simpan Perubahan' : 'Tambah Menu',
                         style: const TextStyle(
                           fontSize: 16,
-                          color: Colors.white,
+                          color: AppTheme.onAction,
                         ),
                       ),
               ),
@@ -621,7 +624,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
             ListTile(
               leading: const Icon(
                 Icons.camera_alt,
-                color: const Color(0xFF00796B),
+                color: AppTheme.primary,
               ),
               title: const Text('Kamera'),
               onTap: () {
@@ -632,7 +635,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
             ListTile(
               leading: const Icon(
                 Icons.photo_library,
-                color: const Color(0xFF00796B),
+                color: AppTheme.primary,
               ),
               title: const Text('Galeri'),
               onTap: () {
@@ -642,7 +645,7 @@ class _MenuItemFormScreenState extends State<MenuItemFormScreen> {
             ),
             if (_imagePath != null)
               ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
+                leading: const Icon(Icons.delete, color: AppTheme.danger),
                 title: const Text('Hapus Foto'),
                 onTap: () {
                   Navigator.pop(context);

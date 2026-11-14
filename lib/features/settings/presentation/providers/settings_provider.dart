@@ -1,3 +1,5 @@
+import 'dart:async';
+import '../../../../core/services/branch_receipt_branding.dart';
 import '../../../../core/services/read_work.dart';
 import 'dart:convert';
 import '../../../../core/services/service_health.dart';
@@ -16,13 +18,85 @@ class SettingsProvider extends ChangeNotifier {
   bool _loaded = false;
   String _currentEmail = '';
   int _loadEpoch = 0;
+  int _identityRevision = 0;
+  String _identityKey = '';
+  String _authAccount = '', _authOwner = '', _activeBranchName = '';
+  bool _authBound = false, _disposed = false;
+  final _branding = BranchReceiptBranding();
+  final Future<dynamic> Function(String)? _branchReader;
+  SettingsProvider({Future<dynamic> Function(String)? branchReader})
+      : _branchReader = branchReader;
+
+  /// Auth notifications invalidate branding immediately, including logout.
+  /// Selected branch still comes from preferences (owners can switch branches).
+  void bindAccount(String accountId, String ownerId) {
+    if (_authBound && _authAccount == accountId && _authOwner == ownerId) return;
+    _authBound = true; _authAccount = accountId; _authOwner = ownerId;
+    _identityKey = '';
+    _identityRevision++; _loadEpoch++;
+    _settings = {}; _loaded = false; _currentEmail = '';
+    _branding.clear(); _resetBranch();
+    scheduleMicrotask(() { if (!_disposed) notifyListeners(); });
+  }
+
+  String _keyFor(SharedPreferences prefs) => jsonEncode([
+    prefs.getString(AppConstants.keyUid) ?? '',
+    prefs.getString(AppConstants.keyOwnerId) ?? '',
+    prefs.getString(AppConstants.keyBranchId) ?? '',
+    prefs.getString(AppConstants.keyEmail) ?? '',
+  ]);
+  bool _authMatches(SharedPreferences prefs) => !_authBound ||
+      (_authAccount == (prefs.getString(AppConstants.keyUid) ?? '') &&
+       _authOwner == (prefs.getString(AppConstants.keyOwnerId) ?? ''));
+  bool _prepareScope(SharedPreferences prefs) {
+    if (!_authMatches(prefs) || _disposed) return false;
+    final key = _keyFor(prefs);
+    if (key != _identityKey) {
+      _identityKey = key; _identityRevision++; _loadEpoch++;
+      _settings = {}; _loaded = false;
+      _currentEmail = prefs.getString(AppConstants.keyEmail) ?? '';
+      _resetBranch();
+      _activeBranchName = prefs.getString(AppConstants.keyBranchName) ?? '';
+      _branding.clear();
+      _branding.bind(ReceiptBrandingScope(
+        prefs.getString(AppConstants.keyUid) ?? '',
+        prefs.getString(AppConstants.keyOwnerId) ?? '',
+        prefs.getString(AppConstants.keyBranchId) ?? ''));
+    }
+    return true;
+  }
+  bool _current(int ticket, String identity, SharedPreferences prefs) =>
+      !_disposed && ticket == _loadEpoch && identity == _identityKey &&
+      identity == _keyFor(prefs) && _authMatches(prefs);
+  void _resetBranch() {
+    _branchStrukNama = null; _branchStrukAlamat = null;
+    _branchStrukTelp = null; _branchStrukFooter = null;
+    _branchDiskonEnabled = false; _branchDiskonLabel = 'Diskon';
+    _branchDiskonTipe = 'persen'; _branchDiskonNilai = 0;
+    _branchDiskonDari = null; _branchDiskonSampai = null; _branchRounding = 0;
+    _activeBranchName = '';
+  }
+  void _applyBranding(BranchReceiptSnapshot snapshot) {
+    _branchStrukNama = snapshot.fields['struk_nama'];
+    _branchStrukAlamat = snapshot.fields['struk_alamat'];
+    _branchStrukTelp = snapshot.fields['struk_telp'];
+    _branchStrukFooter = snapshot.fields['struk_footer'];
+  }
+  void _restoreBranchBranding(SharedPreferences prefs) {
+    final scope = _branding.scope;
+    if (scope == null || _branding.snapshot != null) return;
+    final saved = BranchReceiptSnapshot.decode(prefs.getString(scope.cacheKey), scope);
+    if (saved != null && _branding.accept(_branding.ticket, saved)) _applyBranding(saved);
+  }
+  @override
+  void dispose() { _disposed = true; _loadEpoch++; _branding.clear(); super.dispose(); }
+
 
   // ── Branch-level overrides (dari kolom branches di Supabase) ──────────────
   String? _branchStrukNama;
   String? _branchStrukAlamat;
   String? _branchStrukTelp;
   String? _branchStrukFooter;
-  String? _branchLogoUrl;
   bool _branchDiskonEnabled = false;
   String _branchDiskonLabel = 'Diskon';
   String _branchDiskonTipe = 'persen';   // 'persen' | 'nominal'
@@ -61,7 +135,9 @@ class SettingsProvider extends ChangeNotifier {
   /// Nama yang tampil di header struk (per cabang)
   String get effectiveStoreName => _branchStrukNama?.isNotEmpty == true
       ? _branchStrukNama!
-      : storeName;
+      : (_branding.scope?.branchId.isNotEmpty == true &&
+          _branding.snapshot == null && _activeBranchName.isNotEmpty)
+          ? _activeBranchName : storeName;
 
   /// Alamat di struk (per cabang)
   String get effectiveStoreAddress => _branchStrukAlamat?.isNotEmpty == true
@@ -79,8 +155,7 @@ class SettingsProvider extends ChangeNotifier {
       : receiptFooter;
 
   /// Logo URL (per cabang override logo global)
-  String get effectiveLogoUrl =>
-      _branchLogoUrl?.isNotEmpty == true ? _branchLogoUrl! : logoUrl;
+  String get effectiveLogoUrl => _branding.effectiveLogo(logoUrl);
 
   // ── Branch discount getters ───────────────────────────────────────────────
   bool get branchDiskonEnabled => _branchDiskonEnabled && _isBranchDiskonValid;
@@ -105,26 +180,17 @@ class SettingsProvider extends ChangeNotifier {
   final _branchReads = ReadFlights<void>();
   Future<void> loadSettings({bool localOnly = false}) async {
     final prefs = await SharedPreferences.getInstance();
-    final key = '${prefs.getString(AppConstants.keyUid)}:${prefs.getString(AppConstants.keyOwnerId)}:${prefs.getString(AppConstants.keyBranchId)}:$localOnly';
-    return _settingsReads.run(key, () => _loadSettings(localOnly: localOnly));
+    if (!_prepareScope(prefs)) return;
+    final key = '$_identityKey:$_identityRevision:$localOnly';
+    return _settingsReads.run(key, () => _loadForEmail(_currentEmail, localOnly: localOnly));
   }
-  Future<void> _loadSettings({bool localOnly = false}) async {
-    final prefs = await SharedPreferences.getInstance();
-    _currentEmail = prefs.getString(AppConstants.keyEmail) ?? '';
-    await _loadForEmail(_currentEmail, localOnly: localOnly);
-  }
-
-  Future<void> reloadForCurrentUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final email = prefs.getString(AppConstants.keyEmail) ?? '';
-    if (email != _currentEmail) {
-      _currentEmail = email;
-      await _loadForEmail(_currentEmail);
-    }
-  }
+  Future<void> reloadForCurrentUser() => loadSettings();
 
   Future<void> _loadForEmail(String email, {bool localOnly = false}) async {
     final ticket = ++_loadEpoch;
+    final identity = _identityKey;
+    final scopePrefs = await SharedPreferences.getInstance();
+    if (!_current(ticket, identity, scopePrefs)) return;
     final db = await DatabaseHelper.instance.database;
     List<Map<String, dynamic>> rows;
 
@@ -133,7 +199,7 @@ class SettingsProvider extends ChangeNotifier {
         'SELECT key, value, email FROM settings WHERE email = ? OR email IS NULL OR email = ""',
         [email],
       );
-      if (ticket != _loadEpoch) return;
+      if (!_current(ticket, identity, scopePrefs)) return;
       final globalMap = <String, String>{};
       final userMap = <String, String>{};
       for (final r in rows) {
@@ -151,20 +217,24 @@ class SettingsProvider extends ChangeNotifier {
       rows = await db.rawQuery(
         'SELECT key, value, email FROM settings WHERE email IS NULL OR email = ""',
       );
-      if (ticket != _loadEpoch) return;
+      if (!_current(ticket, identity, scopePrefs)) return;
       _settings = {
         for (var r in rows) r['key'] as String: r['value'] as String? ?? ''
       };
     }
 
-    if (ticket != _loadEpoch) return;
+    if (!_current(ticket, identity, scopePrefs)) return;
     final cachePrefs = await SharedPreferences.getInstance();
-    final cacheKey = 'startup_settings_' + email + '_' + (cachePrefs.getString(AppConstants.keyOwnerId) ?? '');
-    if (ticket != _loadEpoch) return;
+    if (!_current(ticket, identity, scopePrefs)) return;
+    // Legacy unscoped logos cannot establish an owner/branch identity.
+    _settings.remove('logo_url');
+    final cacheKey = 'startup_settings_v2:$identity';
+    if (!_current(ticket, identity, scopePrefs)) return;
     final saved = cachePrefs.getString(cacheKey);
     if (saved != null) {
       try { _settings.addAll(Map<String, String>.from(jsonDecode(saved) as Map)); } catch (_) {}
     }
+    _restoreBranchBranding(cachePrefs);
     _loaded = true;
     notifyListeners();
     if (localOnly) return;
@@ -172,33 +242,15 @@ class SettingsProvider extends ChangeNotifier {
     // Fetch global settings dari Supabase owners
     try {
       final prefs = await SharedPreferences.getInstance();
+      if (!_current(ticket, identity, scopePrefs)) return;
       final ownerId = prefs.getString(AppConstants.keyOwnerId) ?? '';
-      final authId = prefs.getString(AppConstants.keyUid) ?? '';
-      final emailPref = prefs.getString(AppConstants.keyEmail) ?? '';
-      final role = prefs.getString(AppConstants.keyRole) ?? '';
-
-      String resolvedOwnerId = ownerId;
-      if (resolvedOwnerId.isNotEmpty) {
-        final checkOwner = await SupabaseConfig.client
-            .from('owners')
-            .select('id')
-            .eq('id', resolvedOwnerId)
-            .maybeSingle();
-        if (checkOwner == null && emailPref.isNotEmpty) {
-          final userRow = await SupabaseConfig.client
-              .from('users')
-              .select('owner_id')
-              .eq('email', emailPref)
-              .maybeSingle();
-          resolvedOwnerId =
-              userRow?['owner_id']?.toString() ?? resolvedOwnerId;
-        }
-      }
-
+      // The verified profile already supplies owner_id; do not resolve another
+      // owner by email or reuse another account's owner settings.
+      final resolvedOwnerId = ownerId;
       if (resolvedOwnerId.isNotEmpty) {
         final res = await SupabaseConfig.client
             .rpc('get_owner_settings', params: {'p_owner_id': resolvedOwnerId});
-        if (ticket != _loadEpoch || email != _currentEmail) return;
+        if (!_current(ticket, identity, scopePrefs)) return;
         if (res != null && res is Map) {
           if ((res['business_name'] as String?)?.isNotEmpty == true)
             _settings['store_name'] = res['business_name'] as String;
@@ -206,8 +258,7 @@ class SettingsProvider extends ChangeNotifier {
             _settings['store_address'] = res['address'] as String;
           if ((res['phone'] as String?)?.isNotEmpty == true)
             _settings['store_phone'] = res['phone'] as String;
-          if ((res['logo_url'] as String?)?.isNotEmpty == true)
-            _settings['logo_url'] = res['logo_url'] as String;
+          _settings['logo_url'] = res['logo_url'] is String ? (res['logo_url'] as String).trim() : '';
           _settings['tax_enabled'] =
           (res['tax_enabled'] == true || res['tax_enabled'] == 'true')
               ? 'true'
@@ -226,19 +277,21 @@ class SettingsProvider extends ChangeNotifier {
     } catch (e) { ServiceHealth.log('settings',1,0,failureKind(e));
     }
 
-    if (ticket != _loadEpoch || email != _currentEmail) return;
+    if (!_current(ticket, identity, scopePrefs)) return;
     // ── Load branch-specific settings (override global) ───────────────────
     try {
       final prefs = await SharedPreferences.getInstance();
       final branchId = prefs.getString(AppConstants.keyBranchId) ?? '';
+      if (!_current(ticket, identity, scopePrefs)) return;
       if (branchId.isNotEmpty) {
         await _loadBranchSettings(branchId);
       }
     } catch (e) {
     }
 
-    if (ticket != _loadEpoch || email != _currentEmail) return;
+    if (!_current(ticket, identity, scopePrefs)) return;
     await cachePrefs.setString(cacheKey, jsonEncode(_settings));
+    if (!_current(ticket, identity, scopePrefs)) return;
     _loaded = true;
     notifyListeners();
   }
@@ -246,29 +299,38 @@ class SettingsProvider extends ChangeNotifier {
   /// Load/reload setting cabang tertentu (dipanggil saat ganti cabang)
   Future<void> loadBranchSettings(String branchId) async {
     await _loadBranchSettings(branchId);
-    notifyListeners();
+    if (!_disposed) notifyListeners();
   }
 
   Future<void> _loadBranchSettings(String branchId) async {
     final prefs = await SharedPreferences.getInstance();
-    return _branchReads.run('${prefs.getString(AppConstants.keyUid)}:$branchId', () => _readBranchSettings(branchId));
+    if (!_prepareScope(prefs) || branchId != prefs.getString(AppConstants.keyBranchId)) return;
+    _restoreBranchBranding(prefs);
+    final scope = _branding.scope;
+    if (scope == null || !scope.hasIdentity || branchId.isEmpty) return;
+    final ticket = _branding.ticket;
+    final identity = _identityKey;
+    return _branchReads.run('$identity:$_identityRevision',
+      () => _readBranchSettings(branchId, scope, ticket, identity));
   }
-  Future<void> _readBranchSettings(String branchId) async {
-    final epoch = _loadEpoch;
+  Future<void> _readBranchSettings(String branchId, ReceiptBrandingScope scope,
+      int ticket, String identity) async {
     try {
-      final res = await SupabaseConfig.client.rpc(
-        'get_branch_print_settings_by_id',
-        params: {'p_branch_id': branchId},
-      );
-      if (res == null || res is! Map || epoch != _loadEpoch) return;
+      final branchReader = _branchReader;
+      final res = branchReader != null ? await branchReader(branchId) :
+          await SupabaseConfig.client.rpc('get_branch_print_settings_by_id',
+            params: {'p_branch_id': branchId});
+      if (res is! Map || _disposed || !res.containsKey('logo_url') ||
+          BranchReceiptSnapshot.keys.any((key) => res[key] != null && res[key] is! String)) return;
       final latestPrefs = await SharedPreferences.getInstance();
-      if (epoch != _loadEpoch || branchId != latestPrefs.getString(AppConstants.keyBranchId)) return;
-
-      _branchStrukNama = res['struk_nama'] as String?;
-      _branchStrukAlamat = res['struk_alamat'] as String?;
-      _branchStrukTelp = res['struk_telp'] as String?;
-      _branchStrukFooter = res['struk_footer'] as String?;
-      _branchLogoUrl = res['logo_url'] as String?;
+      if (identity != _identityKey || identity != _keyFor(latestPrefs) ||
+          !_authMatches(latestPrefs)) return;
+      final snapshot = BranchReceiptSnapshot(scope, res);
+      if (!_branding.accept(ticket, snapshot)) return;
+      _applyBranding(snapshot);
+      await latestPrefs.setString(scope.cacheKey, snapshot.encode());
+      if (identity != _identityKey || identity != _keyFor(latestPrefs) ||
+          ticket != _branding.ticket || !_authMatches(latestPrefs)) return;
 
       // PPN & SC per cabang override global (kalau beda)
       final ppnEnabled = res['ppn_enabled'] as bool? ?? false;

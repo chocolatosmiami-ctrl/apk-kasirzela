@@ -58,7 +58,7 @@ class _SqliteSyncScreenState extends State<SqliteSyncScreen> {
       appBar: AppBar(
         title: const Text('Sync Data Lokal → Supabase'),
         backgroundColor: AppTheme.primaryRed,
-        foregroundColor: Colors.white,
+        foregroundColor: AppTheme.onAction,
       ),
       body: ZelaPage(
         child: Padding(
@@ -70,9 +70,9 @@ class _SqliteSyncScreenState extends State<SqliteSyncScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.teal[50],
+                  color: AppTheme.primarySurface,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.teal[200]!),
+                  border: Border.all(color: AppTheme.primarySurface!),
                 ),
                 child: const Text(
                   'Fitur ini akan mengupload semua transaksi lama yang tersimpan '
@@ -81,7 +81,7 @@ class _SqliteSyncScreenState extends State<SqliteSyncScreen> {
                   '• Order lama yang sudah ada perlu pemeriksaan stok oleh admin\n'
                   '• Proses berjalan di latar belakang, jangan tutup layar\n'
                   '• Butuh koneksi internet',
-                  style: TextStyle(fontSize: 14, color: Colors.teal),
+                  style: TextStyle(fontSize: 14, color: AppTheme.primary),
                 ),
               ),
               const SizedBox(height: 20),
@@ -105,7 +105,7 @@ class _SqliteSyncScreenState extends State<SqliteSyncScreen> {
                   const SizedBox(height: 6),
                   LinearProgressIndicator(
                     value: _total > 0 ? _progress / _total : 0,
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: AppTheme.borderLight,
                     color: AppTheme.primaryRed,
                     minHeight: 8,
                     borderRadius: BorderRadius.circular(4),
@@ -116,10 +116,10 @@ class _SqliteSyncScreenState extends State<SqliteSyncScreen> {
                     style: TextStyle(
                       fontSize: 14,
                       color: _status.startsWith('✅')
-                          ? Colors.green
+                          ? AppTheme.primary
                           : _status.startsWith('❌')
-                          ? Colors.red
-                          : const Color(0xFF62736F),
+                          ? AppTheme.danger
+                          : AppTheme.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -131,13 +131,13 @@ class _SqliteSyncScreenState extends State<SqliteSyncScreen> {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: _result!.hasError
-                          ? Colors.red[50]
-                          : Colors.green[50],
+                          ? AppTheme.dangerSurface
+                          : AppTheme.primarySurface,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: _result!.hasError
-                            ? Colors.red[300]!
-                            : Colors.green[300]!,
+                            ? AppTheme.danger!
+                            : AppTheme.primary!,
                       ),
                     ),
                     child: Column(
@@ -151,25 +151,25 @@ class _SqliteSyncScreenState extends State<SqliteSyncScreen> {
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
                             color: _result!.hasError
-                                ? Colors.red[800]
-                                : Colors.green[800],
+                                ? AppTheme.danger
+                                : AppTheme.primary,
                           ),
                         ),
                         const SizedBox(height: 8),
                         _resultRow(
                           'Berhasil upload',
                           '${_result!.success} order',
-                          Colors.green,
+                          AppTheme.primary,
                         ),
                         _resultRow(
                           'Dilewati (sudah ada)',
                           '${_result!.skipped} order',
-                          Colors.teal,
+                          AppTheme.primary,
                         ),
                         _resultRow(
                           'Gagal',
                           '${_result!.failed} order',
-                          Colors.red,
+                          AppTheme.danger,
                         ),
                         if (_result!.hasError) ...[
                           const SizedBox(height: 6),
@@ -177,7 +177,7 @@ class _SqliteSyncScreenState extends State<SqliteSyncScreen> {
                             _result!.error ?? 'Sebagian transaksi/stok masih tertunda. Periksa notifikasi sinkronisasi.',
                             style: const TextStyle(
                               fontSize: 14,
-                              color: Colors.red,
+                              color: AppTheme.danger,
                             ),
                           ),
                         ],
@@ -199,7 +199,7 @@ class _SqliteSyncScreenState extends State<SqliteSyncScreen> {
                           height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: AppTheme.onAction,
                           ),
                         )
                       : const Icon(Icons.cloud_upload),
@@ -212,9 +212,9 @@ class _SqliteSyncScreenState extends State<SqliteSyncScreen> {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _syncing
-                        ? Colors.grey
+                        ? AppTheme.textSecondary
                         : AppTheme.primaryRed,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppTheme.onAction,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -235,9 +235,9 @@ class _SqliteSyncScreenState extends State<SqliteSyncScreen> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF7F9F8),
+                      color: AppTheme.surfaceLight,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey[300]!),
+                      border: Border.all(color: AppTheme.fieldBorder!),
                     ),
                     child: ListView.builder(
                       itemCount: _logs.length,
@@ -249,10 +249,10 @@ class _SqliteSyncScreenState extends State<SqliteSyncScreen> {
                             fontSize: 12,
                             fontFamily: 'monospace',
                             color: _logs[i].startsWith('✅')
-                                ? Colors.green[700]
+                                ? AppTheme.primary
                                 : _logs[i].startsWith('❌')
-                                ? Colors.red[700]
-                                : const Color(0xFF62736F),
+                                ? AppTheme.danger
+                                : AppTheme.textSecondary,
                           ),
                         ),
                       ),

@@ -1,3 +1,4 @@
+import '../../../../core/theme/zela_product_grid.dart';
 import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -52,7 +53,7 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
           SnackBar(
             content: Text('✅ ${product.name} ditambahkan'),
             duration: const Duration(seconds: 1),
-            backgroundColor: Colors.green,
+            backgroundColor: AppTheme.primary,
           ),
         );
       }
@@ -60,7 +61,7 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Barcode "$barcode" tidak ditemukan'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.danger,
           duration: const Duration(seconds: 2),
         ),
       );
@@ -73,9 +74,11 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
+        scrollable: true,
         title: Row(
           children: [
-            const Text('⚖️ ', style: TextStyle(fontSize: 20)),
+            const Icon(Icons.scale_outlined,
+                size: 20, color: AppTheme.textSecondary),
             Expanded(
               child: Text(product.name, style: const TextStyle(fontSize: 16)),
             ),
@@ -86,7 +89,7 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
           children: [
             Text(
               'Harga: ${AppUtils.formatCurrency(product.sellPrice)} / ${product.unit}',
-              style: TextStyle(color: const Color(0xFF62736F), fontSize: 14),
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -103,7 +106,7 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
                 labelText: 'Berat / Jumlah',
                 suffixText: product.unit,
                 filled: true,
-                fillColor: Colors.orange[50],
+                fillColor: AppTheme.warningSurface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -158,7 +161,7 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
             },
             child: const Text(
               'Tambah ke Keranjang',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: AppTheme.onAction),
             ),
           ),
         ],
@@ -172,13 +175,13 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.orange[100],
+            color: AppTheme.warningSurface,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: Colors.orange[800],
+              color: AppTheme.warningInk,
               fontWeight: FontWeight.w600,
               fontSize: 14,
             ),
@@ -240,7 +243,7 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
     final retail = context.watch<RetailProvider>();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.onAction,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,7 +254,7 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
             ),
             Text(
               '${retail.cartCount} item · ${AppUtils.formatCurrency(retail.cartTotal)}',
-              style: const TextStyle(fontSize: 12, color: Colors.white),
+              style: const TextStyle(fontSize: 12, color: AppTheme.onAction),
             ),
           ],
         ),
@@ -288,7 +291,7 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
           children: [
             // ── Barcode Scanner Input ─────────────────────────
             Container(
-              color: Colors.orange[50],
+              color: AppTheme.warningSurface,
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
               child: Row(
                 children: [
@@ -306,7 +309,7 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
                         hintText: 'Scan barcode atau ketik kode...',
                         isDense: true,
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: AppTheme.onAction,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide: BorderSide.none,
@@ -353,10 +356,10 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
                       : null,
                   isDense: true,
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: AppTheme.onAction,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
+                    borderSide: BorderSide(color: AppTheme.fieldBorder!),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -386,18 +389,19 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: sel ? AppTheme.primaryOrange : Colors.white,
+                        color: sel ? AppTheme.primaryOrange : AppTheme.onAction,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: sel
                               ? AppTheme.primaryOrange
-                              : Colors.grey[300]!,
+                              : AppTheme.fieldBorder!,
                         ),
                       ),
                       child: Text(
                         cat,
                         style: TextStyle(
-                          color: sel ? Colors.white : const Color(0xFF62736F),
+                          color:
+                              sel ? AppTheme.onAction : AppTheme.textSecondary,
                           fontSize: 14,
                           fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
                         ),
@@ -418,53 +422,56 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
                       ),
                     )
                   : retail.products.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('🛍️', style: TextStyle(fontSize: 48)),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Belum ada produk',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                          TextButton.icon(
-                            icon: const Icon(Icons.add),
-                            label: const Text('Tambah Produk'),
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const RetailProductFormScreen(),
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.shopping_bag_outlined,
+                                  size: 40, color: AppTheme.textSecondary),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Belum ada produk',
+                                style: TextStyle(color: AppTheme.textSecondary),
                               ),
-                            ),
+                              TextButton.icon(
+                                icon: const Icon(Icons.add),
+                                label: const Text('Tambah Produk'),
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const RetailProductFormScreen(),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    )
-                  : GridView.builder(
-                      physics: const ClampingScrollPhysics(),
-                      padding: const EdgeInsets.all(10),
-                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 260,
-                        mainAxisExtent:
-                            300 +
-                            (MediaQuery.textScalerOf(context).scale(14) - 14) *
-                                5,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                      ),
-                      itemCount: retail.products.length,
-                      itemBuilder: (_, i) => _ProductCard(
-                        product: retail.products[i],
-                        onTap: () {
-                          if (retail.products[i].isByWeight) {
-                            _showWeightDialog(retail.products[i]);
-                          } else {
-                            retail.addToCart(retail.products[i]);
-                          }
-                        },
-                      ),
-                    ),
+                        )
+                      : GridView.builder(
+                          physics: const ClampingScrollPhysics(),
+                          padding: const EdgeInsets.all(10),
+                          gridDelegate: ZelaProductGridDelegate(
+                            minItemWidth: 160 +
+                                (MediaQuery.textScalerOf(context).scale(14) -
+                                        14) *
+                                    5,
+                            mainAxisExtent: 300 +
+                                (MediaQuery.textScalerOf(context).scale(14) -
+                                        14) *
+                                    5,
+                          ),
+                          itemCount: retail.products.length,
+                          itemBuilder: (_, i) => _ProductCard(
+                            product: retail.products[i],
+                            onTap: () {
+                              if (retail.products[i].isByWeight) {
+                                _showWeightDialog(retail.products[i]);
+                              } else {
+                                retail.addToCart(retail.products[i]);
+                              }
+                            },
+                          ),
+                        ),
             ),
           ],
         ),
@@ -473,79 +480,15 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
       // ── Cart Bottom Bar ───────────────────────────────
       bottomNavigationBar: retail.cartEmpty
           ? null
-          : Container(
-              padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: const <BoxShadow>[],
-              ),
-              child: Row(
-                children: [
-                  // Cart summary
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '${retail.cartCount} item',
-                          style: TextStyle(
-                            color: const Color(0xFF62736F),
-                            fontSize: 14,
-                          ),
-                        ),
-                        Text(
-                          AppUtils.formatCurrency(retail.cartTotal),
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryOrange,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // View cart
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.shopping_cart_outlined, size: 16),
-                    label: const Text('Keranjang'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.primaryOrange,
-                      side: const BorderSide(color: AppTheme.primaryOrange),
-                    ),
-                    onPressed: _showCart,
-                  ),
-                  const SizedBox(width: 8),
-                  // Checkout
-                  ElevatedButton.icon(
-                    icon: const Icon(
-                      Icons.payment,
-                      size: 16,
-                      color: Colors.white,
-                    ),
-                    label: const Text(
-                      'Bayar',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                    ),
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const RetailCheckoutScreen(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          : AppTheme.cartBar(
+              itemCount: retail.cartCount,
+              previewText: '',
+              totalText: AppUtils.formatCurrency(retail.cartTotal),
+              onViewCart: _showCart,
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const RetailCheckoutScreen()))),
     );
   }
 
@@ -584,7 +527,7 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
             padding: EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(Icons.warning_amber, color: Colors.orange),
+                Icon(Icons.warning_amber, color: AppTheme.warningInk),
                 SizedBox(width: 8),
                 Text(
                   'Stok Hampir Habis',
@@ -598,7 +541,7 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.orange[50],
+                  color: AppTheme.warningSurface,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(p.isOutOfStock ? '❌' : '⚠️'),
@@ -608,7 +551,7 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
               trailing: Text(
                 '${p.stock} ${p.unit}',
                 style: TextStyle(
-                  color: p.isOutOfStock ? Colors.red : Colors.orange,
+                  color: p.isOutOfStock ? AppTheme.danger : AppTheme.warningInk,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -660,7 +603,8 @@ class _RetailCashierScreenState extends State<RetailCashierScreen> {
                 Navigator.pop(context);
                 _onBarcodeSubmit(ctrl.text);
               },
-              child: const Text('Cari', style: TextStyle(color: Colors.white)),
+              child: const Text('Cari',
+                  style: TextStyle(color: AppTheme.onAction)),
             ),
           ],
         );
@@ -708,17 +652,17 @@ class _ProductCard extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-    height: 95,
-    width: double.infinity,
-    color: const Color(0xFFF0F4F2),
-    child: const Center(
-      child: Icon(
-        Icons.inventory_2_outlined,
-        size: 38,
-        color: Color(0xFF62736F),
-      ),
-    ),
-  );
+        height: 95,
+        width: double.infinity,
+        color: AppTheme.surfaceLight,
+        child: const Center(
+          child: Icon(
+            Icons.inventory_2_outlined,
+            size: 38,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -726,10 +670,12 @@ class _ProductCard extends StatelessWidget {
       onTap: product.isOutOfStock ? null : onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.onAction,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: product.isLowStock ? Colors.orange[300]! : Colors.grey[200]!,
+            color: product.isLowStock
+                ? AppTheme.warningInk!
+                : AppTheme.borderLight!,
           ),
           boxShadow: const <BoxShadow>[],
         ),
@@ -777,7 +723,7 @@ class _ProductCard extends StatelessWidget {
                                       ? Icons.scale
                                       : Icons.inventory_2,
                                   size: 10,
-                                  color: const Color(0xFF62736F),
+                                  color: AppTheme.textSecondary,
                                 ),
                                 const SizedBox(width: 2),
                                 Text(
@@ -787,10 +733,10 @@ class _ProductCard extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: product.isOutOfStock
-                                        ? Colors.red
+                                        ? AppTheme.danger
                                         : product.isLowStock
-                                        ? Colors.orange
-                                        : const Color(0xFF62736F),
+                                            ? AppTheme.warningInk
+                                            : AppTheme.textSecondary,
                                   ),
                                 ),
                               ],
@@ -812,13 +758,13 @@ class _ProductCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(3),
                   decoration: const BoxDecoration(
-                    color: Colors.orange,
+                    color: AppTheme.warningInk,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.warning_amber,
                     size: 10,
-                    color: Colors.white,
+                    color: AppTheme.onAction,
                   ),
                 ),
               ),
@@ -834,7 +780,7 @@ class _ProductCard extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFBEDEC),
+                    color: AppTheme.dangerSurface,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
@@ -842,7 +788,7 @@ class _ProductCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFFBA3A3A),
+                      color: AppTheme.danger,
                     ),
                   ),
                 ),
@@ -869,7 +815,7 @@ class _CartSheet extends StatelessWidget {
           height: 4,
           margin: const EdgeInsets.only(top: 10),
           decoration: BoxDecoration(
-            color: Colors.grey[300],
+            color: AppTheme.fieldBorder,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -888,7 +834,7 @@ class _CartSheet extends StatelessWidget {
                 onPressed: retail.clearCart,
                 child: const Text(
                   'Kosongkan',
-                  style: TextStyle(color: Colors.red, fontSize: 14),
+                  style: TextStyle(color: AppTheme.danger, fontSize: 14),
                 ),
               ),
             ],
@@ -905,96 +851,49 @@ class _CartSheet extends StatelessWidget {
               return Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.product.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              '${AppUtils.formatCurrency(item.unitPrice)} / ${item.selectedUnit}',
-                              style: TextStyle(
-                                color: const Color(0xFF62736F),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Qty control
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          GestureDetector(
-                            onTap: () => retail.updateQty(
-                              i,
-                              item.qty - (item.product.isByWeight ? 0.1 : 1),
-                            ),
-                            child: Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: Colors.orange[50],
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Icon(
-                                Icons.remove,
-                                size: 16,
-                                color: AppTheme.primaryOrange,
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: Text(
-                              item.product.isByWeight
-                                  ? item.qty.toStringAsFixed(2)
-                                  : item.qty.toInt().toString(),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => retail.updateQty(
-                              i,
-                              item.qty + (item.product.isByWeight ? 0.1 : 1),
-                            ),
-                            child: Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: Colors.orange[50],
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Icon(
-                                Icons.add,
-                                size: 16,
-                                color: AppTheme.primaryOrange,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        AppUtils.formatCurrency(item.subtotal),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryOrange,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                          Text(item.product.name, style: AppTheme.headingMd),
+                          const SizedBox(height: 4),
+                          Text(
+                              '${AppUtils.formatCurrency(item.unitPrice)} / ${item.selectedUnit}',
+                              style: AppTheme.labelSm),
+                          const SizedBox(height: 8),
+                          Text(AppUtils.formatCurrency(item.subtotal),
+                              style: AppTheme.priceLg),
+                          Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                AppTheme.qtyButton(
+                                    icon: Icons.remove,
+                                    onTap: () => retail.updateQty(
+                                        i,
+                                        item.qty -
+                                            (item.product.isByWeight
+                                                ? 0.1
+                                                : 1))),
+                                Flexible(
+                                    child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12),
+                                        child: Text(
+                                            item.product.isByWeight
+                                                ? item.qty.toStringAsFixed(2)
+                                                : item.qty.toInt().toString(),
+                                            style: AppTheme.headingMd))),
+                                AppTheme.qtyButton(
+                                    icon: Icons.add,
+                                    solid: true,
+                                    onTap: () => retail.updateQty(
+                                        i,
+                                        item.qty +
+                                            (item.product.isByWeight
+                                                ? 0.1
+                                                : 1))),
+                              ]),
+                        ])),
               );
             },
           ),
@@ -1003,7 +902,7 @@ class _CartSheet extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppTheme.onAction,
             boxShadow: const <BoxShadow>[],
           ),
           child: Column(
@@ -1042,7 +941,7 @@ class _CartSheet extends StatelessWidget {
                   child: const Text(
                     'Lanjut ke Pembayaran',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppTheme.onAction,
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),

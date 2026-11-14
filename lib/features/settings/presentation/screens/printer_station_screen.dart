@@ -29,7 +29,7 @@ class _PrinterStationScreenState extends State<PrinterStationScreen> {
       appBar: AppBar(
         title: const Text('Printer Station'),
         backgroundColor: AppTheme.primaryRed,
-        foregroundColor: Colors.white,
+        foregroundColor: AppTheme.onAction,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -56,22 +56,22 @@ class _PrinterStationScreenState extends State<PrinterStationScreen> {
                     const Icon(
                       Icons.print_outlined,
                       size: 64,
-                      color: Colors.grey,
+                      color: AppTheme.textSecondary,
                     ),
                     const SizedBox(height: 16),
                     const Text(
                       'Belum ada printer station',
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: AppTheme.textSecondary),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryRed,
                       ),
-                      icon: const Icon(Icons.add, color: Colors.white),
+                      icon: const Icon(Icons.add, color: AppTheme.onAction),
                       label: const Text(
                         'Tambah Station',
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: AppTheme.onAction),
                       ),
                       onPressed: () => _showAddEditDialog(),
                     ),
@@ -85,17 +85,17 @@ class _PrinterStationScreenState extends State<PrinterStationScreen> {
               children: [
                 // Kasir Stations
                 if (prov.kasirStations.isNotEmpty) ...[
-                  _sectionHeader('🧾 Kasir', Colors.teal),
+                  _sectionHeader('🧾 Kasir', AppTheme.primary),
                   ...prov.kasirStations.map((s) => _stationCard(s)),
                 ],
                 // Dapur Stations
                 if (prov.dapurStations.isNotEmpty) ...[
-                  _sectionHeader('👨‍🍳 Dapur', Colors.orange),
+                  _sectionHeader('👨‍🍳 Dapur', AppTheme.warningInk),
                   ...prov.dapurStations.map((s) => _stationCard(s)),
                 ],
                 // Checker Stations
                 if (prov.checkerStations.isNotEmpty) ...[
-                  _sectionHeader('✅ Checker', Colors.green),
+                  _sectionHeader('✅ Checker', AppTheme.primary),
                   ...prov.checkerStations.map((s) => _stationCard(s)),
                 ],
                 const SizedBox(height: 80),
@@ -106,10 +106,10 @@ class _PrinterStationScreenState extends State<PrinterStationScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppTheme.primaryRed,
-        icon: const Icon(Icons.add, color: Colors.white),
+        icon: const Icon(Icons.add, color: AppTheme.onAction),
         label: const Text(
           'Tambah Station',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppTheme.onAction),
         ),
         onPressed: () => _showAddEditDialog(),
       ),
@@ -158,7 +158,7 @@ class _PrinterStationScreenState extends State<PrinterStationScreen> {
                         station.stationLabel,
                         style: TextStyle(
                           fontSize: 14,
-                          color: const Color(0xFF62736F),
+                          color: AppTheme.textSecondary,
                         ),
                       ),
                     ],
@@ -172,7 +172,7 @@ class _PrinterStationScreenState extends State<PrinterStationScreen> {
                   icon: const Icon(
                     Icons.delete_outline,
                     size: 20,
-                    color: Colors.red,
+                    color: AppTheme.danger,
                   ),
                   onPressed: () => _confirmDelete(station),
                 ),
@@ -182,7 +182,7 @@ class _PrinterStationScreenState extends State<PrinterStationScreen> {
               const Divider(height: 16),
               Row(
                 children: [
-                  const Icon(Icons.print, size: 16, color: Colors.grey),
+                  const Icon(Icons.print, size: 16, color: AppTheme.textSecondary),
                   const SizedBox(width: 6),
                   Text(
                     station.printerName!,
@@ -191,7 +191,7 @@ class _PrinterStationScreenState extends State<PrinterStationScreen> {
                   const Spacer(),
                   Text(
                     '${station.paperWidth}mm',
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary),
                   ),
                 ],
               ),
@@ -233,13 +233,13 @@ class _PrinterStationScreenState extends State<PrinterStationScreen> {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.auto_awesome, size: 14, color: Colors.grey),
+                const Icon(Icons.auto_awesome, size: 14, color: AppTheme.textSecondary),
                 const SizedBox(width: 4),
                 Text(
                   station.autoPrint ? 'Auto Print: ON' : 'Auto Print: OFF',
                   style: TextStyle(
                     fontSize: 14,
-                    color: station.autoPrint ? Colors.green : Colors.grey,
+                    color: station.autoPrint ? AppTheme.primary : AppTheme.textSecondary,
                   ),
                 ),
               ],
@@ -262,7 +262,7 @@ class _PrinterStationScreenState extends State<PrinterStationScreen> {
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
             onPressed: () async {
               Navigator.pop(context);
               final ok = await context
@@ -272,12 +272,12 @@ class _PrinterStationScreenState extends State<PrinterStationScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(ok ? '✅ Station dihapus' : '❌ Gagal hapus'),
-                    backgroundColor: ok ? Colors.green : Colors.red,
+                    backgroundColor: ok ? AppTheme.primary : AppTheme.danger,
                   ),
                 );
               }
             },
-            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+            child: const Text('Hapus', style: TextStyle(color: AppTheme.onAction)),
           ),
         ],
       ),
@@ -381,7 +381,7 @@ class _AddEditStationSheetState extends State<_AddEditStationSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(ok ? '✅ Station disimpan' : '❌ Gagal simpan'),
-          backgroundColor: ok ? Colors.green : Colors.red,
+          backgroundColor: ok ? AppTheme.primary : AppTheme.danger,
         ),
       );
     }
@@ -463,7 +463,7 @@ class _AddEditStationSheetState extends State<_AddEditStationSheet> {
                           decoration: BoxDecoration(
                             color: _stationType == type['value']
                                 ? AppTheme.primaryRed
-                                : const Color(0xFFF7F9F8),
+                                : AppTheme.surfaceLight,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -472,8 +472,8 @@ class _AddEditStationSheetState extends State<_AddEditStationSheet> {
                             style: TextStyle(
                               fontSize: 14,
                               color: _stationType == type['value']
-                                  ? Colors.white
-                                  : Colors.black87,
+                                  ? AppTheme.onAction
+                                  : AppTheme.textPrimary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -497,14 +497,14 @@ class _AddEditStationSheetState extends State<_AddEditStationSheet> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.orange[50],
+                  color: AppTheme.warningSurface,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
                     const Icon(
                       Icons.warning_amber,
-                      color: Colors.orange,
+                      color: AppTheme.warningInk,
                       size: 18,
                     ),
                     const SizedBox(width: 8),
@@ -523,6 +523,7 @@ class _AddEditStationSheetState extends State<_AddEditStationSheet> {
               )
             else
               DropdownButtonFormField<String>(
+ isExpanded: true,
                 value: _printerAddress,
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
@@ -578,7 +579,7 @@ class _AddEditStationSheetState extends State<_AddEditStationSheet> {
                           decoration: BoxDecoration(
                             color: _paperWidth == w
                                 ? AppTheme.primaryRed
-                                : const Color(0xFFF7F9F8),
+                                : AppTheme.surfaceLight,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -587,8 +588,8 @@ class _AddEditStationSheetState extends State<_AddEditStationSheet> {
                             style: TextStyle(
                               fontSize: 14,
                               color: _paperWidth == w
-                                  ? Colors.white
-                                  : Colors.black87,
+                                  ? AppTheme.onAction
+                                  : AppTheme.textPrimary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -645,7 +646,7 @@ class _AddEditStationSheetState extends State<_AddEditStationSheet> {
                   onPressed: _addMenu,
                   child: const Text(
                     '+ Tambah',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: AppTheme.onAction),
                   ),
                 ),
               ],
@@ -678,13 +679,13 @@ class _AddEditStationSheetState extends State<_AddEditStationSheet> {
                 onPressed: _saving ? null : _save,
                 child: _saving
                     ? const CircularProgressIndicator(
-                        color: Colors.white,
+                        color: AppTheme.onAction,
                         strokeWidth: 2,
                       )
                     : const Text(
                         '💾 Simpan Station',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.onAction,
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                         ),

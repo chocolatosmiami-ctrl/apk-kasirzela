@@ -34,7 +34,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             content: Text(
               'Tidak bisa membuka browser. Buka manual: $_dashboardUrl',
             ),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppTheme.warningInk,
             duration: Duration(seconds: 5),
           ),
         );
@@ -48,17 +48,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     final subscription = sub.subscription;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
         title: const Text(
           'Saldo & Paket',
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: Color(0xFF172B2A),
+            color: AppTheme.textPrimary,
           ),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF172B2A),
+        backgroundColor: AppTheme.onAction,
+        foregroundColor: AppTheme.textPrimary,
         elevation: 0,
       ),
       body: ZelaPage(
@@ -72,7 +72,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   Container(
                     padding: const EdgeInsets.all(22),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00796B),
+                      color: AppTheme.primary,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: const <BoxShadow>[],
                     ),
@@ -85,7 +85,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                               sub.isLocked
                                   ? Icons.lock
                                   : Icons.account_balance_wallet,
-                              color: Colors.white,
+                              color: AppTheme.onAction,
                               size: 18,
                             ),
                             const SizedBox(width: 8),
@@ -96,7 +96,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                                   ? '⚠️  Saldo Hampir Habis'
                                   : 'Saldo Aktif',
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                                 fontSize: 14,
                               ),
                             ),
@@ -106,7 +106,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         Text(
                           AppUtils.formatCurrency(sub.balance),
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppTheme.onAction,
                             fontSize: 36,
                             fontWeight: FontWeight.bold,
                           ),
@@ -118,7 +118,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                               ? '${subscription!.planLabel} — transaksi gratis'
                               : '≈ ${sub.remainingTrx} transaksi tersisa',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.85),
+                            color: AppTheme.onAction.withOpacity(0.85),
                             fontSize: 14,
                           ),
                         ),
@@ -129,7 +129,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           Text(
                             'Aktif hingga ${DateFormat('d MMM yyyy', 'id_ID').format(subscription!.planExpiresAt!)}',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.75),
+                              color: AppTheme.onAction.withOpacity(0.75),
                               fontSize: 14,
                             ),
                           ),
@@ -140,18 +140,18 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           child: ElevatedButton.icon(
                             icon: const Icon(
                               Icons.open_in_browser,
-                              color: Color(0xFF00796B),
+                              color: AppTheme.primary,
                             ),
                             label: const Text(
                               'Top Up & Kelola Paket',
                               style: TextStyle(
-                                color: Color(0xFF00796B),
+                                color: AppTheme.primary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
+                              backgroundColor: AppTheme.onAction,
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
@@ -171,13 +171,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: subscription.isPlanActive
-                            ? const Color(0xFFEAF5F1)
-                            : const Color(0xFFF7F9F8),
+                            ? AppTheme.primarySurface
+                            : AppTheme.surfaceLight,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: subscription.isPlanActive
-                              ? const Color(0xFFB2DFDB)
-                              : const Color(0xFFDEE7E3),
+                              ? AppTheme.accentMint
+                              : AppTheme.borderLight,
                         ),
                       ),
                       child: Column(
@@ -186,8 +186,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             'Plan Aktif',
                             subscription.planLabel,
                             valueColor: subscription.isPlanActive
-                                ? Colors.green[700]!
-                                : const Color(0xFF00796B),
+                                ? AppTheme.primary!
+                                : AppTheme.primary,
                           ),
                           if (subscription.planType == 'per_trx') ...[
                             _infoRow(
@@ -223,7 +223,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             _infoRow(
                               'Biaya per transaksi',
                               'Gratis 🎉',
-                              valueColor: Colors.green[700]!,
+                              valueColor: AppTheme.primary!,
                             ),
                           ],
                         ],
@@ -236,9 +236,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.orange[50],
+                      color: AppTheme.warningSurface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orange[200]!),
+                      border: Border.all(color: AppTheme.warningSurface!),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,7 +247,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           children: [
                             Icon(
                               Icons.star_outline,
-                              color: Colors.orange[700],
+                              color: AppTheme.warningInk,
                               size: 18,
                             ),
                             const SizedBox(width: 8),
@@ -255,7 +255,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                               'Paket Tersedia',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: Colors.orange[700],
+                                color: AppTheme.warningInk,
                                 fontSize: 14,
                               ),
                             ),
@@ -291,9 +291,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEAF5F1),
+                      color: AppTheme.primarySurface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFB2DFDB)),
+                      border: Border.all(color: AppTheme.accentMint),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,7 +302,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           children: [
                             Icon(
                               Icons.info_outline,
-                              color: const Color(0xFF00796B),
+                              color: AppTheme.primary,
                               size: 18,
                             ),
                             const SizedBox(width: 8),
@@ -310,7 +310,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                               'Cara Top Up & Ganti Paket',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF00796B),
+                                color: AppTheme.primary,
                                 fontSize: 14,
                               ),
                             ),
@@ -346,7 +346,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       child: Text(
                         _dashboardUrl,
                         style: const TextStyle(
-                          color: Color(0xFF00796B),
+                          color: AppTheme.primary,
                           decoration: TextDecoration.underline,
                           fontSize: 14,
                         ),
@@ -367,14 +367,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(color: Color(0xFF62736F), fontSize: 14),
+          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14),
         ),
         Text(
           value,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,
-            color: valueColor ?? Colors.black87,
+            color: valueColor ?? AppTheme.textPrimary,
           ),
         ),
       ],
@@ -408,14 +408,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: const Color(0xFF00796B),
+                          color: AppTheme.primary,
                         ),
                       ),
                     ],
                   ),
                   Text(
                     desc,
-                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                    style: const TextStyle(fontSize: 12, color: AppTheme.textPrimary),
                   ),
                 ],
               ),
@@ -434,14 +434,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           height: 20,
           margin: const EdgeInsets.only(right: 10, top: 1),
           decoration: const BoxDecoration(
-            color: Color(0xFF00796B),
+            color: AppTheme.primary,
             shape: BoxShape.circle,
           ),
           child: Center(
             child: Text(
               num,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppTheme.onAction,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
@@ -451,7 +451,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
+            style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
           ),
         ),
       ],
@@ -467,7 +467,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
+            style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary),
           ),
         ),
       ],

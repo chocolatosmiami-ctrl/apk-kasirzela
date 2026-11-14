@@ -1,3 +1,5 @@
+import { readBoundedText } from '../_shared/bounded_body.mjs';
+
 const headers = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
@@ -22,7 +24,14 @@ export async function handleLegacyLogin(request, services) {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
   if (request.method !== "POST") return reply(405, { error: "METHOD_NOT_ALLOWED" });
   try {
-    const raw = await request.text();
+    // Preserve the 4096 UTF-16 limit while bounding allocation before decoding.
+    let raw;
+    try { raw = await readBoundedText(request, 16384); }
+    catch (error) {
+      if (error?.message === 'BODY_TOO_LARGE') return reply(413, { error: 'REQUEST_TOO_LARGE' });
+      if (error?.message === 'INVALID_BODY') return reply(400, { error: 'INVALID_REQUEST' });
+      throw error;
+    }
     if (raw.length > 4096) return reply(413, { error: "REQUEST_TOO_LARGE" });
     let body;
     try { body = JSON.parse(raw); } catch { return reply(400, { error: "INVALID_REQUEST" }); }

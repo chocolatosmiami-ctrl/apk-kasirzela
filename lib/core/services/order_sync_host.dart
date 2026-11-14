@@ -84,21 +84,8 @@ class _OrderSyncHostState extends State<OrderSyncHost>
   @override
   Widget build(BuildContext context) {
     final signedIn = SupabaseConfig.client.auth.currentUser != null;
-    return AnimatedBuilder(animation: ServiceHealth.instance, builder: (context, _) => Column(
+    return Column(
       children: [
-      if (ServiceHealth.instance.degraded)
-        Material(color: const Color(0xFFFFF3DA), child: SafeArea(bottom: false,
-          child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: Row(children: [
-              const Icon(Icons.cloud_off_outlined, color: Color(0xFF795300)),
-              const SizedBox(width: 8),
-              const Expanded(child: Text('Layanan belum stabil. Data tersimpan digunakan bila tersedia. '
-                'Hak akses, stok dan subscription tetap diperiksa.',
-                style: TextStyle(fontSize: 12, color: Color(0xFF513B08)))),
-              TextButton(onPressed: ServiceHealth.instance.retrying ? null : () =>
-                  ServiceHealth.instance.retry(widget.onRefresh ?? () async {}),
-                child: Text(ServiceHealth.instance.retrying ? 'Mencoba…' : 'Coba lagi')),
-            ])))),
       if (_sync.needsLogin ||
           (signedIn && _sync.statusMatchesAccount && _sync.pendingCount > 0))
           Material(
@@ -142,6 +129,6 @@ class _OrderSyncHostState extends State<OrderSyncHost>
           ),
         Expanded(child: widget.child),
       ],
-    ));
+    );
   }
 }

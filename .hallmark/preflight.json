@@ -1,0 +1,28 @@
+{
+  "scanned": "2026-11-10",
+  "framework": "Flutter 3.41.4 / Dart 3.11.1",
+  "scope": "native Android application",
+  "source": "GitHub main f883122",
+  "findings": {
+    "fonts": "Roboto, app_theme.dart",
+    "palette": "Existing teal #00796B, warm neutral surfaces",
+    "state": "Provider",
+    "storage": "SQLite, existing sync and Supabase services"
+  },
+  "preserve": [
+    "brand",
+    "routes",
+    "handlers",
+    "all domain files",
+    "all existing tests"
+  ],
+  "introduce": [
+    "semantic color tokens",
+    "Material NavigationBar",
+    "accessible shared production controls",
+    "minimum-width adaptive product grid",
+    "scrollable dialogs",
+    "native login back navigation"
+  ],
+  "completeProject": "Android, assets, pubspec and lockfile supplied from Desktop folder; original source kept as GitHub baseline"
+}

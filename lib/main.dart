@@ -137,17 +137,37 @@ class POSApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<SettingsProvider>(create: (_) => settingsProvider),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, SettingsProvider>(
+          create: (_) => settingsProvider,
+          update: (_, auth, settings) {
+            if (!auth.loading) settings!.bindAccount(
+              auth.currentUser?.authId ?? '', auth.currentUser?.ownerId ?? '');
+            return settings!;
+          },
+        ),
         ChangeNotifierProvider(create: (_) => MenuProvider()),
-        ChangeNotifierProvider(create: (_) => CashierProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, CashierProvider>(
+          create: (_) => CashierProvider(),
+          update: (_, auth, cart) => cart!..bindAccount(
+            auth.currentUser?.authId ?? '', auth.currentUser?.ownerId ?? '',
+            branchId: auth.currentUser?.branchId ?? '', role: auth.currentUser?.role ?? ''),
+        ),
         ChangeNotifierProvider(create: (_) => OrdersProvider()),
         ChangeNotifierProvider(create: (_) => ExpensesProvider()),
         ChangeNotifierProvider(create: (_) => InventoryProvider()),
-        ChangeNotifierProvider(create: (_) => ShiftProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, ShiftProvider>(
+          create: (_) => ShiftProvider(),
+          update: (_, auth, shift) => shift!..bindAccount(auth.currentUser?.authId ?? ''),
+        ),
         ChangeNotifierProvider(create: (_) => SubscriptionProvider()),
         ChangeNotifierProvider(create: (_) => PrinterStationProvider()),
-        ChangeNotifierProvider(create: (_) => RetailProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, RetailProvider>(
+          create: (_) => RetailProvider(),
+          update: (_, auth, cart) => cart!..bindAccount(
+            auth.currentUser?.authId ?? '', auth.currentUser?.ownerId ?? '',
+            branchId: auth.currentUser?.branchId ?? '', role: auth.currentUser?.role ?? ''),
+        ),
         ChangeNotifierProvider(create: (_) => TableProvider()),
       ],
       child: Consumer<SettingsProvider>(

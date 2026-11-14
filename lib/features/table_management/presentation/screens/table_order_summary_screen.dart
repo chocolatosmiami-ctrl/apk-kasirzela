@@ -22,6 +22,7 @@ class TableOrderSummaryScreen extends StatefulWidget {
 
 class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
   bool _loading = true;
+  bool _loadError = false;
 
   @override
   void initState() {
@@ -31,16 +32,25 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
 
   Future<void> _load() async {
     if (!mounted) return;
-    final menuProv = context.read<MenuProvider>();
-    if (menuProv.menuItems.isEmpty) await menuProv.loadData();
-    if (!mounted) return;
-
-    final cashier = context.read<CashierProvider>();
-    await cashier.loadTableCart(widget.table.id!, menuProv.menuItems);
-    if (!mounted) return;
-    cashier.setTableNumber(widget.table.name);
-
-    if (mounted) setState(() => _loading = false);
+    setState(() { _loading = true; _loadError = false; });
+    try {
+      final cashier = context.read<CashierProvider>();
+      final scope = await cashier.prepareSession();
+      if (scope == null) throw StateError('Login diperlukan');
+      if (!mounted) return;
+      final menuProv = context.read<MenuProvider>();
+      if (menuProv.menuItems.isEmpty) await menuProv.loadData();
+      if (!mounted) return;
+      if (!cashier.isActiveCartScope(scope)) throw StateError('Akun atau cabang berubah');
+      final loaded = await cashier.loadTableCart(widget.table.id!, menuProv.menuItems);
+      if (!mounted) return;
+      if (!loaded || !cashier.isActiveCartScope(scope)) throw StateError('Pesanan meja belum dimuat');
+      cashier.setTableNumber(widget.table.name);
+    } catch (_) {
+      _loadError = true;
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Future<void> _goTambahPesanan() async {
@@ -74,7 +84,7 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
     final cashier = context.watch<CashierProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
         title: Text('Pesanan — ${widget.table.name}'),
         backgroundColor: AppTheme.primaryRed,
@@ -86,7 +96,7 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
               widget.table.customerName != null
                   ? '👤 ${widget.table.customerName}'
                   : widget.table.zone,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: const TextStyle(color: AppTheme.onAction, fontSize: 14),
             ),
           ),
         ),
@@ -94,22 +104,28 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
       body: ZelaPage(
         child: _loading
             ? const Center(child: CircularProgressIndicator())
+            : _loadError
+            ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                const Text('Pesanan meja belum dapat dimuat.'),
+                const SizedBox(height: 12),
+                FilledButton(onPressed: _load, child: const Text('Coba lagi')),
+              ]))
             : cashier.isEmpty
             ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('🍽️', style: TextStyle(fontSize: 48)),
+                    const Icon(Icons.restaurant_outlined, size: 40, color: AppTheme.textSecondary),
                     const SizedBox(height: 12),
                     Text(
                       'Belum ada pesanan di ${widget.table.name}',
-                      style: const TextStyle(color: Colors.grey),
+                      style: const TextStyle(color: AppTheme.textSecondary),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Tekan "Tambah Pesanan" untuk mulai',
                       style: TextStyle(
-                        color: const Color(0xFF62736F),
+                        color: AppTheme.textSecondary,
                         fontSize: 14,
                       ),
                     ),
@@ -150,7 +166,7 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
                               '@${AppUtils.formatCurrency(item.menuItem.price)}',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: const Color(0xFF62736F),
+                                color: AppTheme.textSecondary,
                               ),
                             ),
                       trailing: Text(
@@ -169,7 +185,7 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppTheme.onAction,
             boxShadow: const <BoxShadow>[],
           ),
           child: Column(
@@ -202,7 +218,7 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: _loading ? null : _goTambahPesanan,
+                      onPressed: _loading || _loadError ? null : _goTambahPesanan,
                       icon: const Icon(Icons.add_shopping_cart, size: 18),
                       label: const Text('Tambah Pesanan'),
                       style: OutlinedButton.styleFrom(
@@ -218,21 +234,21 @@ class _TableOrderSummaryScreenState extends State<TableOrderSummaryScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: (_loading || cashier.isEmpty)
+                      onPressed: (_loading || _loadError || cashier.isEmpty)
                           ? null
                           : _goBayar,
                       icon: const Icon(
                         Icons.payment,
                         size: 18,
-                        color: Colors.white,
+                        color: AppTheme.onAction,
                       ),
                       label: const Text(
                         'Bayar',
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: AppTheme.onAction),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: cashier.isEmpty
-                            ? const Color(0xFF62736F)
+                            ? AppTheme.textSecondary
                             : AppTheme.primaryRed,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(

@@ -2,12 +2,16 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/resilient_http_client.dart';
 import '../services/service_health.dart';
+import 'backend_connection.dart';
 
 class SupabaseConfig {
-  static const String supabaseUrl = 'https://lckgsgojysyvtoubcteu.supabase.co';
+  static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL',
+      defaultValue: 'https://lckgsgojysyvtoubcteu.supabase.co');
 
-  static const String supabaseAnonKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxja2dzZ29qeXN5dnRvdWJjdGV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MDc3ODUsImV4cCI6MjA5MDA4Mzc4NX0.c2tn7V70j7WloaupdbkKmd-N3_dJnZX4gnPE0lebXx8';
+  static const String supabaseAnonKey = String.fromEnvironment(
+      'SUPABASE_ANON_KEY',
+      defaultValue:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxja2dzZ29qeXN5dnRvdWJjdGV1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MDc3ODUsImV4cCI6MjA5MDA4Mzc4NX0.c2tn7V70j7WloaupdbkKmd-N3_dJnZX4gnPE0lebXx8');
 
   static const String superAdminEmail = 'dendengudasya@gmail.com';
 
@@ -40,18 +44,26 @@ class SupabaseConfig {
   // Semua operasi bypass-RLS harus via RPC SECURITY DEFINER.
   // JANGAN tambahkan service_role key kembali ke sini.
 
-  static bool get isConfigured => true;
+  static String? get configurationError => backendConfigurationError(
+        url: supabaseUrl,
+        key: supabaseAnonKey,
+        urlOverridden: const bool.hasEnvironment('SUPABASE_URL'),
+        keyOverridden: const bool.hasEnvironment('SUPABASE_ANON_KEY'),
+      );
+  static bool get isConfigured => configurationError == null;
   static Future<void>? _initialization;
 
   static Future<void> initialize() => _initialization ??= _initialize();
   static Future<void> _initialize() async {
+    final error = configurationError;
+    if (error != null) throw StateError(error);
     try {
-    await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseAnonKey,
-      httpClient: ResilientHttpClient(diagnostic: ServiceHealth.log),
-      debug: false,
-    );
+      await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: supabaseAnonKey,
+        httpClient: ResilientHttpClient(diagnostic: ServiceHealth.log),
+        debug: false,
+      );
     } catch (_) {
       _initialization = null;
       rethrow;

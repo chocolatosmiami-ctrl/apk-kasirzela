@@ -1,3 +1,4 @@
+import '../../../../core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -69,9 +70,9 @@ class _TableEditorDialogState extends State<TableEditorDialog> {
               }),
             const SizedBox(height: 8),
             const Text('Disimpan ke server untuk cabang yang sedang dipilih.',
-              style: TextStyle(fontSize: 12, color: Color(0xFF62736F))),
+              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
             if (_error != null) Padding(padding: const EdgeInsets.only(top: 12),
-              child: Text(_error!, style: const TextStyle(color: Color(0xFFBA3A3A)))),
+              child: Text(_error!, style: const TextStyle(color: AppTheme.danger))),
           ])),
       )),
       actions: [

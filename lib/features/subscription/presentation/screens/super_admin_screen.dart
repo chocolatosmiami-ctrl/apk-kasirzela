@@ -93,7 +93,7 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Buka manual: $_dashboardUrl'),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppTheme.warningInk,
           ),
         );
       }
@@ -104,17 +104,17 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
   Widget build(BuildContext context) {
     if (!_authChecked) {
       return const Scaffold(
-        backgroundColor: Color(0xFF00796B),
+        backgroundColor: AppTheme.primary,
         body: ZelaPage(
-          child: Center(child: CircularProgressIndicator(color: Colors.white)),
+          child: Center(child: CircularProgressIndicator(color: AppTheme.onAction)),
         ),
       );
     }
     if (!_isSuperAdmin) {
       return Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.onAction,
         appBar: AppBar(
-          backgroundColor: const Color(0xFF00796B),
+          backgroundColor: AppTheme.primary,
           title: const Text('Akses Ditolak'),
         ),
         body: ZelaPage(
@@ -122,11 +122,11 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.block, size: 64, color: Colors.red),
+                Icon(Icons.block, size: 64, color: AppTheme.danger),
                 SizedBox(height: 16),
                 Text(
                   'Anda tidak memiliki akses.',
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(color: AppTheme.textSecondary),
                 ),
               ],
             ),
@@ -136,7 +136,7 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
         title: const Row(
           children: [
@@ -145,7 +145,7 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
             Text('Super Admin Panel'),
           ],
         ),
-        backgroundColor: const Color(0xFF00796B),
+        backgroundColor: AppTheme.primary,
         actions: [
           IconButton(
             icon: const Icon(Icons.open_in_browser),
@@ -156,9 +156,9 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
         ],
         bottom: TabBar(
           controller: _tabCtrl,
-          indicatorColor: Colors.amber,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white,
+          indicatorColor: AppTheme.warningInk,
+          labelColor: AppTheme.onAction,
+          unselectedLabelColor: AppTheme.onAction,
           tabs: const [
             Tab(text: 'Dashboard'),
             Tab(text: 'Owner'),
@@ -179,12 +179,12 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
                         horizontal: 16,
                         vertical: 10,
                       ),
-                      color: Colors.amber[700],
+                      color: AppTheme.warningInk,
                       child: const Row(
                         children: [
                           Icon(
                             Icons.open_in_browser,
-                            color: Colors.white,
+                            color: AppTheme.onAction,
                             size: 16,
                           ),
                           SizedBox(width: 8),
@@ -192,7 +192,7 @@ class _SuperAdminScreenState extends State<SuperAdminScreen>
                             child: Text(
                               'Kelola top up & saldo via Website Dashboard →',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -243,7 +243,7 @@ class _DashboardTab extends StatelessWidget {
           'Total Pendapatan',
           AppUtils.formatCurrency(totalRevenue),
           Icons.payments,
-          Colors.green,
+          AppTheme.primary,
           subtitle: 'Dari semua transaksi',
         ),
         const SizedBox(height: 10),
@@ -254,7 +254,7 @@ class _DashboardTab extends StatelessWidget {
                 'Total Transaksi',
                 '$totalTrx trx',
                 Icons.receipt_long,
-                Colors.teal,
+                AppTheme.primary,
               ),
             ),
             const SizedBox(width: 10),
@@ -263,7 +263,7 @@ class _DashboardTab extends StatelessWidget {
                 'Total Owner',
                 '$totalOwners akun',
                 Icons.people,
-                Colors.teal,
+                AppTheme.primary,
               ),
             ),
             const SizedBox(width: 10),
@@ -272,7 +272,7 @@ class _DashboardTab extends StatelessWidget {
                 'Aktif',
                 '$activeOwners owner',
                 Icons.check_circle,
-                Colors.green,
+                AppTheme.primary,
               ),
             ),
           ],
@@ -295,7 +295,7 @@ class _DashboardTab extends StatelessWidget {
                   padding: EdgeInsets.all(16),
                   child: Text(
                     'Semua owner punya saldo cukup ✅',
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(color: AppTheme.textSecondary),
                   ),
                 ),
               ),
@@ -326,10 +326,10 @@ class _DashboardTab extends StatelessWidget {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: AppTheme.onAction.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: Colors.white, size: 26),
+            child: Icon(icon, color: AppTheme.onAction, size: 26),
           ),
           const SizedBox(width: 14),
           Column(
@@ -338,14 +338,14 @@ class _DashboardTab extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.85),
+                  color: AppTheme.onAction.withOpacity(0.85),
                   fontSize: 14,
                 ),
               ),
               Text(
                 value,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.onAction,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -354,7 +354,7 @@ class _DashboardTab extends StatelessWidget {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
+                    color: AppTheme.onAction.withOpacity(0.7),
                     fontSize: 12,
                   ),
                 ),
@@ -387,7 +387,7 @@ class _DashboardTab extends StatelessWidget {
           ),
           Text(
             title,
-            style: const TextStyle(color: Colors.grey, fontSize: 12),
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
             textAlign: TextAlign.center,
           ),
         ],
@@ -400,7 +400,7 @@ class _DashboardTab extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 6),
       child: ListTile(
-        leading: const Icon(Icons.warning_amber, color: Colors.orange),
+        leading: const Icon(Icons.warning_amber, color: AppTheme.warningInk),
         title: Text(
           s['owner_name'] as String? ?? s['id'] as String? ?? '-',
           style: const TextStyle(fontWeight: FontWeight.w600),
@@ -409,7 +409,7 @@ class _DashboardTab extends StatelessWidget {
         trailing: Text(
           AppUtils.formatCurrency(bal),
           style: const TextStyle(
-            color: Colors.orange,
+            color: AppTheme.warningInk,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -435,7 +435,7 @@ class _OwnersTab extends StatelessWidget {
       return const Center(
         child: Text(
           'Belum ada owner terdaftar',
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(color: AppTheme.textSecondary),
         ),
       );
     }
@@ -460,10 +460,10 @@ class _OwnersTab extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
               color: blocked
-                  ? Colors.red[300]!
+                  ? AppTheme.danger!
                   : locked
-                  ? Colors.orange[300]!
-                  : Colors.transparent,
+                  ? AppTheme.warningInk!
+                  : AppTheme.transparent,
             ),
           ),
           child: ExpansionTile(
@@ -472,19 +472,19 @@ class _OwnersTab extends StatelessWidget {
               height: 42,
               decoration: BoxDecoration(
                 color: blocked
-                    ? Colors.red[50]
+                    ? AppTheme.dangerSurface
                     : locked
-                    ? Colors.orange[50]
-                    : Colors.teal[50],
+                    ? AppTheme.warningSurface
+                    : AppTheme.primarySurface,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 Icons.person,
                 color: blocked
-                    ? Colors.red
+                    ? AppTheme.danger
                     : locked
-                    ? Colors.orange
-                    : Colors.teal,
+                    ? AppTheme.warningInk
+                    : AppTheme.primary,
               ),
             ),
             title: Text(
@@ -501,10 +501,10 @@ class _OwnersTab extends StatelessWidget {
                       Icons.circle,
                       size: 8,
                       color: blocked
-                          ? Colors.red
+                          ? AppTheme.danger
                           : locked
-                          ? Colors.orange
-                          : Colors.green,
+                          ? AppTheme.warningInk
+                          : AppTheme.primary,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -528,7 +528,7 @@ class _OwnersTab extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF7F9F8),
+                        color: AppTheme.surfaceLight,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -564,19 +564,19 @@ class _OwnersTab extends StatelessWidget {
                             icon: Icon(
                               blocked ? Icons.lock_open : Icons.block,
                               size: 14,
-                              color: Colors.white,
+                              color: AppTheme.onAction,
                             ),
                             label: Text(
                               blocked ? 'Aktifkan' : 'Blokir',
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                                 fontSize: 14,
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: blocked
-                                  ? Colors.green
-                                  : Colors.red[700],
+                                  ? AppTheme.primary
+                                  : AppTheme.danger,
                             ),
                             onPressed: () async {
                               final ok = await SubscriptionService.instance
@@ -603,7 +603,7 @@ class _OwnersTab extends StatelessWidget {
         value,
         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
       ),
-      Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+      Text(label, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
     ],
   );
 }

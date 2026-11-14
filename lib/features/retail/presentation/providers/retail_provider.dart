@@ -1,4 +1,7 @@
+import '../../../../core/services/checkout_member.dart';
+import '../../../../core/services/offline_order_sync_service.dart';
 import '../../../../core/services/read_work.dart';
+import '../../../../core/services/cart_session.dart';
 import '../../../../core/utils/app_constants.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../core/config/supabase_config.dart';
@@ -6,7 +9,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../data/models/retail_models.dart';
 
-class RetailProvider extends ChangeNotifier {
+class RetailProvider extends ChangeNotifier with SessionBoundCart {
+  int? lastCheckoutId;
+  String? lastCheckoutNumber;
+
+  @override
+  void clearSessionState() {
+    lastCheckoutId = null;
+    lastCheckoutNumber = null;
+    _cart = [];
+    _products = [];
+    _filtered = [];
+    _searchQuery = '';
+    _selectedCategory = 'Semua';
+    _loading = false;
+    notifyListeners();
+  }
+
   List<RetailProduct> _products = [];
   List<RetailProduct> _filtered = [];
   List<RetailCartItem> _cart = [];
@@ -34,25 +53,28 @@ class RetailProvider extends ChangeNotifier {
   // ── Load products ─────────────────────────────────────
   final _productReads = ReadFlights<void>();
   Future<void> loadProducts() async {
+    final scope = await prepareSession();
+    if (scope == null) return;
+    final epoch = cartSessionEpoch;
     final prefs = await SharedPreferences.getInstance();
-    final key = '${prefs.getString(AppConstants.keyUid)}:${prefs.getString(AppConstants.keyBranchId)}';
+    final key = '${scope.accountId}:${scope.branchId}:$epoch';
     return _productReads.run(key, () async {
-      try { await _loadProducts(); }
+      try { await _loadProducts(scope, epoch); }
       finally {
-        if (key == '${prefs.getString(AppConstants.keyUid)}:${prefs.getString(AppConstants.keyBranchId)}') {
+        if (isCurrentSession(scope, epoch, prefs)) {
           _loading = false; notifyListeners();
         }
       }
     });
   }
-  Future<void> _loadProducts() async {
+  Future<void> _loadProducts(CartScope scope, int epoch) async {
     debugPrint('📊 [RETAIL] <void> loadProducts called');
+    final prods = await SharedPreferences.getInstance();
+    if (!isCurrentSession(scope, epoch, prods)) return;
     _loading = true;
     notifyListeners();
-
-    final prods = await SharedPreferences.getInstance();
-    final userId = prods.getString(AppConstants.keyUid) ?? '';
-    final branchId = prods.getString(AppConstants.keyBranchId) ?? '';
+    final userId = scope.accountId;
+    final branchId = scope.branchId;
     debugPrint('📊 [RETAIL] loadProducts userId=$userId branchId=$branchId');
 
     // Pull dari Supabase jika branchId tersedia (cloud-first)
@@ -65,12 +87,17 @@ class RetailProvider extends ChangeNotifier {
         if (supaResult != null && supaResult is List && supaResult.isNotEmpty) {
           debugPrint('📊 [RETAIL] Supabase products: ${supaResult.length}');
           // Upsert produk dari Supabase ke SQLite lokal
-          if (prods.getString(AppConstants.keyUid) != userId || prods.getString(AppConstants.keyBranchId) != branchId) return;
+          if (!isCurrentSession(scope, epoch, prods)) return;
           await DatabaseHelper.instance.runTransaction((txn) async {
+            requireCurrentSession(scope, epoch, prods);
             final local = await txn.query('retail_products', columns: ['id','sku'], where: 'branch_id = ?', whereArgs: [branchId]);
             final bySku = <String,int>{};
             for (final row in local) { if (row['sku'] != null) bySku.putIfAbsent(row['sku'].toString(), () => row['id'] as int); }
           for (final row in supaResult) {
+            final declaredBranch = row['branch_id']?.toString() ?? '';
+            if (declaredBranch.isNotEmpty && declaredBranch != branchId) {
+              throw StateError('Produk server berada di luar cabang aktif.');
+            }
             final sku = row['sku']?.toString() ?? '';
             final localId = bySku[sku];
             final data = {
@@ -97,6 +124,7 @@ class RetailProvider extends ChangeNotifier {
               if (row['sku'] == null) bySku.remove(sku);
             }
           }
+            requireCurrentSession(scope, epoch, prods);
           });
           debugPrint('📊 [RETAIL] ✅ Supabase sync ke SQLite selesai');
         }
@@ -106,20 +134,13 @@ class RetailProvider extends ChangeNotifier {
     }
 
     // Baca dari SQLite (sudah ter-update dari Supabase di atas)
-    List<Map<String, dynamic>> results;
-    if (userId.isNotEmpty) {
-      results = await DatabaseHelper.instance.rawQuery(
-        "SELECT * FROM retail_products WHERE is_active = 1 AND (created_by = ? OR created_by IS NULL OR branch_id = ?) ORDER BY name ASC",
-        [userId, branchId],
-      );
-    } else {
-      results = await DatabaseHelper.instance.query(
-        'retail_products',
-        where: 'is_active = 1',
-        orderBy: 'name ASC',
-      );
-    }
-    if (prods.getString(AppConstants.keyUid) != userId || prods.getString(AppConstants.keyBranchId) != branchId) return;
+    if (!isCurrentSession(scope, epoch, prods)) return;
+    // Unknown legacy ownership is retained in the DB, never assigned to a reader.
+    final results = branchId.isEmpty ? <Map<String, dynamic>>[] :
+        await DatabaseHelper.instance.query('retail_products',
+          where: 'is_active = 1 AND branch_id = ?', whereArgs: [branchId],
+          orderBy: 'name ASC');
+    if (!isCurrentSession(scope, epoch, prods)) return;
     _products = results.map((r) => RetailProduct.fromMap(r)).toList();
     _applyFilter();
     // Completion notification is owned by the coalesced read wrapper.
@@ -164,6 +185,8 @@ class RetailProvider extends ChangeNotifier {
     String? unit,
     double? unitPrice,
   }) {
+    final scope = cartScope;
+    if (scope == null || product.branchId != scope.branchId) return;
     final selectedUnit = unit ?? product.unit;
     final price = unitPrice ?? product.sellPrice;
 
@@ -213,18 +236,34 @@ class RetailProvider extends ChangeNotifier {
     required double paidAmount,
     required String cashierId,
     double discountTotal = 0,
+    CheckoutMember? member,
   }) async {
+    lastCheckoutId = null;
+    lastCheckoutNumber = null;
     if (_cart.isEmpty) return false;
+    final requestEpoch = cartSessionEpoch;
+    final originScope = cartScope;
     debugPrint('📊 [RETAIL] ════ CHECKOUT START ════');
     debugPrint('📊 [RETAIL] cashierId=$cashierId method=$paymentMethod paid=$paidAmount');
     debugPrint('📊 [RETAIL] cart items: ${_cart.length}');
 
     final db = DatabaseHelper.instance;
-    final now = DateTime.now().toIso8601String();
+    final localNow = DateTime.now();
+    final offset = localNow.timeZoneOffset;
+    final zone = '${offset.isNegative ? '-' : '+'}${offset.inHours.abs().toString().padLeft(2, '0')}:${(offset.inMinutes.abs() % 60).toString().padLeft(2, '0')}';
+    final now = localNow.toIso8601String() + (member == null ? '' : zone);
+    final orderNumber = 'RT-${localNow.millisecondsSinceEpoch}';
 
     try {
       final checkoutPrefs = await SharedPreferences.getInstance();
-      final branchId = checkoutPrefs.getString(AppConstants.keyBranchId) ?? '';
+      final scope = await prepareSession();
+      if (scope == null || !identical(scope, originScope) || requestEpoch != cartSessionEpoch ||
+          scope.branchId.isEmpty || _cart.isEmpty || cashierId != scope.accountId) return false;
+      final epoch = cartSessionEpoch;
+      requireCurrentSession(scope, epoch, checkoutPrefs);
+      if (member != null && !member.matches(scope, epoch)) return false;
+      final branchId = scope.branchId;
+      final kasirName = checkoutPrefs.getString(AppConstants.keyKasirName) ?? checkoutPrefs.getString(AppConstants.keyName) ?? '';
       final netTotal = cartTotal - discountTotal;
       // BUG 30 FIX: change_amount tidak boleh negatif (non-cash paidAmount=0)
       final changeAmount = (paidAmount - netTotal).clamp(0.0, double.infinity);
@@ -237,6 +276,7 @@ class RetailProvider extends ChangeNotifier {
       // BUG 29 FIX: Bungkus SEMUA operasi dalam satu SQLite transaction.
       // Jika crash di tengah, semua di-rollback — tidak ada stok berkurang tanpa order.
       await db.runTransaction((txn) async {
+        requireCurrentSession(scope, epoch, checkoutPrefs);
         // 1. Insert order dulu
         orderId = await txn.rawInsert('''
           INSERT INTO orders (
@@ -246,7 +286,7 @@ class RetailProvider extends ChangeNotifier {
             paid_amount, change_amount, note, branch_id, created_at, updated_at
           ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ''', [
-          'RT-${DateTime.now().millisecondsSinceEpoch}',
+          orderNumber,
           cashierId, 'retail', 'paid',
           cartTotal,
           discountTotal > 0 ? 'nominal' : 'none',
@@ -262,13 +302,18 @@ class RetailProvider extends ChangeNotifier {
         for (final item in cartSnapshot) {
           final p = item.product;
           final baseQty = item.qty;
-          final newStock = (p.stock - baseQty).clamp(0.0, double.infinity);
+          final localRows = await txn.query('retail_products',
+            where: 'id = ? AND branch_id = ?', whereArgs: [p.id, branchId]);
+          if (localRows.isEmpty) throw StateError('Produk tidak tersedia di cabang aktif. Muat ulang produk.');
+          final stockBefore = (localRows.first['stock'] as num?)?.toDouble() ?? 0;
+          final newStock = (stockBefore - baseQty).clamp(0.0, double.infinity);
 
           // Deduct stock
-          await txn.rawUpdate(
-            'UPDATE retail_products SET stock = ? WHERE id = ?',
-            [newStock, p.id],
+          final changed = await txn.rawUpdate(
+            'UPDATE retail_products SET stock = ? WHERE id = ? AND branch_id = ?',
+            [newStock, p.id, branchId],
           );
+          if (changed != 1) throw StateError('Cakupan stok produk berubah.');
 
           // Log stock movement
           await txn.rawInsert('''
@@ -277,7 +322,7 @@ class RetailProvider extends ChangeNotifier {
             VALUES (?,?,?,?,?,?,?,?,?)
           ''', [
             p.id, p.name, 'sale', baseQty,
-            p.stock, newStock, 'Penjualan', now, cashierId,
+            stockBefore, newStock, 'Penjualan', now, cashierId,
           ]);
 
           // Insert order item
@@ -290,13 +335,35 @@ class RetailProvider extends ChangeNotifier {
             item.unitPrice, item.subtotal,
           ]);
         }
+        if (member != null) {
+          await OfflineOrderSyncService.enqueue(txn,
+            orderId: orderId, accountId: cashierId, member: member,
+            order: {
+              'order_number': orderNumber, 'order_type': 'retail',
+              'branch_id': branchId, 'created_at': now, 'cashier_name': kasirName,
+              'subtotal': netTotal + discountTotal, 'discount_amount': discountTotal,
+              'tax_amount': 0, 'service_charge_amount': 0, 'total': netTotal,
+              'payment_method': paymentMethod, 'paid_amount': paidAmount,
+              'change_amount': changeAmount, 'note': 'Retail transaction',
+            },
+            items: cartSnapshot.map((item) => <String, dynamic>{
+              'product_id': item.product.id?.toString() ?? '',
+              'item_name': item.product.name, 'quantity': item.qty,
+              'price': item.unitPrice, 'subtotal': item.subtotal, 'unit': item.selectedUnit,
+            }).toList());
+        }
+        requireCurrentSession(scope, epoch, checkoutPrefs);
       });
       // ── Akhir transaction — semua berhasil atau semua rollback ──
 
       debugPrint('📊 [RETAIL] ✅ Order saved locally, orderId=$orderId');
 
+      if (member != null) {
+        OfflineOrderSyncService.instance.kick();
+      } else {
       _syncOrderToSupabase(
         orderId: orderId,
+        scope: scope, epoch: epoch, branchId: branchId, kasirName: kasirName,
         cashierId: cashierId,
         netTotal: netTotal,
         discountTotal: discountTotal,
@@ -305,9 +372,14 @@ class RetailProvider extends ChangeNotifier {
         now: now,
         cartItems: cartSnapshot,
       );
+      }
 
-      clearCart();
-      await loadProducts();
+      if (isCurrentSession(scope, epoch, checkoutPrefs)) {
+        lastCheckoutId = orderId;
+        lastCheckoutNumber = orderNumber;
+        clearCart();
+        await loadProducts();
+      }
       return true;
     } catch (e) {
       debugPrint('📊 [RETAIL] ERROR: $e');
@@ -318,6 +390,8 @@ class RetailProvider extends ChangeNotifier {
   // Sync order ke Supabase (background)
   Future<void> _syncOrderToSupabase({
     required int orderId,
+    required CartScope scope, required int epoch,
+    required String branchId, required String kasirName,
     required String cashierId,
     required double netTotal,
     required double discountTotal,
@@ -328,8 +402,7 @@ class RetailProvider extends ChangeNotifier {
   }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final branchId  = prefs.getString(AppConstants.keyBranchId) ?? '';
-      final kasirName = prefs.getString(AppConstants.keyKasirName) ?? prefs.getString(AppConstants.keyName) ?? '';
+      requireCurrentSession(scope, epoch, prefs);
 
       debugPrint('📊 [RETAIL] Syncing to Supabase: branchId=$branchId');
 
@@ -358,6 +431,8 @@ class RetailProvider extends ChangeNotifier {
         'unit':       item.selectedUnit,
       }).toList();
 
+      requireCurrentSession(scope, epoch, prefs);
+      if (SupabaseConfig.client.auth.currentUser?.id != scope.accountId) return;
       final result = await SupabaseConfig.client.rpc('insert_order', params: {
         'p_branch_id':      branchId,
         'p_cashier_id':     cashierId,

@@ -83,19 +83,19 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: sel
-                            ? const Color(0xFF00796B)
-                            : const Color(0xFFF7F9F8),
+                            ? AppTheme.primary
+                            : AppTheme.surfaceLight,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: sel
-                              ? const Color(0xFF00796B)
-                              : Colors.grey[300]!,
+                              ? AppTheme.primary
+                              : AppTheme.fieldBorder!,
                         ),
                       ),
                       child: Text(
                         cat,
                         style: TextStyle(
-                          color: sel ? Colors.white : Colors.black87,
+                          color: sel ? AppTheme.onAction : AppTheme.textPrimary,
                           fontSize: 14,
                         ),
                       ),
@@ -135,7 +135,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Isi keterangan dan jumlah'),
-                          backgroundColor: Colors.red,
+                          backgroundColor: AppTheme.danger,
                         ),
                       );
                       return;
@@ -155,18 +155,18 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Pengeluaran dicatat'),
-                          backgroundColor: Colors.green,
+                          backgroundColor: AppTheme.primary,
                         ),
                       );
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00796B),
+                    backgroundColor: AppTheme.primary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   child: const Text(
                     'Simpan Pengeluaran',
-                    style: TextStyle(color: Colors.white, fontSize: 15),
+                    style: TextStyle(color: AppTheme.onAction, fontSize: 15),
                   ),
                 ),
               ),
@@ -189,7 +189,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
         return Scaffold(
           appBar: AppBar(
             title: const Text('Pengeluaran Harian'),
-            backgroundColor: const Color(0xFF00796B),
+            backgroundColor: AppTheme.primary,
             actions: [
               // Pilih tanggal
               IconButton(
@@ -204,7 +204,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     builder: (ctx, child) => Theme(
                       data: Theme.of(ctx).copyWith(
                         colorScheme: const ColorScheme.light(
-                          primary: const Color(0xFF00796B),
+                          primary: AppTheme.primary,
                         ),
                       ),
                       child: child!,
@@ -226,7 +226,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                         margin: const EdgeInsets.all(14),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00796B),
+                          color: AppTheme.primary,
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Column(
@@ -236,14 +236,14 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                               children: [
                                 const Icon(
                                   Icons.receipt_long,
-                                  color: Colors.white,
+                                  color: AppTheme.onAction,
                                   size: 18,
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
                                   AppUtils.formatDate(provider.selectedDate),
                                   style: const TextStyle(
-                                    color: Colors.white,
+                                    color: AppTheme.onAction,
                                     fontSize: 14,
                                   ),
                                 ),
@@ -253,7 +253,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                             Text(
                               AppUtils.formatCurrency(provider.totalToday),
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -261,13 +261,13 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                             const Text(
                               'Total Pengeluaran',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                                 fontSize: 14,
                               ),
                             ),
                             if (provider.byCategory.isNotEmpty) ...[
                               const SizedBox(height: 12),
-                              const Divider(color: Colors.white24),
+                              const Divider(color: AppTheme.onActionMuted),
                               const SizedBox(height: 8),
                               Wrap(
                                 spacing: 8,
@@ -280,7 +280,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                           vertical: 4,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.15),
+                                          color: AppTheme.onAction.withOpacity(0.15),
                                           borderRadius: BorderRadius.circular(
                                             20,
                                           ),
@@ -288,7 +288,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                         child: Text(
                                           '${e.key}: ${AppUtils.formatCurrency(e.value)}',
                                           style: const TextStyle(
-                                            color: Colors.white,
+                                            color: AppTheme.onAction,
                                             fontSize: 14,
                                           ),
                                         ),
@@ -317,7 +317,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                       'Belum ada pengeluaran\n${AppUtils.formatDate(provider.selectedDate)}',
                                       textAlign: TextAlign.center,
                                       style: const TextStyle(
-                                        color: Colors.grey,
+                                        color: AppTheme.textSecondary,
                                         fontSize: 15,
                                       ),
                                     ),
@@ -341,7 +341,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                           width: 44,
                                           height: 44,
                                           decoration: BoxDecoration(
-                                            color: Colors.teal[50],
+                                            color: AppTheme.primarySurface,
                                             borderRadius: BorderRadius.circular(
                                               10,
                                             ),
@@ -368,7 +368,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                                     vertical: 2,
                                                   ),
                                               decoration: BoxDecoration(
-                                                color: Colors.teal[50],
+                                                color: AppTheme.primarySurface,
                                                 borderRadius:
                                                     BorderRadius.circular(4),
                                               ),
@@ -376,7 +376,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                                 e.category,
                                                 style: const TextStyle(
                                                   fontSize: 12,
-                                                  color: Colors.teal,
+                                                  color: AppTheme.primary,
                                                 ),
                                               ),
                                             ),
@@ -387,7 +387,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                               ),
                                               style: const TextStyle(
                                                 fontSize: 12,
-                                                color: Colors.grey,
+                                                color: AppTheme.textSecondary,
                                               ),
                                             ),
                                           ],
@@ -399,7 +399,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                               AppUtils.formatCurrency(e.amount),
                                               style: const TextStyle(
                                                 fontWeight: FontWeight.bold,
-                                                color: Colors.teal,
+                                                color: AppTheme.primary,
                                                 fontSize: 14,
                                               ),
                                             ),
@@ -408,7 +408,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                               tooltip: 'Delete Outline',
                                               icon: const Icon(
                                                 Icons.delete_outline,
-                                                color: Colors.red,
+                                                color: AppTheme.danger,
                                                 size: 20,
                                               ),
                                               onPressed: () =>
@@ -427,7 +427,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           ),
           bottomNavigationBar: SafeArea(
             child: Container(
-              color: Colors.white,
+              color: AppTheme.onAction,
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: Row(
                 children: [
@@ -438,12 +438,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                       width: 48,
                       margin: const EdgeInsets.only(right: 10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEAF5F1),
+                        color: AppTheme.primarySurface,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Icon(
                         Icons.home_rounded,
-                        color: Color(0xFF00796B),
+                        color: AppTheme.primary,
                         size: 22,
                       ),
                     ),
@@ -451,7 +451,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   Expanded(
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00796B),
+                        backgroundColor: AppTheme.primary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -461,13 +461,13 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                       onPressed: _showAddExpense,
                       icon: const Icon(
                         Icons.add,
-                        color: Colors.white,
+                        color: AppTheme.onAction,
                         size: 20,
                       ),
                       label: const Text(
                         'Tambah Pengeluaran',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.onAction,
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
                         ),
@@ -497,12 +497,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
             onPressed: () {
               Navigator.pop(context);
               context.read<ExpensesProvider>().deleteExpense(expense.id!);
             },
-            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+            child: const Text('Hapus', style: TextStyle(color: AppTheme.onAction)),
           ),
         ],
       ),

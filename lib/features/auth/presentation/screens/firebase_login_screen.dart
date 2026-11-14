@@ -1,19 +1,14 @@
-import '../../../../core/services/staff_login_service.dart';
-import '../../../../core/services/login_route.dart';
+import '../../../../core/services/supabase_auth_service.dart';
 import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/app_constants.dart';
 import '../providers/auth_provider.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import 'pin_verify_screen.dart';
 import 'set_pin_screen.dart';
-import '../../../home/presentation/screens/home_screen.dart';
 
 class FirebaseLoginScreen extends StatefulWidget {
   final String initialEmail;
@@ -34,22 +29,24 @@ class _FirebaseLoginScreenState extends State<FirebaseLoginScreen> {
   }
 
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: AppTheme.surfaceLight,
-    body: AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
-      child: _mode == _LoginMode.none
-          ? _RolePickerView(
-              key: const ValueKey('picker'),
-              onPick: (m) => setState(() => _mode = m),
-            )
-          : _FormView(
-              key: ValueKey(_mode),
-              mode: _mode,
-              initialEmail: widget.initialEmail,
-              onBack: () => setState(() => _mode = _LoginMode.none),
-            ),
-    ),
-  );
+        backgroundColor: AppTheme.surfaceLight,
+        body: AnimatedSwitcher(
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 150),
+          child: _mode == _LoginMode.none
+              ? _RolePickerView(
+                  key: const ValueKey('picker'),
+                  onPick: (m) => setState(() => _mode = m),
+                )
+              : _FormView(
+                  key: ValueKey(_mode),
+                  mode: _mode,
+                  initialEmail: widget.initialEmail,
+                  onBack: () => setState(() => _mode = _LoginMode.none),
+                ),
+        ),
+      );
 }
 
 // ── Pilih Role ─────────────────────────────────────────────
@@ -58,61 +55,61 @@ class _RolePickerView extends StatelessWidget {
   const _RolePickerView({super.key, required this.onPick});
 
   Widget build(BuildContext context) => ZelaAuthBody(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const ZelaBrand(),
-        const SizedBox(height: 32),
-        const Text(
-          'Selamat datang kembali',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ZelaBrand(),
+            const SizedBox(height: 32),
+            const Text(
+              'Selamat datang kembali',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Pilih akun untuk melanjutkan operasional usaha.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 28),
+            _RoleCard(
+              icon: Icons.storefront_outlined,
+              title: 'Owner / Super Admin',
+              subtitle: 'Kelola usaha dan akun Anda',
+              color: AppTheme.primary,
+              onTap: () => onPick(_LoginMode.owner),
+            ),
+            const SizedBox(height: 12),
+            _RoleCard(
+              icon: Icons.point_of_sale,
+              title: 'Staf / Kasir',
+              subtitle: 'Masuk dengan akun dari owner',
+              color: AppTheme.primary,
+              onTap: () => onPick(_LoginMode.staff),
+            ),
+            const SizedBox(height: 24),
+            TextButton.icon(
+              onPressed: () => onPick(_LoginMode.register),
+              icon: const Icon(Icons.person_add_outlined),
+              label: const Text('Daftar owner baru'),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'POS untuk operasional yang lebih rapi.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
-        const Text(
-          'Pilih akun untuk melanjutkan operasional usaha.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 15,
-            height: 1.5,
-            color: AppTheme.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 28),
-        _RoleCard(
-          icon: Icons.storefront_outlined,
-          title: 'Owner / Super Admin',
-          subtitle: 'Kelola usaha dan akun Anda',
-          color: AppTheme.primary,
-          onTap: () => onPick(_LoginMode.owner),
-        ),
-        const SizedBox(height: 12),
-        _RoleCard(
-          icon: Icons.point_of_sale,
-          title: 'Staf / Kasir',
-          subtitle: 'Masuk dengan akun dari owner',
-          color: AppTheme.primary,
-          onTap: () => onPick(_LoginMode.staff),
-        ),
-        const SizedBox(height: 24),
-        TextButton.icon(
-          onPressed: () => onPick(_LoginMode.register),
-          icon: const Icon(Icons.person_add_outlined),
-          label: const Text('Daftar owner baru'),
-        ),
-        const SizedBox(height: 20),
-        const Text(
-          'POS untuk operasional yang lebih rapi.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
-        ),
-      ],
-    ),
-  );
+      );
 }
 
 class _RoleCard extends StatelessWidget {
@@ -129,50 +126,50 @@ class _RoleCard extends StatelessWidget {
   });
 
   Widget build(BuildContext context) => Material(
-    color: Colors.white,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-      side: const BorderSide(color: AppTheme.borderLight),
-    ),
-    clipBehavior: Clip.antiAlias,
-    child: InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
-          children: [
-            Icon(icon, size: 28, color: AppTheme.primary),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
-          ],
+        color: AppTheme.onAction,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: AppTheme.borderLight),
         ),
-      ),
-    ),
-  );
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Row(
+              children: [
+                Icon(icon, size: 28, color: AppTheme.primary),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+              ],
+            ),
+          ),
+        ),
+      );
 }
 
 // ── Form View — background PUTIH, teks HITAM ──────────────
@@ -180,8 +177,12 @@ class _FormView extends StatefulWidget {
   final _LoginMode mode;
   final String initialEmail;
   final VoidCallback onBack;
-  const _FormView({super.key, required this.mode, required this.onBack,
-    this.initialEmail = ''});
+  const _FormView({
+    super.key,
+    required this.mode,
+    required this.onBack,
+    this.initialEmail = '',
+  });
   @override
   State<_FormView> createState() => _FormViewState();
 }
@@ -266,28 +267,21 @@ class _FormViewState extends State<_FormView> {
       if (_isRegister) {
         await _doRegister(email, pass);
       } else {
-        // Selecting the Owner tile must not send a legacy cashier directly to
-        // Auth, where an account that has not yet migrated cannot exist.
-        final profile = email == SupabaseConfig.superAdminEmail
-            ? null : await StaffLoginService.findProfile(email);
-        if (!mounted) return;
-        if (usesStaffLogin(profile?['role']?.toString())) {
-          await _doStaffLogin(email, pass, knownProfile: profile);
-        } else {
-          await _doOwnerLogin(email, pass);
-        }
+        await _doCredentialLogin(email, pass);
       }
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = 'Terjadi kesalahan: $e';
+        _error = authenticationErrorMessage(e);
       });
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
-  // ── Owner / SuperAdmin Login ──────────────────────────────
-  Future<void> _doOwnerLogin(String email, String pass) async {
+  // ── Credential login; role comes from the authenticated profile ──────────────────────────────
+  Future<void> _doCredentialLogin(String email, String pass) async {
     final auth = context.read<AuthProvider>();
     if (!SupabaseConfig.isInitialized) {
       if (mounted) {
@@ -297,7 +291,7 @@ class _FormViewState extends State<_FormView> {
               'Konfigurasi server belum diset. '
               'Hubungi developer untuk setup SUPABASE_URL & SUPABASE_ANON_KEY.',
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.danger,
             duration: Duration(seconds: 5),
           ),
         );
@@ -308,194 +302,25 @@ class _FormViewState extends State<_FormView> {
 
     final result = await auth.login(email: email, password: pass);
     if (!mounted) return;
-    setState(() => _loading = false);
     if (!result.success) {
       setState(() => _error = result.error ?? 'Email atau password salah');
       return;
     }
-    await auth.checkSession();
-    if (!mounted) return;
+    final profile = auth.currentUser;
+    if (profile == null || profile.authId.isEmpty) {
+      setState(() => _error = 'Profil akun belum aktif atau belum disetujui. Hubungi owner.');
+      return;
+    }
     await context.read<SettingsProvider>().reloadForCurrentUser();
-    if (!mounted) return;
+    if (!mounted || auth.currentUser?.authId != profile.authId) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => PinVerifyScreen(
-          userName: auth.currentUser?.name ?? '',
-          userRole: auth.currentUser?.role ?? 'owner',
+          userName: profile.name,
+          userRole: profile.role,
         ),
       ),
     );
-  }
-
-  // ── Staff Login — email + password saja, PIN dikecek terpisah ──
-  Future<void> _doStaffLogin(String email, String pass,
-      {Map<String, dynamic>? knownProfile}) async {
-    try {
-      debugPrint('🔐 [StaffLogin] START email=$email');
-      final result = knownProfile ?? await StaffLoginService.findProfile(email);
-      debugPrint('🔐 [StaffLogin] Profile response received');
-
-      if (!mounted) return;
-
-      final profile = result;
-
-      debugPrint('🔐 [StaffLogin] Profile response parsed');
-      if (profile == null) {
-        debugPrint(
-          '🔐 [StaffLogin] ❌ Profile NULL - email not found in users table',
-        );
-        setState(() {
-          _loading = false;
-          _error =
-              'Akun belum terdaftar di sistem.\n'
-              'Minta owner tambahkan akun Anda melalui menu:\n'
-              '"Cabang Saya → Tambah Staff"';
-        });
-        return;
-      }
-
-      // BUG 48 FIX: Cek is_active
-      final isActive = profile['is_active'];
-      if (isActive == false || isActive == 0) {
-        setState(() {
-          _loading = false;
-          _error = 'Akun Anda telah dinonaktifkan. Hubungi owner.';
-        });
-        return;
-      }
-
-      final role = profile['role'] as String? ?? 'kasir';
-
-      // Owner/superadmin harus login via tab owner
-      if (role == 'owner' || role == 'superadmin') {
-        setState(() {
-          _loading = false;
-          _error = 'Akun owner gunakan tombol "Owner / Super Admin"';
-        });
-        return;
-      }
-
-      // A cached password hash is not a Supabase session. The server verifies
-      // legacy credentials and links the real Auth account before returning JWTs.
-      final linkedId = profile['auth_id']?.toString() ?? '';
-      final authId = await StaffLoginService.signIn(email, pass,
-          legacy: linkedId.isEmpty);
-      if (!mounted) return;
-
-      // Step 3: Simpan session ke SharedPreferences
-      debugPrint(
-        '🔐 [StaffLogin] owner_id: ${profile["owner_id"]}, branch_id: ${profile["branch_id"]}',
-      );
-      final prefs = await SharedPreferences.getInstance();
-      final branchId = profile['branch_id']?.toString() ?? '';
-
-      // Manajer multi-cabang: branch_id kosong/null → mode food default, nama kosong
-      String branchMode = 'food';
-      String branchName = '';
-
-      // Hanya fetch branch data jika branchId tidak kosong
-      if (branchId.isNotEmpty) {
-        try {
-          final branchData = await SupabaseConfig.client
-              .from('branches')
-              .select('name, mode')
-              .eq('id', branchId)
-              .maybeSingle();
-          if (branchData != null) {
-            branchMode = branchData['mode'] as String? ?? 'food';
-            branchName = branchData['name'] as String? ?? '';
-            debugPrint(
-              '🔐 [StaffLogin] branch mode=$branchMode, name=$branchName',
-            );
-          }
-        } catch (e) {
-          debugPrint('🔐 [StaffLogin] branch fetch error: $e');
-        }
-      } else {
-        // Manajer multi-cabang: set flag khusus
-        debugPrint(
-          '🔐 [StaffLogin] ℹ️ branch_id kosong → manajer multi-cabang',
-        );
-        branchName = 'Semua Cabang';
-      }
-
-      final authUid = authId; // Always use the UID from the real Auth session.
-      final usersId = profile['id']?.toString() ?? '';
-
-      debugPrint('🔵 [LOGIN-SAVE] authUid(auth_id)=$authUid');
-      debugPrint('🔵 [LOGIN-SAVE] usersId(users.id)=$usersId');
-      debugPrint('🔵 [LOGIN-SAVE] branchId=$branchId');
-
-      await prefs.setString(AppConstants.keyUid, authUid);
-      await prefs.setString(AppConstants.keyUsersId, usersId);
-      await prefs.setString(
-        AppConstants.keyName,
-        profile['name'] as String? ?? '',
-      );
-      await prefs.setString(AppConstants.keyEmail, email);
-      await prefs.setString(AppConstants.keyRole, role);
-      await prefs.setString(
-        AppConstants.keyOwnerId,
-        profile['owner_id']?.toString() ?? '',
-      );
-      await prefs.setString(AppConstants.keyBranchId, branchId);
-      await prefs.setString(AppConstants.keyBranchName, branchName);
-      await prefs.setString('branch_mode', branchMode);
-      await prefs.setString('kasir_name', profile['name'] as String? ?? '');
-      // Flag manajer multi-cabang
-      await prefs.setBool(
-        'is_multi_branch_manager',
-        branchId.isEmpty && role == 'manajer',
-      );
-
-      if (!mounted) return;
-      await context.read<AuthProvider>().checkSession();
-      if (!mounted) return;
-      await context.read<SettingsProvider>().reloadForCurrentUser();
-      if (!mounted) return;
-      setState(() => _loading = false);
-
-      final name = profile['name'] as String? ?? '';
-      final pinFromServer = (profile['pin_hash']?.toString() ?? '').trim();
-      final pinFromPrefs = (prefs.getString('sb_pin_hash') ?? '').trim();
-      final hasPin = pinFromServer.isNotEmpty || pinFromPrefs.isNotEmpty;
-      debugPrint('📌 [StaffLogin] PIN CHECK: email=$email');
-      debugPrint(
-        '📌 [StaffLogin] pinFromServer=${pinFromServer.isEmpty ? 'EMPTY' : 'SET(${pinFromServer.length}chars)'}',
-      );
-      debugPrint(
-        '📌 [StaffLogin] pinFromPrefs=${pinFromPrefs.isEmpty ? 'EMPTY' : 'SET(${pinFromPrefs.length}chars)'}',
-      );
-      debugPrint(
-        '📌 [StaffLogin] hasPin=$hasPin → ${hasPin ? 'PinVerify' : 'SetPin'}',
-      );
-
-      // Step 4: Cek PIN
-      // Manajer multi-cabang (branch_id kosong) → langsung ke HomeScreen tanpa pilih cabang
-      if (!hasPin) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) =>
-                SetPinScreen(userName: name, userRole: role, userEmail: email),
-          ),
-        );
-      } else {
-        if (pinFromServer.isNotEmpty) {
-          await prefs.setString('sb_pin_hash', pinFromServer);
-        }
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => PinVerifyScreen(userName: name, userRole: role),
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = 'Terjadi kesalahan: $e';
-      });
-    }
   }
 
   // ── Register Owner Baru ───────────────────────────────────
@@ -526,131 +351,136 @@ class _FormViewState extends State<_FormView> {
     );
   }
 
-  Widget build(BuildContext context) => ZelaAuthBody(
-    child: AutofillGroup(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: IconButton(
-              onPressed: _loading ? null : widget.onBack,
-              tooltip: 'Kembali',
-              icon: const Icon(Icons.arrow_back),
-            ),
-          ),
-          const ZelaBrand(),
-          const SizedBox(height: 28),
-          Text(
-            _title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            _isRegister
-                ? 'Buat akun untuk mulai mengelola usaha Anda.'
-                : 'Gunakan email dan password Anda. Akun owner, manajer, atau kasir dikenali otomatis.',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 15,
-              height: 1.5,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 28),
-          if (_isRegister) ...[
-            _label('Nama lengkap'),
-            _field(
-              _nameCtrl,
-              'Nama Anda',
-              Icons.person_outline,
-              cap: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
-            _label('Nama usaha'),
-            _field(
-              _bizCtrl,
-              'Nama usaha Anda',
-              Icons.storefront_outlined,
-              cap: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
-          ],
-          _label('Email'),
-          _field(
-            _emailCtrl,
-            'nama@email.com',
-            Icons.email_outlined,
-            type: TextInputType.emailAddress,
-          ),
-          const SizedBox(height: 16),
-          _label('Password'),
-          _passField(),
-          if (_isOwner)
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: _loading ? null : _showForgotPassword,
-                child: const Text('Lupa password?'),
-              ),
-            ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Semantics(
-                liveRegion: true,
-                child: Text(
-                  _error!,
-                  style: const TextStyle(
-                    color: AppTheme.danger,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
+  Widget build(BuildContext context) => PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && !_loading) widget.onBack();
+      },
+      child: ZelaAuthBody(
+        child: AutofillGroup(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  onPressed: _loading ? null : widget.onBack,
+                  tooltip: 'Kembali',
+                  icon: const Icon(Icons.arrow_back),
                 ),
               ),
-            ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _loading ? null : _submit,
-            child: _loading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      color: AppTheme.primary,
-                      strokeWidth: 2,
+              const ZelaBrand(),
+              const SizedBox(height: 28),
+              Text(
+                _title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                _isRegister
+                    ? 'Buat akun untuk mulai mengelola usaha Anda.'
+                    : 'Gunakan email dan password Anda. Akun owner, manajer, atau kasir dikenali otomatis.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 15,
+                  height: 1.5,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 28),
+              if (_isRegister) ...[
+                _label('Nama lengkap'),
+                _field(
+                  _nameCtrl,
+                  'Nama Anda',
+                  Icons.person_outline,
+                  cap: TextCapitalization.words,
+                ),
+                const SizedBox(height: 16),
+                _label('Nama usaha'),
+                _field(
+                  _bizCtrl,
+                  'Nama usaha Anda',
+                  Icons.storefront_outlined,
+                  cap: TextCapitalization.words,
+                ),
+                const SizedBox(height: 16),
+              ],
+              _label('Email'),
+              _field(
+                _emailCtrl,
+                'nama@email.com',
+                Icons.email_outlined,
+                type: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 16),
+              _label('Password'),
+              _passField(),
+              if (_isOwner)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: _loading ? null : _showForgotPassword,
+                    child: const Text('Lupa password?'),
+                  ),
+                ),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(
+                        color: AppTheme.danger,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
                     ),
-                  )
-                : Text(_isRegister ? 'Daftar sekarang' : 'Masuk'),
+                  ),
+                ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: _loading ? null : _submit,
+                child: _loading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: AppTheme.primary,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(_isRegister ? 'Daftar sekarang' : 'Masuk'),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'POS untuk operasional yang lebih rapi.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+              ),
+            ],
           ),
-          const SizedBox(height: 24),
-          const Text(
-            'POS untuk operasional yang lebih rapi.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
-          ),
-        ],
-      ),
-    ),
-  );
+        ),
+      ));
 
   Widget _label(String text) => Padding(
-    padding: const EdgeInsets.only(bottom: 6),
-    child: Text(
-      text,
-      style: const TextStyle(
-        color: Colors.black87,
-        fontWeight: FontWeight.w600,
-        fontSize: 14,
-      ),
-    ),
-  );
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: AppTheme.textPrimary,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+      );
 
   Widget _field(
     TextEditingController ctrl,
@@ -658,72 +488,82 @@ class _FormViewState extends State<_FormView> {
     IconData icon, {
     TextInputType? type,
     TextCapitalization cap = TextCapitalization.none,
-  }) => TextFormField(
-    controller: ctrl,
-    keyboardType: type,
-    textCapitalization: cap,
-    style: const TextStyle(color: Colors.black87),
-    decoration: InputDecoration(
-      hintText: hint,
-      hintStyle: TextStyle(color: const Color(0xFF62736F), fontSize: 14),
-      prefixIcon: Icon(icon, color: const Color(0xFF62736F), size: 20),
-      filled: true,
-      fillColor: const Color(0xFFF7F9F8),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: _accent, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-    ),
-  );
+  }) =>
+      TextFormField(
+        controller: ctrl,
+        keyboardType: type,
+        textInputAction: TextInputAction.next,
+        scrollPadding: const EdgeInsets.all(24),
+        autocorrect: type != TextInputType.emailAddress,
+        textCapitalization: cap,
+        style: const TextStyle(color: AppTheme.textPrimary),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+          prefixIcon: Icon(icon, color: AppTheme.textSecondary, size: 20),
+          filled: true,
+          fillColor: AppTheme.surfaceLight,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: AppTheme.fieldBorder!),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: AppTheme.fieldBorder!),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: _accent, width: 1.5),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        ),
+      );
 
   Widget _passField() => TextFormField(
-    controller: _passCtrl,
-    obscureText: !_showPass,
-    style: const TextStyle(color: Colors.black87),
-    onFieldSubmitted: (_) => _submit(),
-    decoration: InputDecoration(
-      hintText: 'Masukkan password',
-      hintStyle: TextStyle(color: const Color(0xFF62736F), fontSize: 14),
-      prefixIcon: Icon(
-        Icons.lock_outline,
-        color: const Color(0xFF62736F),
-        size: 20,
-      ),
-      suffixIcon: IconButton(
-        tooltip: 'Visibility Off',
-        icon: Icon(
-          _showPass ? Icons.visibility_off : Icons.visibility,
-          color: const Color(0xFF62736F),
-          size: 20,
+        controller: _passCtrl,
+        obscureText: !_showPass,
+        autocorrect: false,
+        enableSuggestions: false,
+        textInputAction: TextInputAction.done,
+        scrollPadding: const EdgeInsets.all(24),
+        style: const TextStyle(color: AppTheme.textPrimary),
+        onFieldSubmitted: (_) => _submit(),
+        decoration: InputDecoration(
+          hintText: 'Masukkan password',
+          hintStyle: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+          prefixIcon: Icon(
+            Icons.lock_outline,
+            color: AppTheme.textSecondary,
+            size: 20,
+          ),
+          suffixIcon: IconButton(
+            tooltip: _showPass ? 'Sembunyikan password' : 'Tampilkan password',
+            icon: Icon(
+              _showPass ? Icons.visibility_off : Icons.visibility,
+              color: AppTheme.textSecondary,
+              size: 20,
+            ),
+            onPressed: () => setState(() => _showPass = !_showPass),
+          ),
+          filled: true,
+          fillColor: AppTheme.surfaceLight,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: AppTheme.fieldBorder!),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: AppTheme.fieldBorder!),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: _accent, width: 1.5),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         ),
-        onPressed: () => setState(() => _showPass = !_showPass),
-      ),
-      filled: true,
-      fillColor: const Color(0xFFF7F9F8),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.grey[300]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: _accent, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-    ),
-  );
+      );
 
   void _showForgotPassword() {
     final ctrl = TextEditingController(text: _emailCtrl.text);
@@ -759,13 +599,16 @@ class _FormViewState extends State<_FormView> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('✅ Link reset password dikirim ke email'),
-                      backgroundColor: Colors.green,
+                      backgroundColor: AppTheme.primary,
                     ),
                   );
                 }
               } catch (_) {}
             },
-            child: const Text('Kirim', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Kirim',
+              style: TextStyle(color: AppTheme.onAction),
+            ),
           ),
         ],
       ),

@@ -20,7 +20,7 @@ class LockedScreen extends StatelessWidget {
             content: Text(
               'Tidak bisa membuka browser. Buka manual:\n$_dashboardUrl',
             ),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppTheme.warningInk,
             duration: Duration(seconds: 6),
           ),
         );
@@ -35,7 +35,7 @@ class LockedScreen extends StatelessWidget {
     return Scaffold(
       body: ZelaPage(
         child: Container(
-          decoration: const BoxDecoration(color: const Color(0xFF00796B)),
+          decoration: const BoxDecoration(color: AppTheme.primary),
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
@@ -47,18 +47,18 @@ class LockedScreen extends StatelessWidget {
                     width: 100,
                     height: 100,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: AppTheme.onAction.withOpacity(0.15),
                       shape: BoxShape.circle,
                     ),
                     child: const Center(
-                      child: Icon(Icons.lock, color: Colors.white, size: 50),
+                      child: Icon(Icons.lock, color: AppTheme.onAction, size: 50),
                     ),
                   ),
                   const SizedBox(height: 24),
                   const Text(
                     'Saldo Habis',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppTheme.onAction,
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
                     ),
@@ -68,7 +68,7 @@ class LockedScreen extends StatelessWidget {
                     'Saldo transaksi Anda telah habis.\n'
                     'Isi saldo melalui website dashboard\nuntuk melanjutkan berjualan.',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.85),
+                      color: AppTheme.onAction.withOpacity(0.85),
                       fontSize: 14,
                       height: 1.6,
                     ),
@@ -80,7 +80,7 @@ class LockedScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: AppTheme.onAction.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Column(
@@ -105,18 +105,18 @@ class LockedScreen extends StatelessWidget {
                     child: ElevatedButton.icon(
                       icon: const Icon(
                         Icons.open_in_browser,
-                        color: Color(0xFFB71C1C),
+                        color: AppTheme.danger,
                       ),
                       label: const Text(
                         'Isi Saldo via Website',
                         style: TextStyle(
-                          color: Color(0xFFB71C1C),
+                          color: AppTheme.danger,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
+                        backgroundColor: AppTheme.onAction,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -133,10 +133,10 @@ class LockedScreen extends StatelessWidget {
                     child: Text(
                       _dashboardUrl,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppTheme.onAction,
                         fontSize: 14,
                         decoration: TextDecoration.underline,
-                        decorationColor: Colors.white,
+                        decorationColor: AppTheme.onAction,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -146,7 +146,7 @@ class LockedScreen extends StatelessWidget {
                     'Setelah saldo masuk, aplikasi akan aktif otomatis\n'
                     '(restart aplikasi jika perlu)',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.55),
+                      color: AppTheme.onAction.withOpacity(0.55),
                       fontSize: 12,
                     ),
                     textAlign: TextAlign.center,
@@ -167,12 +167,12 @@ class LockedScreen extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 14),
+          style: TextStyle(color: AppTheme.onAction.withOpacity(0.7), fontSize: 14),
         ),
         Text(
           value,
           style: const TextStyle(
-            color: Colors.white,
+            color: AppTheme.onAction,
             fontWeight: FontWeight.bold,
             fontSize: 14,
           ),

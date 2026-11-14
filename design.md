@@ -1,0 +1,3 @@
+# Kasir Zela UI
+
+Native Flutter app screens, not marketing pages. Keep existing teal brand and Roboto. Color and font roles belong in AppTheme. Use Material controls, 48 dp minimum touch targets, persistent navigation labels, neutral surfaces and restrained status colors. Product grids use actual pane width and text scale. Forms scroll with the keyboard; dialogs keep long content reachable. Preserve all routes, handlers, permission filtering, data and domain logic. Respect disableAnimations. Do not create business proof or test data in application stores. Existing user-editable category and preset symbols remain data.

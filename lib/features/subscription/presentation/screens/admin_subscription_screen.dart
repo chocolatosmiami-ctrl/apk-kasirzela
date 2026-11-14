@@ -45,7 +45,7 @@ class _AdminSubscriptionScreenState extends State<AdminSubscriptionScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Buka manual: $_dashboardUrl'),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppTheme.warningInk,
           ),
         );
       }
@@ -55,17 +55,17 @@ class _AdminSubscriptionScreenState extends State<AdminSubscriptionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9F8),
+      backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
         title: const Text(
           'Monitor Saldo Cabang',
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: Color(0xFF172B2A),
+            color: AppTheme.textPrimary,
           ),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF172B2A),
+        backgroundColor: AppTheme.onAction,
+        foregroundColor: AppTheme.textPrimary,
         elevation: 0,
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
@@ -90,12 +90,12 @@ class _AdminSubscriptionScreenState extends State<AdminSubscriptionScreen> {
                         horizontal: 16,
                         vertical: 12,
                       ),
-                      color: const Color(0xFF00796B),
+                      color: AppTheme.primary,
                       child: const Row(
                         children: [
                           Icon(
                             Icons.open_in_browser,
-                            color: Colors.white,
+                            color: AppTheme.onAction,
                             size: 18,
                           ),
                           SizedBox(width: 10),
@@ -103,7 +103,7 @@ class _AdminSubscriptionScreenState extends State<AdminSubscriptionScreen> {
                             child: Text(
                               'Top up saldo dilakukan via Website Dashboard →',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -123,7 +123,7 @@ class _AdminSubscriptionScreenState extends State<AdminSubscriptionScreen> {
                         ? const Center(
                             child: Text(
                               'Belum ada cabang terdaftar',
-                              style: TextStyle(color: Colors.grey),
+                              style: TextStyle(color: AppTheme.textSecondary),
                             ),
                           )
                         : ListView.builder(
@@ -146,16 +146,16 @@ class _AdminSubscriptionScreenState extends State<AdminSubscriptionScreen> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      color: const Color(0xFFF7F9F8),
+      color: AppTheme.surfaceLight,
       child: Row(
         children: [
-          _statBox('${_subs.length}', 'Cabang', Colors.teal),
-          _statBox('$locked', 'Terkunci', Colors.red),
-          _statBox('$warning', 'Warning', Colors.orange),
+          _statBox('${_subs.length}', 'Cabang', AppTheme.primary),
+          _statBox('$locked', 'Terkunci', AppTheme.danger),
+          _statBox('$warning', 'Warning', AppTheme.warningInk),
           _statBox(
             AppUtils.formatCurrency(totalBalance),
             'Total Saldo',
-            Colors.green,
+            AppTheme.primary,
           ),
         ],
       ),
@@ -175,7 +175,7 @@ class _AdminSubscriptionScreenState extends State<AdminSubscriptionScreen> {
         ),
         Text(
           label,
-          style: TextStyle(fontSize: 12, color: const Color(0xFF62736F)),
+          style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
         ),
       ],
     ),
@@ -194,10 +194,10 @@ class _BranchCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         side: BorderSide(
           color: sub.isLocked
-              ? Colors.red[300]!
+              ? AppTheme.danger!
               : sub.isWarning
-              ? Colors.orange[300]!
-              : Colors.transparent,
+              ? AppTheme.warningInk!
+              : AppTheme.transparent,
         ),
       ),
       child: ListTile(
@@ -206,19 +206,19 @@ class _BranchCard extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             color: sub.isLocked
-                ? Colors.red[50]
+                ? AppTheme.dangerSurface
                 : sub.isWarning
-                ? Colors.orange[50]
-                : Colors.green[50],
+                ? AppTheme.warningSurface
+                : AppTheme.primarySurface,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
             sub.isLocked ? Icons.lock : Icons.store,
             color: sub.isLocked
-                ? Colors.red
+                ? AppTheme.danger
                 : sub.isWarning
-                ? Colors.orange
-                : Colors.green,
+                ? AppTheme.warningInk
+                : AppTheme.primary,
             size: 20,
           ),
         ),
@@ -239,10 +239,10 @@ class _BranchCard extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: sub.isLocked
-                    ? Colors.red
+                    ? AppTheme.danger
                     : sub.isWarning
-                    ? Colors.orange
-                    : Colors.green,
+                    ? AppTheme.warningInk
+                    : AppTheme.primary,
                 fontSize: 14,
               ),
             ),
@@ -251,7 +251,7 @@ class _BranchCard extends StatelessWidget {
                 'TERKUNCI',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.red,
+                  color: AppTheme.danger,
                   fontWeight: FontWeight.bold,
                 ),
               ),

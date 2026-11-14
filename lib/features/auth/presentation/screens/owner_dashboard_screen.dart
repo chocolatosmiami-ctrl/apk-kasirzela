@@ -138,13 +138,13 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: selectedMode == 'food'
-                              ? Colors.red[50]
-                              : const Color(0xFFF7F9F8),
+                              ? AppTheme.dangerSurface
+                              : AppTheme.surfaceLight,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: selectedMode == 'food'
                                 ? AppTheme.primaryRed
-                                : Colors.grey[300]!,
+                                : AppTheme.fieldBorder!,
                           ),
                         ),
                         child: Column(
@@ -165,7 +165,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                               'Menu, meja, bahan baku',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: const Color(0xFF62736F),
+                                color: AppTheme.textSecondary,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -182,13 +182,13 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: selectedMode == 'retail'
-                              ? Colors.orange[50]
-                              : const Color(0xFFF7F9F8),
+                              ? AppTheme.warningSurface
+                              : AppTheme.surfaceLight,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: selectedMode == 'retail'
                                 ? AppTheme.primaryOrange
-                                : Colors.grey[300]!,
+                                : AppTheme.fieldBorder!,
                           ),
                         ),
                         child: Column(
@@ -209,7 +209,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                               'Barcode, stok, HPP',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: const Color(0xFF62736F),
+                                color: AppTheme.textSecondary,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -224,12 +224,12 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.amber[50],
+                  color: AppTheme.warningSurface,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Text(
                   '⚠️ Mode tidak dapat diubah setelah cabang dibuat',
-                  style: TextStyle(fontSize: 12, color: Colors.orange),
+                  style: TextStyle(fontSize: 12, color: AppTheme.warningInk),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -257,7 +257,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                               '✅ Cabang "${result.branchName}" dibuat!\n'
                               'Trial gratis Rp 25.000 sudah aktif.',
                             ),
-                            backgroundColor: Colors.green,
+                            backgroundColor: AppTheme.primary,
                             duration: const Duration(seconds: 3),
                           ),
                         );
@@ -266,7 +266,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(result.error ?? 'Gagal'),
-                            backgroundColor: Colors.red,
+                            backgroundColor: AppTheme.danger,
                           ),
                         );
                       }
@@ -274,7 +274,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                   },
                   child: const Text(
                     'Buat Cabang',
-                    style: TextStyle(color: Colors.white, fontSize: 15),
+                    style: TextStyle(color: AppTheme.onAction, fontSize: 15),
                   ),
                 ),
               ),
@@ -292,7 +292,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('❌ Hanya Owner yang dapat menghapus cabang'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.danger,
         ),
       );
       return;
@@ -301,10 +301,11 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
+ scrollable: true,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
+            Icon(Icons.warning_amber_rounded, color: AppTheme.danger, size: 28),
             SizedBox(width: 8),
             Text('Hapus Cabang', style: TextStyle(fontSize: 17)),
           ],
@@ -315,7 +316,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
           children: [
             RichText(
               text: TextSpan(
-                style: const TextStyle(color: Colors.black87, fontSize: 14),
+                style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
                 children: [
                   const TextSpan(
                     text: 'Anda yakin ingin menonaktifkan cabang ',
@@ -332,9 +333,9 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.orange[50],
+                color: AppTheme.warningSurface,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange[300]!),
+                border: Border.all(color: AppTheme.warningInk!),
               ),
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -367,11 +368,11 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
             child: const Text('Batal'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.danger),
             onPressed: () => Navigator.pop(context, true),
             child: const Text(
               'Hapus Cabang',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: AppTheme.onAction),
             ),
           ),
         ],
@@ -392,7 +393,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('✅ Cabang "${branch.name}" berhasil dinonaktifkan'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppTheme.primary,
         ),
       );
     } else {
@@ -400,7 +401,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('❌ Gagal menghapus cabang. Coba lagi.'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.danger,
         ),
       );
     }
@@ -487,7 +488,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                     'KASIR ZL',
                     'kasir',
                     role,
-                    Colors.teal,
+                    AppTheme.primary,
                     (v) => setS(() => role = v),
                   ),
                   const SizedBox(width: 8),
@@ -495,7 +496,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                     'Manajer',
                     'manajer',
                     role,
-                    Colors.green,
+                    AppTheme.primary,
                     (v) => setS(() => role = v),
                   ),
                 ],
@@ -504,18 +505,18 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.orange[50],
+                  color: AppTheme.warningSurface,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.orange, size: 14),
+                    Icon(Icons.info_outline, color: AppTheme.warningInk, size: 14),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Setelah akun dibuat, staff login dengan email+password ini '
                         'lalu buat PIN sendiri.',
-                        style: TextStyle(fontSize: 12, color: Colors.orange),
+                        style: TextStyle(fontSize: 12, color: AppTheme.warningInk),
                       ),
                     ),
                   ],
@@ -553,8 +554,8 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                                 : result.error ?? 'Gagal',
                           ),
                           backgroundColor: result.success
-                              ? Colors.green
-                              : Colors.red,
+                              ? AppTheme.primary
+                              : AppTheme.danger,
                           duration: const Duration(seconds: 4),
                         ),
                       );
@@ -562,7 +563,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                   },
                   child: const Text(
                     'Buat Akun Staff',
-                    style: TextStyle(color: Colors.white, fontSize: 15),
+                    style: TextStyle(color: AppTheme.onAction, fontSize: 15),
                   ),
                 ),
               ),
@@ -581,11 +582,11 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.onAction,
       appBar: AppBar(
         title: const Text('Dashboard Owner'),
         backgroundColor: AppTheme.primaryRed,
-        foregroundColor: Colors.white,
+        foregroundColor: AppTheme.onAction,
         actions: [
           IconButton(
             tooltip: 'Refresh',
@@ -604,7 +605,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                     SizedBox(height: 16),
                     Text(
                       'Memuat data cabang...',
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: AppTheme.textSecondary),
                     ),
                   ],
                 ),
@@ -619,12 +620,12 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00796B),
+                      color: AppTheme.primary,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.store, color: Colors.white, size: 28),
+                        const Icon(Icons.store, color: AppTheme.onAction, size: 28),
                         const SizedBox(width: 12),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -632,14 +633,14 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                             const Text(
                               'Total Cabang',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                                 fontSize: 14,
                               ),
                             ),
                             Text(
                               '${_branches.length} Cabang Aktif',
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.onAction,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -670,8 +671,8 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                           height: 42,
                           decoration: BoxDecoration(
                             color: b.isRetail
-                                ? Colors.orange[50]
-                                : Colors.red[50],
+                                ? AppTheme.warningSurface
+                                : AppTheme.dangerSurface,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Center(
@@ -698,8 +699,8 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: b.isRetail
-                                    ? Colors.orange[100]
-                                    : Colors.red[100],
+                                    ? AppTheme.warningSurface
+                                    : AppTheme.dangerSurface,
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -708,8 +709,8 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   color: b.isRetail
-                                      ? Colors.orange[800]
-                                      : Colors.red[800],
+                                      ? AppTheme.warningInk
+                                      : AppTheme.danger,
                                 ),
                               ),
                             ),
@@ -721,10 +722,10 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                               sub?.isLocked == true ? Icons.lock : Icons.circle,
                               size: 10,
                               color: sub?.isLocked == true
-                                  ? Colors.red
+                                  ? AppTheme.danger
                                   : sub?.isWarning == true
-                                  ? Colors.orange
-                                  : Colors.green,
+                                  ? AppTheme.warningInk
+                                  : AppTheme.primary,
                             ),
                             const SizedBox(width: 5),
                             Text(
@@ -761,14 +762,14 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                                         icon: const Icon(
                                           Icons.add_card,
                                           size: 16,
-                                          color: Colors.white,
+                                          color: AppTheme.onAction,
                                         ),
                                         label: const Text(
                                           'Top Up',
-                                          style: TextStyle(color: Colors.white),
+                                          style: TextStyle(color: AppTheme.onAction),
                                         ),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.green[700],
+                                          backgroundColor: AppTheme.primary,
                                         ),
                                         onPressed: () {},
                                       ),
@@ -795,15 +796,15 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                                         icon: const Icon(
                                           Icons.delete_outline,
                                           size: 16,
-                                          color: Colors.red,
+                                          color: AppTheme.danger,
                                         ),
                                         label: const Text(
                                           'Hapus Cabang',
-                                          style: TextStyle(color: Colors.red),
+                                          style: TextStyle(color: AppTheme.danger),
                                         ),
                                         style: OutlinedButton.styleFrom(
                                           side: const BorderSide(
-                                            color: Colors.red,
+                                            color: AppTheme.danger,
                                           ),
                                           padding: const EdgeInsets.symmetric(
                                             vertical: 8,
@@ -829,10 +830,10 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
         heroTag: 'features_auth_presentation_screens_owner_dashboard_screen_6',
         backgroundColor: AppTheme.primaryRed,
         onPressed: _showAddBranch,
-        icon: const Icon(Icons.add_business, color: Colors.white),
+        icon: const Icon(Icons.add_business, color: AppTheme.onAction),
         label: const Text(
           'Tambah Cabang',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppTheme.onAction),
         ),
       ),
     );
@@ -845,7 +846,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('🏪', style: TextStyle(fontSize: 64)),
+            const Icon(Icons.storefront_outlined, size: 40, color: AppTheme.textSecondary),
             const SizedBox(height: 16),
             const Text(
               'Belum Ada Cabang',
@@ -855,7 +856,7 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
             Text(
               'Tambah cabang pertama Anda untuk mulai berjualan',
               textAlign: TextAlign.center,
-              style: TextStyle(color: const Color(0xFF62736F)),
+              style: TextStyle(color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -867,10 +868,10 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
                 ),
               ),
               onPressed: _showAddBranch,
-              icon: const Icon(Icons.add_business, color: Colors.white),
+              icon: const Icon(Icons.add_business, color: AppTheme.onAction),
               label: const Text(
                 'Tambah Cabang Pertama',
-                style: TextStyle(color: Colors.white, fontSize: 15),
+                style: TextStyle(color: AppTheme.onAction, fontSize: 15),
               ),
             ),
           ],
@@ -893,15 +894,15 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: sel ? color : const Color(0xFFF7F9F8),
+            color: sel ? color : AppTheme.surfaceLight,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: sel ? color : Colors.grey[300]!),
+            border: Border.all(color: sel ? color : AppTheme.fieldBorder!),
           ),
           child: Center(
             child: Text(
               label,
               style: TextStyle(
-                color: sel ? Colors.white : const Color(0xFF62736F),
+                color: sel ? AppTheme.onAction : AppTheme.textSecondary,
                 fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
               ),
             ),

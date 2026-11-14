@@ -1,10 +1,11 @@
+import '../../../../core/database/order_queries.dart';
+import '../../../../core/services/checkout_member.dart';
+import '../../../../core/widgets/checkout_member_field.dart';
 import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../../cashier/presentation/screens/receipt_screen.dart';
 import '../../../../features/orders/data/models/order_models.dart';
-import '../../../../features/reports/data/services/pdf_service.dart';
-import '../../../../features/settings/presentation/providers/settings_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -27,9 +28,17 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
   final _paidCtrl = TextEditingController();
   double _discount = 0;
   bool _processing = false;
+  late final CheckoutMemberController _member;
+  void _memberChanged() { if (mounted) setState(() {}); }
+  @override
+  void initState() {
+    super.initState();
+    _member = CheckoutMemberController(cart: context.read<RetailProvider>())..addListener(_memberChanged);
+  }
 
   @override
   void dispose() {
+    _member.dispose();
     _paidCtrl.dispose();
     super.dispose();
   }
@@ -42,18 +51,59 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
   }
 
   Future<void> _processPayment() async {
-    if (_processing) return;
+    if (_processing || !_member.ready) return;
+    setState(() => _processing = true);
+    try {
+      await _processPaymentOnce();
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pembayaran belum selesai. Periksa status transaksi sebelum mencoba lagi.')));
+    } finally {
+      if (mounted) setState(() => _processing = false);
+    }
+  }
 
+  Future<void> _processPaymentOnce() async {
+    final retail = context.read<RetailProvider>();
+    final auth = context.read<AuthProvider>();
+    final paymentMember = _member.selected;
+    final paymentScope = retail.cartScope;
+    final paymentEpoch = retail.cartSessionEpoch;
+    final String cashierId = auth.currentUser?.authId ?? '';
+    if (retail.cartEmpty || !_total.isFinite || _total <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Keranjang atau total pembayaran tidak valid.')));
+      return;
+    }
+    final paid = double.tryParse(_paidCtrl.text.replaceAll('.', '')) ?? _total;
+    if (!paid.isFinite || (_paymentMethod == 'cash' && paid < _total)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Uang kurang ${AppUtils.formatCurrency(_total - paid)}',
+          ),
+          backgroundColor: AppTheme.warningInk,
+        ),
+      );
+      return;
+    }
+
+    // Cek saldo hanya setelah input pembayaran diterima.
     // Cek saldo dengan grace period offline
     final sub = context.read<SubscriptionProvider>();
     final permission = await sub.checkAndDeduct();
+    if (!mounted) return;
+    if (paymentEpoch != retail.cartSessionEpoch ||
+        !identical(paymentScope, retail.cartScope) ||
+        cashierId != (auth.currentUser?.authId ?? '')) {
+      throw StateError('Akun atau cabang berubah selama pembayaran.');
+    }
 
     if (!permission.allowed) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(permission.reason ?? 'Transaksi tidak diizinkan'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.danger,
           duration: const Duration(seconds: 3),
         ),
       );
@@ -67,30 +117,11 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
           content: Text(
             '⚠️ Mode Offline — Sisa ${permission.remainingGraceTrx} trx',
           ),
-          backgroundColor: Colors.orange[700],
+          backgroundColor: AppTheme.warningInk,
           duration: const Duration(seconds: 2),
         ),
       );
     }
-
-    final paid = double.tryParse(_paidCtrl.text.replaceAll('.', '')) ?? _total;
-    if (_paymentMethod == 'cash' && paid < _total) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Uang kurang ${AppUtils.formatCurrency(_total - paid)}',
-          ),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    setState(() => _processing = true);
-
-    final retail = context.read<RetailProvider>();
-    final auth = context.read<AuthProvider>();
-    final String cashierId = auth.currentUser?.authId ?? '';
 
     // Simpan cart snapshot SEBELUM checkout (checkout akan clearCart)
     final cartSnapshot = retail.cart.toList();
@@ -109,9 +140,13 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
       paidAmount: paid,
       cashierId: cashierId,
       discountTotal: _discount,
+      member: paymentMember,
     );
 
     if (!mounted) return;
+    if (paymentEpoch != retail.cartSessionEpoch ||
+        !identical(paymentScope, retail.cartScope) ||
+        cashierId != (auth.currentUser?.authId ?? '')) return;
     setState(() => _processing = false);
 
     if (ok) {
@@ -122,295 +157,77 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
 
       // Navigate ke ReceiptScreen (sama seperti kasir makanan)
       if (!mounted) return;
-      await _navigateToReceipt(paid, cartUnitMap);
+      await _navigateToReceipt(retail.lastCheckoutId, retail.lastCheckoutNumber, cartUnitMap);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Transaksi gagal, coba lagi'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.danger,
         ),
       );
     }
   }
 
-  Future<void> _navigateToReceipt(
-    double paid, [
-    Map<String, String> cartUnitMap = const {},
-  ]) async {
+  Future<void> _navigateToReceipt(int? savedId, String? savedNumber,
+      Map<String, String> cartUnitMap) async {
+    final retail = context.read<RetailProvider>();
+    final scope = retail.cartScope;
+    final epoch = retail.cartSessionEpoch;
+    final cashierId = context.read<AuthProvider>().currentUser?.authId ?? '';
     try {
-      final auth = context.read<AuthProvider>();
-      final settings = context.read<SettingsProvider>();
-      if (!settings.loaded) await settings.loadSettings();
-      final retail = context.read<RetailProvider>();
-
-      // Ambil order terakhir dari SQLite
-      final orders = await DatabaseHelper.instance.rawQuery(
-        "SELECT * FROM orders WHERE cashier_id = ? ORDER BY id DESC LIMIT 1",
-        [auth.currentUser?.authId ?? ''],
-      );
-
-      debugPrint('[RETAIL-NAV] unitMap=' + cartUnitMap.toString());
-
-      OrderModel order;
-      if (orders.isNotEmpty) {
-        final row = orders.first;
-        final orderId = row['id'] as int;
-        final itemRows = await DatabaseHelper.instance.rawQuery(
-          "SELECT * FROM order_items WHERE order_id = ?",
-          [orderId],
-        );
-        final items = itemRows.map((i) {
-          final name = i['name']?.toString() ?? '';
-          // Ambil unit dari SQLite, fallback ke cartUnitMap
-          final unit = (i['unit'] as String?)?.isNotEmpty == true
-              ? i['unit'] as String
-              : cartUnitMap[name];
-          debugPrint(
-            '[RETAIL-ITEM] name=' +
-                name +
-                ' qty=' +
-                (i['qty']?.toString() ?? '?') +
-                ' unit=' +
-                (unit ?? 'NULL'),
-          );
-          return OrderItemModel(
-            id: i['id'] as int?,
-            orderId: orderId,
-            menuItemId: (i['menu_item_id'] as num?)?.toInt() ?? 0,
-            name: name,
-            price: (i['price'] as num?)?.toDouble() ?? 0,
-            qty:
-                ((i['qty_real'] as num?) ?? (i['qty'] as num?))?.toDouble() ??
-                1.0,
-            unit: unit,
-            subtotal: (i['subtotal'] as num?)?.toDouble() ?? 0,
-          );
-        }).toList();
-
-        order = OrderModel.fromMap(row, items: items);
-      } else {
-        // Fallback: buat dari data cart
-        order = OrderModel(
-          orderNumber: 'RT-${DateTime.now().millisecondsSinceEpoch}',
-          orderType: 'retail',
-          status: 'completed',
-          subtotal: _total + _discount,
-          discountAmount: _discount,
-          total: _total,
-          paymentMethod: _paymentMethod,
-          paidAmount: paid,
-          changeAmount: (paid - _total).clamp(0, double.infinity),
-          cashierId: auth.currentUser?.authId,
-          cashierName: auth.currentUser?.name ?? '',
-          createdAt: DateTime.now().toIso8601String(),
-          updatedAt: DateTime.now().toIso8601String(),
-          items: retail.cart.map((item) {
-            debugPrint(
-              '[RETAIL-DEBUG] item=' +
-                  item.product.name +
-                  ' qty=' +
-                  item.qty.toString() +
-                  ' unit=' +
-                  item.selectedUnit +
-                  ' price=' +
-                  item.unitPrice.toString(),
-            );
-            return OrderItemModel(
-              orderId: 0,
-              menuItemId: item.product.id ?? 0,
-              name: item.product.name,
-              price: item.unitPrice,
-              qty: item.qty.toDouble(),
-              unit: item.selectedUnit,
-              subtotal: item.subtotal,
-            );
-          }).toList(),
-        );
+      if (savedId == null || savedNumber == null || scope == null) {
+        throw StateError('Identitas struk tidak tersedia.');
       }
-
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => ReceiptScreen(order: order)),
+      final orders = await DatabaseHelper.instance.rawQuery(
+        '''SELECT o.*, $orderReceiptMemberSql FROM orders o
+        WHERE o.id = ? AND o.order_number = ? AND o.cashier_id = ? AND o.branch_id = ?''',
+        [savedId, savedNumber, cashierId, scope.branchId],
       );
-    } catch (e) {
-      debugPrint('_navigateToReceipt error: $e');
-      // Fallback ke dialog lama
-      if (mounted) _showSuccessDialog(paid);
-    }
-  }
+      if (orders.isEmpty) throw StateError('Struk tersimpan belum tersedia.');
+      final row = orders.first;
+      final orderId = savedId;
+      final itemRows = await DatabaseHelper.instance.rawQuery(
+        'SELECT * FROM order_items WHERE order_id = ?', [orderId]);
+      final items = itemRows.map((i) {
+        final name = i['name']?.toString() ?? '';
+        // Ambil unit dari SQLite, fallback ke cartUnitMap
+        final unit = (i['unit'] as String?)?.isNotEmpty == true
+            ? i['unit'] as String
+            : cartUnitMap[name];
+        debugPrint(
+          '[RETAIL-ITEM] name=' +
+              name +
+              ' qty=' +
+              (i['qty']?.toString() ?? '?') +
+              ' unit=' +
+              (unit ?? 'NULL'),
+        );
+        return OrderItemModel(
+          id: i['id'] as int?,
+          orderId: orderId,
+          menuItemId: (i['menu_item_id'] as num?)?.toInt() ?? 0,
+          name: name,
+          price: (i['price'] as num?)?.toDouble() ?? 0,
+          qty:
+              ((i['qty_real'] as num?) ?? (i['qty'] as num?))?.toDouble() ??
+              1.0,
+          unit: unit,
+          subtotal: (i['subtotal'] as num?)?.toDouble() ?? 0,
+        );
+      }).toList();
 
-  void _showSuccessDialog(double paid) {
-    final change = paid - _total;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: Colors.green[50],
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_circle,
-                color: Colors.green,
-                size: 44,
-              ),
-            ),
-            const SizedBox(height: 14),
-            const Text(
-              'Transaksi Berhasil!',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Total: ${AppUtils.formatCurrency(_total)}',
-              style: const TextStyle(fontSize: 14),
-            ),
-            if (_paymentMethod == 'cash' && change > 0)
-              Text(
-                'Kembalian: ${AppUtils.formatCurrency(change)}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                ),
-              ),
-          ],
-        ),
-        actions: [
-          // Print struk
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              icon: const Icon(Icons.share, size: 16),
-              label: const Text('Bagikan Struk'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppTheme.primaryOrange,
-                side: const BorderSide(color: AppTheme.primaryOrange),
-              ),
-              onPressed: () async {
-                // Build temp OrderModel for retail
-                final auth = context.read<AuthProvider>();
-                final settings = context.read<SettingsProvider>();
-                if (!settings.loaded) await settings.loadSettings();
-                final tempOrder = OrderModel(
-                  orderNumber: 'RT-${DateTime.now().millisecondsSinceEpoch}',
-                  orderType: 'retail',
-                  status: 'paid',
-                  subtotal: _total,
-                  total: _total,
-                  discountAmount: _discount,
-                  paymentMethod: _paymentMethod,
-                  paidAmount: paid,
-                  changeAmount: (paid - _total).clamp(0, double.infinity),
-                  cashierId: auth.currentUser?.authId,
-                  cashierName: auth.currentUser?.name ?? '',
-                  createdAt: DateTime.now().toIso8601String(),
-                  updatedAt: DateTime.now().toIso8601String(),
-                  items: context
-                      .read<RetailProvider>()
-                      .cart
-                      .map(
-                        (item) => OrderItemModel(
-                          orderId: 0,
-                          menuItemId: item.product.id ?? 0,
-                          name: item.product.name,
-                          price: item.unitPrice,
-                          qty: item.qty.toDouble(),
-                          unit: item.selectedUnit,
-                          subtotal: item.subtotal,
-                        ),
-                      )
-                      .toList(),
-                );
-                try {
-                  await PdfService.shareReceipt(tempOrder, settings);
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Share gagal: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              },
-            ),
-          ),
-          const SizedBox(height: 6),
-          // Cetak ke printer
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              icon: const Icon(Icons.print, size: 16),
-              label: const Text('Cetak ke Printer'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF00796B),
-                side: BorderSide(color: const Color(0xFF00796B)!),
-              ),
-              onPressed: () async {
-                final settings = context.read<SettingsProvider>();
-                if (!settings.loaded) await settings.loadSettings();
-                final auth = context.read<AuthProvider>();
-                final tempOrder = OrderModel(
-                  orderNumber: 'RT-${DateTime.now().millisecondsSinceEpoch}',
-                  orderType: 'retail',
-                  status: 'paid',
-                  subtotal: _total,
-                  total: _total,
-                  discountAmount: _discount,
-                  paymentMethod: _paymentMethod,
-                  paidAmount: paid,
-                  changeAmount: (paid - _total).clamp(0, double.infinity),
-                  cashierId: auth.currentUser?.authId,
-                  cashierName: auth.currentUser?.name ?? '',
-                  createdAt: DateTime.now().toIso8601String(),
-                  updatedAt: DateTime.now().toIso8601String(),
-                  items: [],
-                );
-                try {
-                  await PdfService.printReceipt(tempOrder, settings);
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Print gagal: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              },
-            ),
-          ),
-          const SizedBox(height: 6),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryOrange,
-              ),
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'Transaksi Baru',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+      final order = OrderModel.fromMap(row, items: items);
+      if (!mounted || epoch != retail.cartSessionEpoch ||
+          !identical(scope, retail.cartScope) ||
+          cashierId != context.read<AuthProvider>().currentUser?.authId) return;
+      Navigator.pushReplacement(context,
+        MaterialPageRoute(builder: (_) => ReceiptScreen(order: order)));
+    } catch (_) {
+      if (!mounted || epoch != retail.cartSessionEpoch ||
+          !identical(scope, retail.cartScope)) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(
+        'Pembayaran tersimpan. Buka Riwayat untuk mencetak struk.')));
+    }
   }
 
   @override
@@ -486,14 +303,14 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                           Text(
                             'HPP',
                             style: TextStyle(
-                              color: const Color(0xFF62736F),
+                              color: AppTheme.textSecondary,
                               fontSize: 14,
                             ),
                           ),
                           Text(
                             AppUtils.formatCurrency(retail.cartHPP),
                             style: TextStyle(
-                              color: const Color(0xFF62736F),
+                              color: AppTheme.textSecondary,
                               fontSize: 14,
                             ),
                           ),
@@ -503,6 +320,9 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+
+            CheckoutMemberField(controller: _member, enabled: !_processing),
             const SizedBox(height: 12),
 
             // Discount
@@ -516,7 +336,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                   children: [
                     const Icon(
                       Icons.local_offer,
-                      color: Colors.green,
+                      color: AppTheme.primary,
                       size: 18,
                     ),
                     const SizedBox(width: 8),
@@ -591,7 +411,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                         decoration: InputDecoration(
                           labelText: 'Uang Dibayar',
                           prefixText: 'Rp ',
-                          fillColor: Colors.green[50],
+                          fillColor: AppTheme.primarySurface,
                           filled: true,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -621,7 +441,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                                         AppUtils.formatCurrency(a),
                                         style: const TextStyle(fontSize: 12),
                                       ),
-                                      backgroundColor: Colors.green[50],
+                                      backgroundColor: AppTheme.primarySurface,
                                     ),
                                   ),
                                 )
@@ -632,7 +452,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                           margin: const EdgeInsets.only(top: 8),
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.green[50],
+                            color: AppTheme.primarySurface,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(
@@ -647,7 +467,7 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
-                                  color: Colors.green,
+                                  color: AppTheme.primary,
                                 ),
                               ),
                             ],
@@ -674,12 +494,12 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                     children: [
                       const Text(
                         'TOTAL',
-                        style: TextStyle(color: Colors.white, fontSize: 14),
+                        style: TextStyle(color: AppTheme.onAction, fontSize: 14),
                       ),
                       Text(
                         AppUtils.formatCurrency(_total),
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppTheme.onAction,
                           fontSize: 26,
                           fontWeight: FontWeight.bold,
                         ),
@@ -691,13 +511,13 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
+                        backgroundColor: AppTheme.onAction,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      onPressed: _processing ? null : _processPayment,
+                      onPressed: _processing || !_member.ready ? null : _processPayment,
                       child: _processing
                           ? const CircularProgressIndicator(
                               color: AppTheme.primaryOrange,
@@ -728,16 +548,16 @@ class _RetailCheckoutScreenState extends State<RetailCheckoutScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: sel ? AppTheme.primaryOrange : const Color(0xFFF7F9F8),
+          color: sel ? AppTheme.primaryOrange : AppTheme.surfaceLight,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: sel ? AppTheme.primaryOrange : Colors.grey[300]!,
+            color: sel ? AppTheme.primaryOrange : AppTheme.fieldBorder!,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: sel ? Colors.white : const Color(0xFF62736F),
+            color: sel ? AppTheme.onAction : AppTheme.textSecondary,
             fontSize: 14,
             fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
           ),

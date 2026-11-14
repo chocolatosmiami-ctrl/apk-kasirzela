@@ -164,14 +164,14 @@ class _LoginScreenState extends State<LoginScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEAF5F1),
+                    color: AppTheme.primarySurface,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
                       const Icon(
                         Icons.lock_clock,
-                        color: Color(0xFF00796B),
+                        color: AppTheme.primary,
                         size: 28,
                       ),
                       const SizedBox(width: 12),
@@ -190,7 +190,7 @@ class _LoginScreenState extends State<LoginScreen>
                               'Halo $userName! Isi modal awal sebelum mulai.',
                               style: const TextStyle(
                                 fontSize: 14,
-                                color: Color(0xFF62736F),
+                                color: AppTheme.textSecondary,
                               ),
                             ),
                           ],
@@ -206,22 +206,22 @@ class _LoginScreenState extends State<LoginScreen>
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF7F9F8),
+                    color: AppTheme.surfaceLight,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFDEE7E3)),
+                    border: Border.all(color: AppTheme.borderLight),
                   ),
                   child: Row(
                     children: [
                       const Icon(
                         Icons.schedule,
-                        color: Color(0xFF62736F),
+                        color: AppTheme.textSecondary,
                         size: 16,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         'Mulai shift: ${_formatNow()}',
                         style: const TextStyle(
-                          color: Color(0xFF62736F),
+                          color: AppTheme.textSecondary,
                           fontSize: 14,
                         ),
                       ),
@@ -246,16 +246,16 @@ class _LoginScreenState extends State<LoginScreen>
                   decoration: InputDecoration(
                     prefixText: 'Rp ',
                     hintText: '0',
-                    fillColor: const Color(0xFFEAF5F1),
+                    fillColor: AppTheme.primarySurface,
                     filled: true,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFFB2DFDB)),
+                      borderSide: const BorderSide(color: AppTheme.accentMint),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(
-                        color: Color(0xFF00796B),
+                        color: AppTheme.primary,
                         width: 2,
                       ),
                     ),
@@ -275,16 +275,16 @@ class _LoginScreenState extends State<LoginScreen>
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEAF5F1),
+                              color: AppTheme.primarySurface,
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: const Color(0xFFB2DFDB),
+                                color: AppTheme.accentMint,
                               ),
                             ),
                             child: Text(
                               'Rp ${(amt / 1000).toInt()}rb',
                               style: const TextStyle(
-                                color: Color(0xFF00796B),
+                                color: AppTheme.primary,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -301,7 +301,7 @@ class _LoginScreenState extends State<LoginScreen>
                     labelText: 'Catatan (opsional)',
                     prefixIcon: const Icon(
                       Icons.note_outlined,
-                      color: Color(0xFF00796B),
+                      color: AppTheme.primary,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -316,13 +316,13 @@ class _LoginScreenState extends State<LoginScreen>
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    icon: const Icon(Icons.play_arrow, color: Colors.white),
+                    icon: const Icon(Icons.play_arrow, color: AppTheme.onAction),
                     label: const Text(
                       'Mulai Shift & Masuk',
-                      style: TextStyle(color: Colors.white, fontSize: 14),
+                      style: TextStyle(color: AppTheme.onAction, fontSize: 14),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00796B),
+                      backgroundColor: AppTheme.primary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -359,7 +359,7 @@ class _LoginScreenState extends State<LoginScreen>
                             child: const Text(
                               'Lewati (Admin Only)',
                               style: TextStyle(
-                                color: Color(0xFF62736F),
+                                color: AppTheme.textSecondary,
                                 fontSize: 14,
                               ),
                             ),
@@ -469,9 +469,9 @@ class _LoginScreenState extends State<LoginScreen>
       width: 72,
       height: 72,
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F9F8),
+        color: AppTheme.surfaceLight,
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFDEE7E3)),
+        border: Border.all(color: AppTheme.borderLight),
       ),
       child: Center(
         child: Text(
@@ -479,7 +479,7 @@ class _LoginScreenState extends State<LoginScreen>
           style: const TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF172B2A),
+            color: AppTheme.textPrimary,
           ),
         ),
       ),
@@ -503,7 +503,7 @@ class _LoginScreenState extends State<LoginScreen>
         decoration: BoxDecoration(
           color: bg,
           shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFFDEE7E3)),
+          border: Border.all(color: AppTheme.borderLight),
         ),
         child: Center(
           child: Icon(icon, color: fg, size: large ? 30 : 22),

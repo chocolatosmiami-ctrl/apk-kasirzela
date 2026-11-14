@@ -1,6 +1,10 @@
 node_modules/
 .dart_tool/
 build/
+android/.gradle/
+android/.cxx/
+android/local.properties
+.flutter-plugins*
 .env
 .env.*
 !.env.example

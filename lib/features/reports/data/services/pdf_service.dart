@@ -131,6 +131,9 @@ class PdfService {
       try { sb.writeln(AppUtils.formatDateTime(AppUtils.safeParseDate(order.createdAt))); } catch (_) {}
       if (order.cashierName != null && order.cashierName!.isNotEmpty)
         sb.writeln('Kasir: ${order.cashierName}');
+    for (final field in order.memberReceiptRows) {
+      sb.writeln('${field.key}: ${field.value}');
+    }
       sb.writeln('--------------------------------');
       for (final item in order.items) {
         sb.writeln('${_fmtQtyUnit(item.qty, item.unit)} ${item.name}');
@@ -242,6 +245,10 @@ class PdfService {
               _row8('Meja', order.tableNumber!),
             if (order.cashierName != null && order.cashierName!.isNotEmpty)
               _row8('Kasir', order.cashierName!),
+            for (final field in order.memberReceiptRows)
+              pw.Align(alignment: pw.Alignment.centerLeft, child: pw.Text(
+                '${field.key}: ${field.value}',
+                style: const pw.TextStyle(fontSize: 8))),
             pw.Divider(thickness: 0.5),
             pw.SizedBox(height: 2),
 

@@ -126,7 +126,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final dailyData = _report['daily'] as List<dynamic>? ?? [];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.onAction,
       appBar: AppBar(
         backgroundColor: AppTheme.primaryRed,
         title: const Text('Laporan'),
@@ -198,7 +198,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                   0,
                             ),
                             icon: Icons.attach_money,
-                            color: Colors.green,
+                            color: AppTheme.primary,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -208,7 +208,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             value:
                                 '${(summary['total_orders'] as num?)?.toInt() ?? 0}',
                             icon: Icons.receipt,
-                            color: Colors.teal,
+                            color: AppTheme.primary,
                           ),
                         ),
                       ],
@@ -235,7 +235,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             value:
                                 '${(summary['cancelled_orders'] as num?)?.toInt() ?? 0}',
                             icon: Icons.cancel,
-                            color: Colors.red,
+                            color: AppTheme.danger,
                           ),
                         ),
                       ],
@@ -267,13 +267,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                   padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
                                     color: isProfit
-                                        ? Colors.green[50]
-                                        : Colors.red[50],
+                                        ? AppTheme.primarySurface
+                                        : AppTheme.dangerSurface,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: isProfit
-                                          ? Colors.green[300]!
-                                          : Colors.red[300]!,
+                                          ? AppTheme.primary!
+                                          : AppTheme.danger!,
                                     ),
                                   ),
                                   child: Column(
@@ -287,8 +287,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                                 ? Icons.trending_up
                                                 : Icons.trending_down,
                                             color: isProfit
-                                                ? Colors.green[700]
-                                                : Colors.red[700],
+                                                ? AppTheme.primary
+                                                : AppTheme.danger,
                                             size: 18,
                                           ),
                                           const SizedBox(width: 6),
@@ -298,8 +298,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                               fontWeight: FontWeight.bold,
                                               fontSize: 14,
                                               color: isProfit
-                                                  ? Colors.green[700]
-                                                  : Colors.red[700],
+                                                  ? AppTheme.primary
+                                                  : AppTheme.danger,
                                             ),
                                           ),
                                         ],
@@ -308,20 +308,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                       _bookRow(
                                         'Pemasukan (Omzet)',
                                         AppUtils.formatCurrency(rev),
-                                        Colors.green,
+                                        AppTheme.primary,
                                       ),
                                       _bookRow(
                                         'Total Pengeluaran',
                                         '- ${AppUtils.formatCurrency(exp)}',
-                                        Colors.red,
+                                        AppTheme.danger,
                                       ),
                                       const Divider(height: 14),
                                       _bookRow(
                                         isProfit ? '✅ Laba Bersih' : '❌ Rugi',
                                         AppUtils.formatCurrency(profit.abs()),
                                         isProfit
-                                            ? Colors.green[700]!
-                                            : Colors.red[700]!,
+                                            ? AppTheme.primary!
+                                            : AppTheme.danger!,
                                         bold: true,
                                       ),
                                       if (exp > 0 &&
@@ -332,7 +332,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                           'Rincian Pengeluaran:',
                                           style: TextStyle(
                                             fontSize: 12,
-                                            color: const Color(0xFF62736F),
+                                            color: AppTheme.textSecondary,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
@@ -346,7 +346,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                                   (e['total'] as num)
                                                       .toDouble(),
                                                 ),
-                                                Colors.orange[700]!,
+                                                AppTheme.warningInk!,
                                                 fontSize: 12,
                                               ),
                                             ),
@@ -467,7 +467,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                   padding: EdgeInsets.all(16),
                                   child: Text(
                                     'Belum ada data penjualan',
-                                    style: TextStyle(color: Colors.grey),
+                                    style: TextStyle(color: AppTheme.textSecondary),
                                   ),
                                 ),
                               )
@@ -491,7 +491,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                         decoration: BoxDecoration(
                                           color: i < 3
                                               ? AppTheme.primaryRed
-                                              : Colors.grey[200],
+                                              : AppTheme.borderLight,
                                           shape: BoxShape.circle,
                                         ),
                                         child: Center(
@@ -499,8 +499,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                             '${i + 1}',
                                             style: TextStyle(
                                               color: i < 3
-                                                  ? Colors.white
-                                                  : const Color(0xFF62736F),
+                                                  ? AppTheme.onAction
+                                                  : AppTheme.textSecondary,
                                               fontSize: 14,
                                               fontWeight: FontWeight.bold,
                                             ),
@@ -527,7 +527,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                               child: LinearProgressIndicator(
                                                 value: qty / maxQty,
                                                 backgroundColor:
-                                                    Colors.grey[200],
+                                                    AppTheme.borderLight,
                                                 color: i < 3
                                                     ? AppTheme.primaryRed
                                                     : AppTheme.primaryOrange,
@@ -556,7 +556,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                                   0,
                                             ),
                                             style: TextStyle(
-                                              color: const Color(0xFF62736F),
+                                              color: AppTheme.textSecondary,
                                               fontSize: 12,
                                             ),
                                           ),
@@ -582,7 +582,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Muat laporan dulu'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppTheme.warningInk,
         ),
       );
       return;
@@ -621,7 +621,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error export: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.danger,
           ),
         );
       }
@@ -643,14 +643,14 @@ Widget _PeriodBtn(
         margin: const EdgeInsets.symmetric(horizontal: 4),
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryRed : Colors.transparent,
+          color: isSelected ? AppTheme.primaryRed : AppTheme.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
           label,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: isSelected ? Colors.white : const Color(0xFF62736F),
+            color: isSelected ? AppTheme.onAction : AppTheme.textSecondary,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             fontSize: 14,
           ),
@@ -702,7 +702,7 @@ class _SummaryCard extends StatelessWidget {
             ),
             Text(
               title,
-              style: TextStyle(fontSize: 14, color: const Color(0xFF62736F)),
+              style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
             ),
           ],
         ),
@@ -721,12 +721,12 @@ Widget _PaymentRow(String label, int count, double amount) {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: const Color(0xFFF7F9F8),
+            color: AppTheme.surfaceLight,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
             '$count trx',
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
+            style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
           ),
         ),
         const Spacer(),
@@ -756,7 +756,7 @@ Widget _bookRow(
             label,
             style: TextStyle(
               fontSize: fontSize,
-              color: const Color(0xFF62736F),
+              color: AppTheme.textSecondary,
             ),
           ),
         ),
@@ -809,7 +809,7 @@ class _SimpleBarchart extends StatelessWidget {
                   Container(
                     height: 120 * ratio,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00796B),
+                      color: AppTheme.primary,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -818,7 +818,7 @@ class _SimpleBarchart extends StatelessWidget {
                     dateStr.length >= 10 ? dateStr.substring(8, 10) : dateStr,
                     style: TextStyle(
                       fontSize: 12,
-                      color: const Color(0xFF62736F),
+                      color: AppTheme.textSecondary,
                     ),
                   ),
                 ],

@@ -1,0 +1,43 @@
+{
+  "technology": "Flutter 3.41.4 / Dart 3.11.1",
+  "branch": "redesign/hallmark-android-ui",
+  "screensReviewedInSource": 43,
+  "domainEntrypointFilesByteIdentical": 63,
+  "analysisErrors": 0,
+  "fullDartFlutterKernelCompilation": "passed",
+  "originalDartTestScripts": {
+    "passed": 11,
+    "failed": 0,
+    "names": [
+      "checkout_diagnostic",
+      "checkout_gate",
+      "concurrent_clients",
+      "login_route",
+      "order_outbox",
+      "performance_read_work",
+      "pin_secret",
+      "receipt_sync_state",
+      "recipe_stock",
+      "startup_resilience",
+      "table_model"
+    ]
+  },
+  "functionalWidgetTests": {
+    "passed": 9,
+    "failed": 1,
+    "preExistingFailure": "PIN values are masked in semantics: active SemanticsHandle; reproduced on original baseline"
+  },
+  "componentRenderCaptures": {
+    "passed": 2,
+    "failed": 0
+  },
+  "apk": "not produced: Flutter CLI cannot spawn Git (Access denied)",
+  "androidDeviceValidation": "not run: no ADB device; emulator could not write its configuration",
+  "screenshots": "original login widgets and actual shared components rendered in native Flutter headless engine; not Android screenshots",
+  "limitations": [
+    "No authenticated production-state screenshots",
+    "No live payment, hardware or server integration tests",
+    "No complete dark-mode device verification",
+    "sloplint does not support Dart; no fabricated pass"
+  ]
+}
