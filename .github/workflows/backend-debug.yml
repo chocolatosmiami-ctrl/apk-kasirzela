@@ -20,6 +20,8 @@ jobs:
           git -C "$RUNNER_TEMP/flutter" remote add origin https://github.com/flutter/flutter.git
           git -C "$RUNNER_TEMP/flutter" fetch --depth=1 origin ff37bef603469fb030f2b72995ab929ccfc227f0
           git -C "$RUNNER_TEMP/flutter" checkout --detach FETCH_HEAD
+          git -C "$RUNNER_TEMP/flutter" fetch --depth=1 origin refs/tags/3.41.4:refs/tags/3.41.4
+          test "$(git -C "$RUNNER_TEMP/flutter" rev-parse 3.41.4)" = ff37bef603469fb030f2b72995ab929ccfc227f0
           echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
           echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
       - name: Resolve locked packages
