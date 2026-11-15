@@ -170,11 +170,24 @@ BEGIN
   SELECT * INTO v FROM zela_qr.visits WHERE table_id=t.id AND state IN ('open','closing');
  END IF;
  IF p_action='menu' THEN
-  RETURN jsonb_build_object('branch',t.branch_name,'table',t.name,'visit_id',v.id,'state',coalesce(v.state,'closed'),
-   'menu',zela_qr.catalog(t.branch_id,coalesce(v.state='open',false)),
+  RETURN jsonb_build_object('branch',t.branch_name,'table',t.name,'visit_id',v.id,'state',coalesce(v.state,'ready'),
+   'menu',zela_qr.catalog(t.branch_id,v.id IS NULL OR v.state='open'),
    'fees',jsonb_build_object('tax_enabled',t.ppn_enabled,'tax_percent',t.ppn_persen,'service_enabled',t.sc_enabled,'service_amount',t.sc_amount,'rounding',t.rounding));
  END IF;
- IF v.id IS NULL THEN RAISE EXCEPTION 'Meja belum dibuka kasir' USING ERRCODE='P0001'; END IF;
+ -- Creating a visit is a write: only join immediately before submission may do it.
+ -- Serialize on the same table row as staff open; concurrent guests share one visit.
+ IF p_action='join' AND v.id IS NULL THEN
+  PERFORM 1 FROM public.restaurant_tables WHERE id=t.id FOR UPDATE;
+  SELECT * INTO v FROM zela_qr.visits WHERE table_id=t.id AND state IN ('open','closing');
+  IF v.id IS NULL THEN
+   IF (SELECT status FROM public.restaurant_tables WHERE id=t.id)<>'empty'
+    OR EXISTS(SELECT 1 FROM public.table_carts WHERE branch_id=t.branch_id AND table_id=t.id) THEN
+    RAISE EXCEPTION 'Meja masih memiliki pesanan kasir. Hubungi kasir.' USING ERRCODE='P0001'; END IF;
+   INSERT INTO zela_qr.visits(table_id,branch_id) VALUES(t.id,t.branch_id) RETURNING * INTO v;
+   UPDATE public.restaurant_tables SET status='occupied',occupied_at=now(),customer_name='Pesanan QR' WHERE id=t.id;
+  END IF;
+ END IF;
+ IF v.id IS NULL THEN RAISE EXCEPTION 'Sesi meja belum tersedia. Kirim pesanan kembali.' USING ERRCODE='P0001'; END IF;
  SELECT * INTO v FROM zela_qr.visits WHERE id=v.id FOR UPDATE;
  IF length(coalesce(p_data->>'guest_token',''))<>64 THEN RAISE EXCEPTION 'Sesi pelanggan tidak valid' USING ERRCODE='22023'; END IF;
  visitor_hash:=encode(extensions.digest(p_data->>'guest_token','sha256'),'hex');

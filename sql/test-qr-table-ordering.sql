@@ -45,8 +45,15 @@ BEGIN
  IF (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='zela_qr' AND c.relkind='r' AND c.relrowsecurity)<>5 THEN RAISE EXCEPTION 'QRTEST: private RLS missing'; END IF;
  r:=public.qr_staff_v1(a,'enable',jsonb_build_object('branch_id',branch,'table_id',910001));link:=r->>'token';
  r:=public.qr_guest_v1('menu',jsonb_build_object('link_token',link));
- IF r->>'state'<>'closed' OR jsonb_array_length(r->'menu')<>1 OR (r->'menu'->0->>'available')::boolean THEN RAISE EXCEPTION 'QRTEST: closed/catalog scoping'; END IF;
- r:=public.qr_staff_v1(a,'open',jsonb_build_object('branch_id',branch,'table_id',910001));visit:=(r->>'visit_id')::uuid;
+ IF r->>'state'<>'ready' OR jsonb_array_length(r->'menu')<>1 OR NOT (r->'menu'->0->>'available')::boolean OR EXISTS(SELECT 1 FROM zela_qr.visits) THEN RAISE EXCEPTION 'QRTEST: ready/catalog scoping or scan created visit'; END IF;
+ denied:=false;BEGIN PERFORM public.qr_guest_v1('join',jsonb_build_object('link_token',link,'guest_token',token,'name',''));EXCEPTION WHEN SQLSTATE '22023' THEN denied:=true;END;
+ IF NOT denied OR EXISTS(SELECT 1 FROM zela_qr.visits) THEN RAISE EXCEPTION 'QRTEST: invalid join created visit'; END IF;
+ UPDATE public.restaurant_tables SET status='occupied' WHERE id=910001;
+ denied:=false;BEGIN PERFORM public.qr_guest_v1('join',jsonb_build_object('link_token',link,'guest_token',token,'name','Fixture guest A'));EXCEPTION WHEN SQLSTATE 'P0001' THEN denied:=true;END;
+ IF NOT denied OR EXISTS(SELECT 1 FROM zela_qr.visits) THEN RAISE EXCEPTION 'QRTEST: auto join overwrote occupied legacy table'; END IF;
+ UPDATE public.restaurant_tables SET status='empty' WHERE id=910001;
+ r:=public.qr_guest_v1('join',jsonb_build_object('link_token',link,'guest_token',token,'name','Fixture guest A'));visit:=(r->>'visit_id')::uuid;
+ IF (SELECT count(*) FROM zela_qr.visits)<>1 OR (SELECT status FROM public.restaurant_tables WHERE id=910001)<>'occupied' THEN RAISE EXCEPTION 'QRTEST: auto visit creation'; END IF;
  r:=public.qr_staff_v1(a,'list',jsonb_build_object('branch_id',branch));
  IF jsonb_array_length(r->'tables')<>1 OR jsonb_array_length(r->'orders')<>0 THEN RAISE EXCEPTION 'QRTEST: staff list scoping'; END IF;
  r:=public.qr_guest_v1('menu',jsonb_build_object('link_token',link));
