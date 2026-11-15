@@ -113,11 +113,16 @@ CREATE FUNCTION zela_qr.assert_actor(p_actor uuid,p_branch uuid) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 BEGIN
  PERFORM set_config('request.jwt.claim.sub',p_actor::text,true);
+ PERFORM set_config('request.jwt.claim.role','authenticated',true);
  PERFORM set_config('request.jwt.claims',jsonb_build_object('sub',p_actor,'role','authenticated')::text,true);
  IF NOT EXISTS(SELECT 1 FROM public.users WHERE auth_id=p_actor AND is_active IS TRUE
  AND is_approved IS TRUE AND role IN ('kasir','owner','manajer','admin','superadmin')) THEN
   RAISE EXCEPTION 'Akun kasir tidak aktif' USING ERRCODE='42501'; END IF;
  PERFORM public.v54_assert_branch(p_branch);
+ IF NOT EXISTS(SELECT 1 FROM public.users u JOIN public.branches b ON b.id=p_branch
+  WHERE u.auth_id=p_actor AND (u.role='superadmin' OR (u.owner_id=b.owner_id
+   AND (u.role IN ('owner','admin') OR u.branch_id=b.id)))) THEN
+  RAISE EXCEPTION 'Akses cabang ditolak' USING ERRCODE='42501'; END IF;
  IF NOT EXISTS(SELECT 1 FROM public.branches b JOIN public.owners o ON o.id=b.owner_id
  WHERE b.id=p_branch AND b.is_active IS TRUE AND b.mode='food' AND o.is_active IS TRUE) THEN
   RAISE EXCEPTION 'Cabang tidak aktif' USING ERRCODE='42501'; END IF;

@@ -36,6 +36,7 @@ DECLARE a uuid:='00000000-0000-4000-8000-000000000011'; actor_b uuid:='00000000-
  r jsonb; again jsonb; batch uuid; batch2 uuid; pending_batch uuid; bill jsonb;
  items jsonb; payload jsonb; manual jsonb; old_balance numeric; before_stock numeric; denied boolean; job uuid;
 BEGIN
+ PERFORM set_config('request.jwt.claim.role','service_role',true);
  IF has_schema_privilege('authenticated','zela_qr','USAGE') OR has_schema_privilege('anon','zela_qr','USAGE')
  OR has_function_privilege('anon','public.qr_guest_v1(text,jsonb)','EXECUTE')
  OR has_function_privilege('authenticated','public.qr_staff_v1(uuid,text,jsonb)','EXECUTE')
@@ -46,6 +47,10 @@ BEGIN
  r:=public.qr_guest_v1('menu',jsonb_build_object('link_token',link));
  IF r->>'state'<>'closed' OR jsonb_array_length(r->'menu')<>1 OR (r->'menu'->0->>'available')::boolean THEN RAISE EXCEPTION 'QRTEST: closed/catalog scoping'; END IF;
  r:=public.qr_staff_v1(a,'open',jsonb_build_object('branch_id',branch,'table_id',910001));visit:=(r->>'visit_id')::uuid;
+ r:=public.qr_staff_v1(a,'list',jsonb_build_object('branch_id',branch));
+ IF jsonb_array_length(r->'tables')<>1 OR jsonb_array_length(r->'orders')<>0 THEN RAISE EXCEPTION 'QRTEST: staff list scoping'; END IF;
+ r:=public.qr_guest_v1('menu',jsonb_build_object('link_token',link));
+ IF r->'menu'->0->>'available'<>'true' THEN RAISE EXCEPTION 'QRTEST: open menu unavailable'; END IF;
  again:=public.qr_staff_v1(a,'open',jsonb_build_object('branch_id',branch,'table_id',910001));
  IF again->>'visit_id'<>visit::text THEN RAISE EXCEPTION 'QRTEST: duplicate visit'; END IF;
  r:=public.qr_guest_v1('join',jsonb_build_object('link_token',link,'guest_token',token,'name','Fixture guest A'));
@@ -60,6 +65,7 @@ BEGIN
  IF NOT denied THEN RAISE EXCEPTION 'QRTEST: changed retry accepted'; END IF;
  r:=public.qr_guest_v1('status',jsonb_build_object('link_token',link,'guest_token',token2));
  IF jsonb_array_length(r->'orders')<>0 THEN RAISE EXCEPTION 'QRTEST: customer privacy'; END IF;
+ PERFORM set_config('request.jwt.claim.role','service_role',true);
  denied:=false;BEGIN PERFORM public.qr_staff_v1(actor_b,'accept',jsonb_build_object('branch_id',branch,'batch_id',batch));EXCEPTION WHEN insufficient_privilege THEN denied:=true;END;
  IF NOT denied THEN RAISE EXCEPTION 'QRTEST: cross-owner accept'; END IF;
  r:=public.qr_staff_v1(a,'accept',jsonb_build_object('branch_id',branch,'batch_id',batch));
@@ -125,6 +131,19 @@ BEGIN
  IF r->>'cancelled'<>'true' THEN RAISE EXCEPTION 'QRTEST: cancellation ticket missing'; END IF;
  r:=public.qr_staff_v1(a,'close_empty',jsonb_build_object('branch_id',branch,'visit_id',visit));
  IF r->>'closed'<>'true' THEN RAISE EXCEPTION 'QRTEST: empty visit close'; END IF;
+ INSERT INTO public.customers(id,owner_id,no_hp,nama,member_number,member_registered_at)
+ VALUES('50000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','0800000000','Fixture member','123456',now()-interval '1 minute');
+ r:=public.qr_staff_v1(a,'open',jsonb_build_object('branch_id',branch,'table_id',910001));visit:=(r->>'visit_id')::uuid;
+ r:=public.qr_guest_v1('join',jsonb_build_object('link_token',link,'guest_token',token,'name','Fixture member'));
+ r:=public.qr_guest_v1('submit',jsonb_build_object('link_token',link,'guest_token',token,'request_id','30000000-0000-4000-8000-000000000007','items',items));
+ r:=public.qr_staff_v1(a,'accept',jsonb_build_object('branch_id',branch,'batch_id',r->>'id'));
+ bill:=public.qr_staff_v1(a,'bill',jsonb_build_object('branch_id',branch,'visit_id',visit,'device_id',repeat('d',64)));
+ payload:=payload||jsonb_build_object('qr_visit_id',visit,'qr_bill_token',bill->>'bill_token','order_number',bill->>'receipt_number',
+ 'subtotal',20000,'total',20000,'paid_amount',20000,'order_type','dine_in','member_number','123456','customer_id','50000000-0000-4000-8000-000000000001',
+ 'items',jsonb_build_array(jsonb_build_object('item_name','Fixture dish','quantity',1,'price',20000,'subtotal',20000)));
+ r:=public.sync_qr_food_order_v1(payload);again:=public.sync_qr_food_order_v1(payload);
+ IF r->>'member_linked'<>'true' OR r->>'qr_billed'<>'true' OR r->>'order_id'<>again->>'order_id'
+ OR (SELECT total_transaksi FROM public.customers WHERE id='50000000-0000-4000-8000-000000000001')<>1 THEN RAISE EXCEPTION 'QRTEST: member settlement duplicated or lost'; END IF;
  RAISE NOTICE 'QRTEST: PASS catalog privacy; duplicate retries; tenant scope; reservation; delta tickets; uncertain-print copy; bill lock; ordinary POS rollback; combined payment exactly once; visit reset; cancellation';
 END;
 $test$;
