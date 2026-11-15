@@ -25,14 +25,14 @@ class PrinterService {
   PrinterService._();
 
   // ── Keys printer customer ─────────────────────────────
-  static const String _keyPrinterName    = 'bt_printer_name';
+  static const String _keyPrinterName = 'bt_printer_name';
   static const String _keyPrinterAddress = 'bt_printer_address';
-  static const String _keyPaperWidth     = 'bt_printer_width';
+  static const String _keyPaperWidth = 'bt_printer_width';
 
   // ── Keys printer dapur ────────────────────────────────
-  static const String _keyKitchenName    = 'bt_kitchen_name';
+  static const String _keyKitchenName = 'bt_kitchen_name';
   static const String _keyKitchenAddress = 'bt_kitchen_address';
-  static const String _keyKitchenWidth   = 'bt_kitchen_width';
+  static const String _keyKitchenWidth = 'bt_kitchen_width';
   static const String _keyAutoPrintKitchen = 'auto_print_kitchen';
 
   // ── Simpan & load printer CUSTOMER ───────────────────
@@ -44,7 +44,7 @@ class PrinterService {
 
   Future<PrinterDevice?> getSavedPrinter() async {
     final p = await SharedPreferences.getInstance();
-    final name    = p.getString(_keyPrinterName) ?? '';
+    final name = p.getString(_keyPrinterName) ?? '';
     final address = p.getString(_keyPrinterAddress) ?? '';
     if (name.isEmpty || address.isEmpty) return null;
     return PrinterDevice(name: name, address: address);
@@ -69,7 +69,7 @@ class PrinterService {
 
   Future<PrinterDevice?> getSavedKitchenPrinter() async {
     final p = await SharedPreferences.getInstance();
-    final name    = p.getString(_keyKitchenName) ?? '';
+    final name = p.getString(_keyKitchenName) ?? '';
     final address = p.getString(_keyKitchenAddress) ?? '';
     if (name.isEmpty || address.isEmpty) return null;
     return PrinterDevice(name: name, address: address);
@@ -144,7 +144,7 @@ class PrinterService {
       final bool btEnabled = await PrintBluetoothThermal.bluetoothEnabled;
       if (!btEnabled) return [];
       final List<BluetoothInfo> devices =
-      await PrintBluetoothThermal.pairedBluetooths;
+          await PrintBluetoothThermal.pairedBluetooths;
       return devices
           .map((d) => PrinterDevice(name: d.name, address: d.macAdress))
           .toList();
@@ -169,61 +169,72 @@ class PrinterService {
   }
 
   Future<void> disconnect() async {
-    try { await PrintBluetoothThermal.disconnect; } catch (_) {}
+    try {
+      await PrintBluetoothThermal.disconnect;
+    } catch (_) {}
   }
 
   Future<bool> isConnected() async {
-    try { return await PrintBluetoothThermal.connectionStatus; }
-    catch (_) { return false; }
+    try {
+      return await PrintBluetoothThermal.connectionStatus;
+    } catch (_) {
+      return false;
+    }
   }
 
   // ── ESC/POS helpers ───────────────────────────────────
   List<int> _encode(String text) => text.codeUnits;
 
-  static const List<int> _reset  = [0x1B, 0x40];
-  static const List<int> _bold1  = [0x1B, 0x45, 0x01];
-  static const List<int> _bold0  = [0x1B, 0x45, 0x00];
+  static const List<int> _reset = [0x1B, 0x40];
+  static const List<int> _bold1 = [0x1B, 0x45, 0x01];
+  static const List<int> _bold0 = [0x1B, 0x45, 0x00];
   static const List<int> _center = [0x1B, 0x61, 0x01];
-  static const List<int> _left   = [0x1B, 0x61, 0x00];
-  static const List<int> _size2  = [0x1B, 0x21, 0x30];
-  static const List<int> _size1  = [0x1B, 0x21, 0x00];
-  static const List<int> _lf     = [0x0A];
-  static const List<int> _cut    = [0x1D, 0x56, 0x41, 0x10];
+  static const List<int> _left = [0x1B, 0x61, 0x00];
+  static const List<int> _size2 = [0x1B, 0x21, 0x30];
+  static const List<int> _size1 = [0x1B, 0x21, 0x00];
+  static const List<int> _lf = [0x0A];
+  static const List<int> _cut = [0x1D, 0x56, 0x41, 0x10];
 
   static final _logoReads = ReadFlights<List<int>?>();
   static final _logoCache = <String, _CachedLogo>{};
-  static Future<List<int>?> _fetchAndConvertLogo(String url, int lineWidth) async {
+  static Future<List<int>?> _fetchAndConvertLogo(
+      String url, int lineWidth) async {
     final key = '$lineWidth:$url';
     final saved = _logoCache.remove(key);
     final age = saved == null ? null : DateTime.now().difference(saved.created);
-    if (saved != null && age != null && !age.isNegative && age < const Duration(minutes: 1)) {
+    if (saved != null &&
+        age != null &&
+        !age.isNegative &&
+        age < const Duration(minutes: 1)) {
       _logoCache[key] = saved;
       return List.of(saved.bytes);
     }
-    final bytes = await _logoReads.run(key, () => _downloadAndConvertLogo(url, lineWidth));
+    final bytes = await _logoReads.run(
+        key, () => _downloadAndConvertLogo(url, lineWidth));
     if (bytes != null) {
       _logoCache[key] = _CachedLogo(List.of(bytes), DateTime.now());
-      while (_logoCache.length > 4) { _logoCache.remove(_logoCache.keys.first); }
+      while (_logoCache.length > 4) {
+        _logoCache.remove(_logoCache.keys.first);
+      }
     }
     return bytes;
   }
+
   static Future<List<int>?> _downloadAndConvertLogo(
       String url, int lineWidth) async {
     try {
       final uri = Uri.parse(url);
-      final response =
-      await http.get(uri).timeout(const Duration(seconds: 5));
+      final response = await http.get(uri).timeout(const Duration(seconds: 5));
       if (response.statusCode != 200) return null;
       img.Image? decoded = img.decodeImage(response.bodyBytes);
       if (decoded == null) return null;
       final targetWidth = math.min(200, lineWidth * 6);
       decoded = img.copyResize(decoded,
           width: targetWidth,
-          height:
-          (targetWidth * decoded.height / decoded.width).round());
+          height: (targetWidth * decoded.height / decoded.width).round());
       final profile = await CapabilityProfile.load();
-      final generator = Generator(
-          lineWidth == 32 ? PaperSize.mm58 : PaperSize.mm80, profile);
+      final generator =
+          Generator(lineWidth == 32 ? PaperSize.mm58 : PaperSize.mm80, profile);
       final List<int> bytes = [];
       bytes.addAll(generator.image(decoded, align: PosAlign.center));
       return bytes;
@@ -236,7 +247,10 @@ class PrinterService {
   List<int> _line(String text,
       {bool bold = false, bool center = false, bool big = false}) {
     final List<int> b = [];
-    if (center) b.addAll(_center); else b.addAll(_left);
+    if (center)
+      b.addAll(_center);
+    else
+      b.addAll(_left);
     if (big) b.addAll(_size2);
     if (bold) b.addAll(_bold1);
     b.addAll(_encode(text));
@@ -264,8 +278,7 @@ class PrinterService {
     try {
       final connected = await PrintBluetoothThermal.connectionStatus;
       if (connected) await PrintBluetoothThermal.disconnect;
-      return await PrintBluetoothThermal.connect(
-          macPrinterAddress: address);
+      return await PrintBluetoothThermal.connect(macPrinterAddress: address);
     } catch (e) {
       debugPrint('🖨️ [BT] _connectToAddress error: $e');
       return false;
@@ -273,8 +286,16 @@ class PrinterService {
   }
 
   // ── Print nota DAPUR ──────────────────────────────────
-  Future<PrintResult> printKitchenReceipt(OrderModel order) async {
-    final kitchenPrinter = await getSavedKitchenPrinter();
+  Future<PrintResult> printKitchenReceipt(
+    OrderModel order, {
+    String? heading,
+    String? customerName,
+    bool isCopy = false,
+    bool allowCustomerPrinter = false,
+    String? cancellationReason,
+  }) async {
+    final kitchenPrinter = await getSavedKitchenPrinter() ??
+        (allowCustomerPrinter ? await getSavedPrinter() : null);
     if (kitchenPrinter == null) return PrintResult.noDevice;
 
     final ok = await _connectToAddress(kitchenPrinter.address);
@@ -286,8 +307,17 @@ class PrinterService {
 
       final List<int> ticket = [];
       ticket.addAll(_reset);
-      ticket.addAll(_line('*** NOTA DAPUR ***',
-          bold: true, center: true));
+      ticket.addAll(_line('*** NOTA DAPUR ***', bold: true, center: true));
+      if (isCopy || RegExp(r'^QR-[0-9a-f]{32}$').hasMatch(order.orderNumber)) {
+        ticket.addAll(
+            _line('SALINAN - JANGAN MASAK ULANG', bold: true, center: true));
+      }
+      if (heading != null)
+        ticket.addAll(_line(heading, bold: true, center: true));
+      if (customerName != null)
+        ticket.addAll(_line('Nama: $customerName', bold: true));
+      if (cancellationReason != null)
+        ticket.addAll(_line('BATAL: $cancellationReason', bold: true));
       ticket.addAll(_divider(width: lineWidth));
 
       final orderNum = order.orderNumber.length > 8
@@ -297,15 +327,13 @@ class PrinterService {
       ticket.addAll(_row('Tgl',
           AppUtils.formatDateTime(AppUtils.safeParseDate(order.createdAt)),
           totalWidth: lineWidth));
-      ticket.addAll(_row('Tipe',
-          AppUtils.getOrderTypeLabel(order.orderType),
+      ticket.addAll(_row('Tipe', AppUtils.getOrderTypeLabel(order.orderType),
           totalWidth: lineWidth));
       if (order.tableNumber != null && order.tableNumber!.isNotEmpty)
         ticket.addAll(
             _row('Meja', 'Meja ${order.tableNumber}', totalWidth: lineWidth));
       if (order.cashierName != null && order.cashierName!.isNotEmpty)
-        ticket.addAll(
-            _row('Kasir', order.cashierName!, totalWidth: lineWidth));
+        ticket.addAll(_row('Kasir', order.cashierName!, totalWidth: lineWidth));
       ticket.addAll(_divider(width: lineWidth));
 
       for (final item in order.items) {
@@ -399,13 +427,14 @@ class PrinterService {
       ticket.addAll(_reset);
 
       // ── Header: pakai effective (per-cabang override global) ─────────────
-      final headerName    = settings.effectiveStoreName;
+      final headerName = settings.effectiveStoreName;
       final headerAddress = settings.effectiveStoreAddress;
-      final headerPhone   = settings.effectiveStorePhone;
-      final headerFooter  = settings.effectiveReceiptFooter;
-      final headerLogo    = settings.effectiveLogoUrl;
+      final headerPhone = settings.effectiveStorePhone;
+      final headerFooter = settings.effectiveReceiptFooter;
+      final headerLogo = settings.effectiveLogoUrl;
 
-      debugPrint('🖨️ [BT] headerName=$headerName addr=$headerAddress logo=$headerLogo');
+      debugPrint(
+          '🖨️ [BT] headerName=$headerName addr=$headerAddress logo=$headerLogo');
 
       if (headerLogo.isNotEmpty) {
         try {
@@ -440,15 +469,13 @@ class PrinterService {
       ticket.addAll(_row('Tgl',
           AppUtils.formatDateTime(AppUtils.safeParseDate(order.createdAt)),
           totalWidth: lineWidth));
-      ticket.addAll(_row('Tipe',
-          AppUtils.getOrderTypeLabel(order.orderType),
+      ticket.addAll(_row('Tipe', AppUtils.getOrderTypeLabel(order.orderType),
           totalWidth: lineWidth));
       if (order.tableNumber != null && order.tableNumber!.isNotEmpty)
         ticket.addAll(
             _row('Meja', 'Meja ${order.tableNumber}', totalWidth: lineWidth));
       if (order.cashierName != null && order.cashierName!.isNotEmpty)
-        ticket.addAll(
-            _row('Kasir', order.cashierName!, totalWidth: lineWidth));
+        ticket.addAll(_row('Kasir', order.cashierName!, totalWidth: lineWidth));
 
       for (final field in order.memberReceiptRows) {
         ticket.addAll(_line('${field.key}: ${field.value}'));
@@ -460,8 +487,7 @@ class PrinterService {
         ticket.addAll(_line('${item.qty}x ${item.name}', bold: true));
         if (item.note != null && item.note!.isNotEmpty)
           ticket.addAll(_line('   * ${item.note}'));
-        ticket.addAll(_row(
-            '   @${AppUtils.formatCurrency(item.price)}',
+        ticket.addAll(_row('   @${AppUtils.formatCurrency(item.price)}',
             AppUtils.formatCurrency(item.subtotal),
             totalWidth: lineWidth));
       }
@@ -470,15 +496,14 @@ class PrinterService {
 
       // ── Summary ──────────────────────────────────────────────────────────
       if (order.discountAmount > 0) {
-        ticket.addAll(_row('Subtotal',
-            AppUtils.formatCurrency(order.subtotal),
+        ticket.addAll(_row('Subtotal', AppUtils.formatCurrency(order.subtotal),
             totalWidth: lineWidth));
         // Tampilkan label diskon branch jika ada
         final diskonLabel = settings.branchDiskonEnabled
             ? settings.branchDiskonLabel
             : 'Diskon';
-        ticket.addAll(_row(diskonLabel,
-            '-${AppUtils.formatCurrency(order.discountAmount)}',
+        ticket.addAll(_row(
+            diskonLabel, '-${AppUtils.formatCurrency(order.discountAmount)}',
             totalWidth: lineWidth));
       }
       if (order.taxAmount > 0)
@@ -486,8 +511,8 @@ class PrinterService {
             AppUtils.formatCurrency(order.taxAmount),
             totalWidth: lineWidth));
       if (settings.serviceChargeEnabled && settings.serviceChargeAmount > 0)
-        ticket.addAll(_row('Service',
-            AppUtils.formatCurrency(settings.serviceChargeAmount),
+        ticket.addAll(_row(
+            'Service', AppUtils.formatCurrency(settings.serviceChargeAmount),
             totalWidth: lineWidth));
 
       // Pembulatan — hanya tampilkan jika ada
@@ -495,13 +520,14 @@ class PrinterService {
       if (rounding > 0) {
         // taxableAmount = subtotal - total discount (manual + branch)
         final taxableAmt = order.subtotal - order.discountAmount;
-        final raw = taxableAmt + order.taxAmount +
+        final raw = taxableAmt +
+            order.taxAmount +
             (settings.serviceChargeEnabled ? settings.serviceChargeAmount : 0);
         final rounded = (raw / rounding).ceil() * rounding.toDouble();
         final roundDiff = rounded - raw;
         if (roundDiff > 0)
-          ticket.addAll(_row('Pembulatan',
-              '+${AppUtils.formatCurrency(roundDiff)}',
+          ticket.addAll(_row(
+              'Pembulatan', '+${AppUtils.formatCurrency(roundDiff)}',
               totalWidth: lineWidth));
       }
 
@@ -513,15 +539,14 @@ class PrinterService {
       ticket.addAll(_line('=' * lineWidth));
 
       // ── Pembayaran ───────────────────────────────────────────────────────
-      ticket.addAll(_row('Bayar',
-          AppUtils.getPaymentMethodLabel(order.paymentMethod ?? ''),
+      ticket.addAll(_row(
+          'Bayar', AppUtils.getPaymentMethodLabel(order.paymentMethod ?? ''),
           totalWidth: lineWidth));
       if (order.paymentMethod == 'cash') {
-        ticket.addAll(_row('Terima',
-            AppUtils.formatCurrency(order.paidAmount),
+        ticket.addAll(_row('Terima', AppUtils.formatCurrency(order.paidAmount),
             totalWidth: lineWidth));
-        ticket.addAll(_row('Kembali',
-            AppUtils.formatCurrency(order.changeAmount),
+        ticket.addAll(_row(
+            'Kembali', AppUtils.formatCurrency(order.changeAmount),
             totalWidth: lineWidth));
       }
 
@@ -532,8 +557,7 @@ class PrinterService {
       }
       ticket.addAll(_divider(width: lineWidth));
       ticket.addAll(_line('powered by kasirzela.id', center: true));
-      ticket.addAll(
-          _line('*** Terima Kasih ***', bold: true, center: true));
+      ticket.addAll(_line('*** Terima Kasih ***', bold: true, center: true));
       ticket.addAll(_lf);
       ticket.addAll(_lf);
       ticket.addAll(_lf);
@@ -562,8 +586,7 @@ class PrinterService {
       final List<int> ticket = [];
 
       ticket.addAll(_reset);
-      ticket.addAll(
-          _line('TEST PRINT', bold: true, center: true, big: true));
+      ticket.addAll(_line('TEST PRINT', bold: true, center: true, big: true));
       ticket.addAll(_line('POS Kasir App', center: true));
       ticket.addAll(_divider(width: lineWidth));
       ticket.addAll(_line('Printer terhubung!', center: true));
@@ -596,7 +619,8 @@ class PrinterService {
     sb.writeln('No: ${order.orderNumber}');
     if (order.dailySeq != null)
       sb.writeln('Struk ke-${order.dailySeq} hari ini');
-    sb.writeln('Tgl: ${AppUtils.formatDateTime(AppUtils.safeParseDate(order.createdAt))}');
+    sb.writeln(
+        'Tgl: ${AppUtils.formatDateTime(AppUtils.safeParseDate(order.createdAt))}');
     if (order.cashierName != null && order.cashierName!.isNotEmpty)
       sb.writeln('Kasir: ${order.cashierName}');
     for (final field in order.memberReceiptRows) {
@@ -613,9 +637,8 @@ class PrinterService {
     sb.writeln('--------------------------------');
     if (order.discountAmount > 0) {
       sb.writeln('Subtotal: ${AppUtils.formatCurrency(order.subtotal)}');
-      final label = settings.branchDiskonEnabled
-          ? settings.branchDiskonLabel
-          : 'Diskon';
+      final label =
+          settings.branchDiskonEnabled ? settings.branchDiskonLabel : 'Diskon';
       sb.writeln('$label  : -${AppUtils.formatCurrency(order.discountAmount)}');
     }
     if (order.taxAmount > 0)
@@ -624,7 +647,8 @@ class PrinterService {
     sb.writeln('================================');
     sb.writeln('TOTAL: ${AppUtils.formatCurrency(order.total)}');
     sb.writeln('================================');
-    sb.writeln('Bayar: ${AppUtils.getPaymentMethodLabel(order.paymentMethod ?? '')}');
+    sb.writeln(
+        'Bayar: ${AppUtils.getPaymentMethodLabel(order.paymentMethod ?? '')}');
     if (order.paymentMethod == 'cash') {
       sb.writeln('Terima : ${AppUtils.formatCurrency(order.paidAmount)}');
       sb.writeln('Kembali: ${AppUtils.formatCurrency(order.changeAmount)}');
@@ -635,6 +659,7 @@ class PrinterService {
     return sb.toString();
   }
 }
+
 class _CachedLogo {
   final List<int> bytes;
   final DateTime created;

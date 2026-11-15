@@ -74,10 +74,11 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
 
       // Auto-print dapur (berlaku untuk semua order termasuk online)
       if (mounted) {
-        final autoPrintKitchen = await PrinterService.instance
-            .getAutoPrintKitchen();
+        final autoPrintKitchen =
+            await PrinterService.instance.getAutoPrintKitchen();
         debugPrint('🍳 [Receipt] autoPrintKitchen=$autoPrintKitchen');
-        if (autoPrintKitchen) {
+        if (autoPrintKitchen &&
+            !RegExp(r'^QR-[0-9a-f]{32}$').hasMatch(widget.order.orderNumber)) {
           final result = await PrinterService.instance.printKitchenReceipt(
             widget.order,
           );
@@ -134,9 +135,8 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
       backgroundColor: AppTheme.surfaceLight,
       appBar: AppBar(
         backgroundColor: _isOnlineOrder ? _platformColor : AppTheme.onAction,
-        foregroundColor: _isOnlineOrder
-            ? AppTheme.onAction
-            : AppTheme.textPrimary,
+        foregroundColor:
+            _isOnlineOrder ? AppTheme.onAction : AppTheme.textPrimary,
         elevation: 0,
         surfaceTintColor: AppTheme.transparent,
         title: Text(
@@ -161,7 +161,8 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
             // ── Banner sukses ─────────────────────────────────
             _isOnlineOrder ? _buildOnlineBanner() : _buildNormalBanner(order),
             if (order.id != null && order.orderType != 'retail')
-              ReceiptSyncStatus(orderId: order.id!, orderNumber: order.orderNumber),
+              ReceiptSyncStatus(
+                  orderId: order.id!, orderNumber: order.orderNumber),
 
             // Struk
             Expanded(
@@ -239,8 +240,9 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                         if (order.cashierName != null)
                           _row('Kasir', order.cashierName!),
                         for (final field in order.memberReceiptRows)
-                          Align(alignment: Alignment.centerLeft, child: Text(
-                            '${field.key}: ${field.value}')),
+                          Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text('${field.key}: ${field.value}')),
                         _row(
                           'Pembayaran',
                           _isOnlineOrder
@@ -381,8 +383,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                             builder: (_) {
                               final rounding = settings.branchRounding;
                               if (rounding <= 0) return const SizedBox.shrink();
-                              final rawTotal =
-                                  order.subtotal -
+                              final rawTotal = order.subtotal -
                                   order.discountAmount +
                                   order.taxAmount +
                                   order.serviceChargeAmount;
@@ -541,7 +542,8 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                               ),
                             ),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppTheme.warningInk),
+                              side:
+                                  const BorderSide(color: AppTheme.warningInk),
                               padding: const EdgeInsets.symmetric(vertical: 8),
                             ),
                           ),
@@ -586,7 +588,8 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                       ),
                       label: const Text(
                         'Transaksi Baru',
-                        style: TextStyle(color: AppTheme.onAction, fontSize: 15),
+                        style:
+                            TextStyle(color: AppTheme.onAction, fontSize: 15),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _isOnlineOrder
@@ -618,7 +621,8 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
       decoration: BoxDecoration(color: AppTheme.primary),
       child: Column(
         children: [
-          const Icon(Icons.delivery_dining_outlined, size: 40, color: AppTheme.textSecondary),
+          const Icon(Icons.delivery_dining_outlined,
+              size: 40, color: AppTheme.textSecondary),
           const SizedBox(height: 8),
           Text(
             'Order $_platformName Tercatat!',
@@ -654,7 +658,8 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
       decoration: const BoxDecoration(color: AppTheme.primary),
       child: Column(
         children: [
-          const Icon(Icons.check_circle_outline, color: AppTheme.onAction, size: 60),
+          const Icon(Icons.check_circle_outline,
+              color: AppTheme.onAction, size: 60),
           const SizedBox(height: 8),
           const Text(
             'Tersimpan di HP',
@@ -935,12 +940,11 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
           result == PrintResult.success
               ? '✅ Nota dapur berhasil dicetak'
               : result == PrintResult.connectFailed
-              ? '❌ Gagal connect ke printer dapur. Pastikan menyala.'
-              : '❌ Gagal cetak dapur: ${result.name}',
+                  ? '❌ Gagal connect ke printer dapur. Pastikan menyala.'
+                  : '❌ Gagal cetak dapur: ${result.name}',
         ),
-        backgroundColor: result == PrintResult.success
-            ? AppTheme.primary
-            : AppTheme.danger,
+        backgroundColor:
+            result == PrintResult.success ? AppTheme.primary : AppTheme.danger,
         duration: const Duration(seconds: 3),
       ),
     );
@@ -955,11 +959,12 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     final phone = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
- scrollable: true,
+        scrollable: true,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: const Row(
           children: [
-            Icon(Icons.smartphone_outlined, size: 24, color: AppTheme.textSecondary),
+            Icon(Icons.smartphone_outlined,
+                size: 24, color: AppTheme.textSecondary),
             SizedBox(width: 8),
             Text('Kirim Struk via WA', style: TextStyle(fontSize: 16)),
           ],
@@ -1018,7 +1023,8 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
               backgroundColor: AppTheme.whatsApp,
             ),
             icon: const Icon(Icons.send, size: 16, color: AppTheme.onAction),
-            label: const Text('Kirim', style: TextStyle(color: AppTheme.onAction)),
+            label:
+                const Text('Kirim', style: TextStyle(color: AppTheme.onAction)),
             onPressed: () {
               final raw = phoneCtrl.text.trim();
               if (raw.isEmpty) return;

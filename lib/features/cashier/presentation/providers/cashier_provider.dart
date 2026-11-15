@@ -16,11 +16,60 @@ import '../../../../core/utils/app_utils.dart';
 import '../../../inventory/data/stock_availability_service.dart';
 
 class CashierProvider extends ChangeNotifier with SessionBoundCart {
-  final Future<dynamic> Function(String, Map<String, dynamic>)? _tableRpcOverride;
-  CashierProvider({Future<dynamic> Function(String, Map<String, dynamic>)? tableRpc})
+  Map<String, dynamic>? _qrBill;
+  Map<String, dynamic>? get qrBill =>
+      _qrBill == null ? null : Map.unmodifiable(_qrBill!);
+
+  Future<void> loadQrBill(
+      Map<String, dynamic> bill, List<MenuItemModel> menus) async {
+    final scope = await prepareSession();
+    if (scope == null ||
+        bill['branch_id'] != scope.branchId ||
+        !isActiveCartScope(scope))
+      throw StateError('Tagihan bukan milik cabang aktif.');
+    final existing = await DatabaseHelper.instance.rawQuery(
+        'SELECT id FROM orders WHERE order_number=?', [bill['receipt_number']]);
+    if (existing.isNotEmpty) {
+      OfflineOrderSyncService.instance.kick();
+      throw StateError(
+          'Tagihan sudah disimpan di HP ini. Periksa riwayat dan sinkronisasi, jangan bayar ulang.');
+    }
+    final loaded = <CartItem>[];
+    for (final row in bill['items'] as List) {
+      final matching = menus
+          .where((m) =>
+              (m.branchId == null || m.branchId == scope.branchId) &&
+              m.name.trim().toLowerCase() ==
+                  row['item_name'].toString().trim().toLowerCase())
+          .toList();
+      if (matching.length != 1 || matching.single.id == null)
+        throw StateError(
+            'Menu QR tidak cocok dengan menu lokal. Sinkronkan menu dahulu.');
+      final item = MenuItemModel.fromMap(
+          {...matching.single.toMap(), 'price': row['price'], 'has_stock': 0});
+      loaded.add(CartItem(
+          menuItem: item,
+          qty: (row['quantity'] as num).toInt(),
+          note: row['note']?.toString()));
+    }
+    if (!isActiveCartScope(scope))
+      throw StateError('Akun berubah saat memuat tagihan.');
+    clearCart(detachTable: true);
+    _cartItems = loaded;
+    _qrBill = Map<String, dynamic>.from(bill);
+    _orderType = 'dine_in';
+    _tableNumber = bill['table_name']?.toString();
+    notifyListeners();
+  }
+
+  final Future<dynamic> Function(String, Map<String, dynamic>)?
+      _tableRpcOverride;
+  CashierProvider(
+      {Future<dynamic> Function(String, Map<String, dynamic>)? tableRpc})
       : _tableRpcOverride = tableRpc;
 
-  Future<dynamic> _runTableRpc(String method, CartScope scope, Map<String, dynamic> params) async {
+  Future<dynamic> _runTableRpc(
+      String method, CartScope scope, Map<String, dynamic> params) async {
     final call = _tableRpcOverride;
     if (call != null) return await call(method, params);
     if (SupabaseConfig.client.auth.currentUser?.id != scope.accountId) {
@@ -28,21 +77,24 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
     }
     return await SupabaseConfig.client.rpc(method, params: params);
   }
+
   @override
   void clearSessionState() {
     _lastCheckoutDiagnostic = null;
     clearCart(detachTable: true);
   }
 
-  Future<Map<int, double>> _scopedMenuStock(Transaction txn,
-      List<CartItem> items, CartScope scope) async {
+  Future<Map<int, double>> _scopedMenuStock(
+      Transaction txn, List<CartItem> items, CartScope scope) async {
     final stock = <int, double>{};
     for (final item in items) {
       if (item.menuItem.id == null) continue;
       final rows = await txn.query('menu_items',
-        where: 'id = ? AND (branch_id = ? OR branch_id IS NULL)',
-        whereArgs: [item.menuItem.id, scope.branchId]);
-      if (rows.isEmpty) throw StateError('Menu tidak tersedia di cabang aktif. Muat ulang menu.');
+          where: 'id = ? AND (branch_id = ? OR branch_id IS NULL)',
+          whereArgs: [item.menuItem.id, scope.branchId]);
+      if (rows.isEmpty)
+        throw StateError(
+            'Menu tidak tersedia di cabang aktif. Muat ulang menu.');
       stock[item.menuItem.id!] = (rows.first['stock'] as num?)?.toDouble() ?? 0;
     }
     return stock;
@@ -52,36 +104,62 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
   CheckoutDiagnostic? get lastCheckoutDiagnostic => _lastCheckoutDiagnostic;
 
   Future<void> _captureCheckoutDiagnostic(Object error, String stage,
-      {bool receiptSaved = false, String? orderNumber, int? sessionEpoch}) async {
+      {bool receiptSaved = false,
+      String? orderNumber,
+      int? sessionEpoch}) async {
     if (sessionEpoch != null && sessionEpoch != cartSessionEpoch) return;
     String summary;
     try {
       final db = DatabaseHelper.instance;
       final version = await db.rawQuery('PRAGMA user_version');
-      final parts = <String>['version=' + version.first.values.first.toString()];
+      final parts = <String>[
+        'version=' + version.first.values.first.toString()
+      ];
       final prefs = await SharedPreferences.getInstance();
-      parts.add('uid_present=' + (prefs.getString(AppConstants.keyUid)?.isNotEmpty ?? false).toString());
-      parts.add('users_id_present=' + (prefs.getString(AppConstants.keyUsersId)?.isNotEmpty ?? false).toString());
-      parts.add('branch_present=' + (prefs.getString(AppConstants.keyBranchId)?.isNotEmpty ?? false).toString());
-      parts.add('auth_session_present=' + (SupabaseConfig.client.auth.currentSession != null).toString());
-      for (final table in ['orders', 'order_items', 'ingredients', 'menu_ingredients', 'order_sync_outbox']) {
+      parts.add('uid_present=' +
+          (prefs.getString(AppConstants.keyUid)?.isNotEmpty ?? false)
+              .toString());
+      parts.add('users_id_present=' +
+          (prefs.getString(AppConstants.keyUsersId)?.isNotEmpty ?? false)
+              .toString());
+      parts.add('branch_present=' +
+          (prefs.getString(AppConstants.keyBranchId)?.isNotEmpty ?? false)
+              .toString());
+      parts.add('auth_session_present=' +
+          (SupabaseConfig.client.auth.currentSession != null).toString());
+      for (final table in [
+        'orders',
+        'order_items',
+        'ingredients',
+        'menu_ingredients',
+        'order_sync_outbox'
+      ]) {
         final cols = await db.rawQuery('PRAGMA table_info(' + table + ')');
-        parts.add(table + ':[' + cols.map((c) => c['name'].toString()).join(',') + ']');
+        parts.add(table +
+            ':[' +
+            cols.map((c) => c['name'].toString()).join(',') +
+            ']');
       }
       summary = parts.join('; ');
     } catch (probeError) {
-      summary = 'Tidak dapat dibaca: ' + CheckoutDiagnostic.sanitize(probeError.toString());
+      summary = 'Tidak dapat dibaca: ' +
+          CheckoutDiagnostic.sanitize(probeError.toString());
     }
     if (sessionEpoch != null && sessionEpoch != cartSessionEpoch) return;
     _lastCheckoutDiagnostic = CheckoutDiagnostic.fromError(error,
-      stage: stage, receiptSaved: receiptSaved, orderNumber: orderNumber,
-      databaseSummary: summary);
+        stage: stage,
+        receiptSaved: receiptSaved,
+        orderNumber: orderNumber,
+        databaseSummary: summary);
     debugPrint(_lastCheckoutDiagnostic!.report);
     try {
       final prefs = await SharedPreferences.getInstance();
       if (sessionEpoch != null && sessionEpoch != cartSessionEpoch) return;
-      await prefs.setString('last_checkout_diagnostic', _lastCheckoutDiagnostic!.report);
-    } catch (_) { /* Diagnostic persistence must not replace the original error. */ }
+      await prefs.setString(
+          'last_checkout_diagnostic', _lastCheckoutDiagnostic!.report);
+    } catch (_) {
+      /* Diagnostic persistence must not replace the original error. */
+    }
   }
 
   List<CartItem> _cartItems = [];
@@ -102,10 +180,10 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
 
   // ── Branch-level discount & rounding (dari branch settings dashboard) ─────
   bool _branchDiskonEnabled = false;
-  String _branchDiskonTipe = 'persen';   // 'persen' | 'nominal'
+  String _branchDiskonTipe = 'persen'; // 'persen' | 'nominal'
   double _branchDiskonNilai = 0;
   String _branchDiskonLabel = 'Diskon';
-  int _branchRounding = 0;              // 0=off, 100, 500, 1000
+  int _branchRounding = 0; // 0=off, 100, 500, 1000
 
   List<CartItem> get cartItems => List.unmodifiable(_cartItems);
   String get orderType => _orderType;
@@ -119,7 +197,8 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
   bool get isEmpty => _cartItems.isEmpty;
   bool get serviceChargeEnabled => _serviceChargeEnabled;
   double get serviceChargeFlat => _serviceChargeFlat;
-  double get serviceChargeAmount => _serviceChargeEnabled ? _serviceChargeFlat : 0;
+  double get serviceChargeAmount =>
+      _serviceChargeEnabled ? _serviceChargeFlat : 0;
 
   // ── Kalkulasi ─────────────────────────────────────────────────────────────
   double get subtotal => _cartItems.fold(0.0, (sum, i) => sum + i.subtotal);
@@ -195,7 +274,8 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
     _branchDiskonNilai = diskonNilai;
     _branchDiskonLabel = diskonLabel;
     _branchRounding = rounding;
-    debugPrint('🛒 [CASHIER] setBranchConfig tax=$taxEnabled(${taxPercent}%) sc=$scEnabled(Rp$scAmount) diskon=$diskonEnabled($diskonNilai$diskonTipe) round=$rounding');
+    debugPrint(
+        '🛒 [CASHIER] setBranchConfig tax=$taxEnabled(${taxPercent}%) sc=$scEnabled(Rp$scAmount) diskon=$diskonEnabled($diskonNilai$diskonTipe) round=$rounding');
     notifyListeners();
   }
 
@@ -221,9 +301,12 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
   }
 
   Future<void> addItem(MenuItemModel item) async {
+    if (_qrBill != null)
+      throw StateError('Tambahkan pesanan melalui QR sebelum tagihan dibuka.');
     final scope = await prepareSession();
     if (scope == null || !isActiveCartScope(scope)) return;
-    if (!_tableCartReady) throw StateError('Pesanan meja belum dimuat. Coba lagi.');
+    if (!_tableCartReady)
+      throw StateError('Pesanan meja belum dimuat. Coba lagi.');
     if (item.branchId?.isNotEmpty == true && item.branchId != scope.branchId) {
       throw StateError('Menu berasal dari cabang lain. Muat ulang menu.');
     }
@@ -238,13 +321,16 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
   }
 
   Future<void> removeItem(int menuItemId) async {
+    if (_qrBill != null) throw StateError('Tagihan QR sudah dikunci.');
     final scope = await prepareSession();
     if (scope == null || !isActiveCartScope(scope)) return;
-    if (!_tableCartReady) throw StateError('Pesanan meja belum dimuat. Coba lagi.');
+    if (!_tableCartReady)
+      throw StateError('Pesanan meja belum dimuat. Coba lagi.');
     final idx = _cartItems.indexWhere((c) => c.menuItem.id == menuItemId);
     if (idx >= 0) {
       if (_cartItems[idx].qty > 1) {
-        _cartItems[idx] = _cartItems[idx].copyWith(qty: _cartItems[idx].qty - 1);
+        _cartItems[idx] =
+            _cartItems[idx].copyWith(qty: _cartItems[idx].qty - 1);
       } else {
         _cartItems.removeAt(idx);
       }
@@ -254,18 +340,22 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
   }
 
   Future<void> deleteItem(int menuItemId) async {
+    if (_qrBill != null) throw StateError('Tagihan QR sudah dikunci.');
     final scope = await prepareSession();
     if (scope == null || !isActiveCartScope(scope)) return;
-    if (!_tableCartReady) throw StateError('Pesanan meja belum dimuat. Coba lagi.');
+    if (!_tableCartReady)
+      throw StateError('Pesanan meja belum dimuat. Coba lagi.');
     _cartItems.removeWhere((c) => c.menuItem.id == menuItemId);
     notifyListeners();
     await _autoSaveIfTableActive();
   }
 
   Future<void> setItemNote(int menuItemId, String note) async {
+    if (_qrBill != null) throw StateError('Tagihan QR sudah dikunci.');
     final scope = await prepareSession();
     if (scope == null || !isActiveCartScope(scope)) return;
-    if (!_tableCartReady) throw StateError('Pesanan meja belum dimuat. Coba lagi.');
+    if (!_tableCartReady)
+      throw StateError('Pesanan meja belum dimuat. Coba lagi.');
     final idx = _cartItems.indexWhere((c) => c.menuItem.id == menuItemId);
     if (idx >= 0) {
       _cartItems[idx] =
@@ -275,9 +365,20 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
     }
   }
 
-  void setOrderType(String type) { _orderType = type; notifyListeners(); }
-  void setTableNumber(String? t) { _tableNumber = t; notifyListeners(); }
-  void setOrderNote(String? n) { _orderNote = n; notifyListeners(); }
+  void setOrderType(String type) {
+    _orderType = type;
+    notifyListeners();
+  }
+
+  void setTableNumber(String? t) {
+    _tableNumber = t;
+    notifyListeners();
+  }
+
+  void setOrderNote(String? n) {
+    _orderNote = n;
+    notifyListeners();
+  }
 
   void setDiscount(String type, double value) {
     _discountType = type;
@@ -292,7 +393,11 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
   }
 
   void clearCart({bool detachTable = false}) {
-    if (detachTable) { _currentTableId = null; _tableCartReady = true; }
+    _qrBill = null;
+    if (detachTable) {
+      _currentTableId = null;
+      _tableCartReady = true;
+    }
     _tableLoadEpoch++;
     _cartItems = [];
     _orderType = 'dine_in';
@@ -306,7 +411,8 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
   Future<void> clearDraft() async {
     final scope = await prepareSession();
     if (scope == null || !isActiveCartScope(scope)) return;
-    if (!_tableCartReady) throw StateError('Pesanan meja belum dimuat. Coba lagi.');
+    if (!_tableCartReady)
+      throw StateError('Pesanan meja belum dimuat. Coba lagi.');
     clearCart();
     await _autoSaveIfTableActive();
   }
@@ -333,11 +439,11 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
       final itemsSnapshot = List<CartItem>.from(_cartItems);
       final itemsJson = itemsSnapshot
           .map((i) => {
-        'menu_name': i.menuItem.name,
-        'menu_price': i.menuItem.price,
-        'qty': i.qty,
-        'note': i.note,
-      })
+                'menu_name': i.menuItem.name,
+                'menu_price': i.menuItem.price,
+                'qty': i.qty,
+                'note': i.note,
+              })
           .toList();
 
       await _runTableRpc('save_table_cart', scope, {
@@ -346,7 +452,8 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
         'p_items': itemsJson,
       });
 
-      debugPrint('🪑 [CART] saved ${itemsJson.length} item ke meja $tableId (Supabase)');
+      debugPrint(
+          '🪑 [CART] saved ${itemsJson.length} item ke meja $tableId (Supabase)');
     } catch (e) {
       debugPrint('🪑 [CART] saveTableCart error: $e');
     }
@@ -354,7 +461,8 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
 
   /// Load cart TERSIMPAN milik meja [tableId] dari Supabase, reconstruct
   /// dari [allMenuItems] dengan pencocokan NAMA MENU (bukan ID).
-  Future<bool> loadTableCart(int tableId, List<MenuItemModel> allMenuItems) async {
+  Future<bool> loadTableCart(
+      int tableId, List<MenuItemModel> allMenuItems) async {
     final scope = await prepareSession();
     if (scope == null || !isActiveCartScope(scope)) return false;
     clearCart(detachTable: true);
@@ -368,7 +476,8 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
       requireCurrentSession(scope, epoch, prefs);
       final branchId = scope.branchId;
       if (branchId.isEmpty) {
-        debugPrint('🪑 [CART] loadTableCart: branchId kosong, cart dikosongkan');
+        debugPrint(
+            '🪑 [CART] loadTableCart: branchId kosong, cart dikosongkan');
         _cartItems = [];
         notifyListeners();
         return false;
@@ -379,7 +488,8 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
         'p_table_id': tableId,
       });
       final rows = (result as List?) ?? [];
-      debugPrint('🪑 [CART] loadTableCart: ${rows.length} baris dari Supabase untuk meja $tableId');
+      debugPrint(
+          '🪑 [CART] loadTableCart: ${rows.length} baris dari Supabase untuk meja $tableId');
 
       final loaded = <CartItem>[];
       for (final r in rows) {
@@ -403,7 +513,8 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
         } else {
           // Menu tidak ketemu di data lokal — buat MenuItemModel sementara
           // dari data yang tersimpan (nama + harga), supaya tetap tampil
-          debugPrint('🪑 [CART] menu "$menuName" tidak ada di allMenuItems, pakai data tersimpan');
+          debugPrint(
+              '🪑 [CART] menu "$menuName" tidak ada di allMenuItems, pakai data tersimpan');
           loaded.add(CartItem(
             menuItem: MenuItemModel(
               id: null,
@@ -418,14 +529,18 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
           ));
         }
       }
-      if (!isCurrentSession(scope, epoch, prefs) || tableEpoch != _tableLoadEpoch) return false;
+      if (!isCurrentSession(scope, epoch, prefs) ||
+          tableEpoch != _tableLoadEpoch) return false;
       _tableCartReady = true;
       _cartItems = loaded;
-      debugPrint('🪑 [CART] loaded ${_cartItems.length} item dari meja $tableId (Supabase)');
+      debugPrint(
+          '🪑 [CART] loaded ${_cartItems.length} item dari meja $tableId (Supabase)');
       notifyListeners();
       return isCurrentSession(scope, epoch, prefs);
     } catch (e) {
-      if (isActiveCartScope(scope) && epoch == cartSessionEpoch && tableEpoch == _tableLoadEpoch) {
+      if (isActiveCartScope(scope) &&
+          epoch == cartSessionEpoch &&
+          tableEpoch == _tableLoadEpoch) {
         _tableCartReady = false;
         notifyListeners();
       }
@@ -465,7 +580,7 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
       final map = <String, double>{};
       for (final row in result) {
         final nameKey =
-        (row['menu_name_key'] as String? ?? '').toLowerCase().trim();
+            (row['menu_name_key'] as String? ?? '').toLowerCase().trim();
         final sisa = (row['stock_sisa'] as num?)?.toDouble() ?? 0;
         if (nameKey.isNotEmpty) map[nameKey] = sisa;
       }
@@ -483,14 +598,20 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
   }) async {
     debugPrint('🌐 [ONLINE] checkoutOnline called platform=$platform');
     if (_cartItems.isEmpty) {
-      _lastCheckoutDiagnostic = CheckoutDiagnostic(code: 'CART_EMPTY', stage: 'cart',
-        detail: 'Keranjang kosong', timestamp: DateTime.now().toUtc().toIso8601String());
+      _lastCheckoutDiagnostic = CheckoutDiagnostic(
+          code: 'CART_EMPTY',
+          stage: 'cart',
+          detail: 'Keranjang kosong',
+          timestamp: DateTime.now().toUtc().toIso8601String());
       return null;
     }
     final lease = _checkoutGate.tryAcquire();
     if (lease == null) {
-      _lastCheckoutDiagnostic = CheckoutDiagnostic(code: 'CHECKOUT_BUSY', stage: 'guard',
-        detail: 'Checkout lain masih berjalan', timestamp: DateTime.now().toUtc().toIso8601String());
+      _lastCheckoutDiagnostic = CheckoutDiagnostic(
+          code: 'CHECKOUT_BUSY',
+          stage: 'guard',
+          detail: 'Checkout lain masih berjalan',
+          timestamp: DateTime.now().toUtc().toIso8601String());
       return null;
     }
     final requestEpoch = cartSessionEpoch;
@@ -502,22 +623,29 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
 
     try {
       final scope = await prepareSession();
-      if (scope == null || requestEpoch != cartSessionEpoch || scope.branchId.isEmpty || _cartItems.isEmpty) {
-        throw StateError('Pilih cabang dan isi ulang keranjang pada akun aktif.');
+      if (scope == null ||
+          requestEpoch != cartSessionEpoch ||
+          scope.branchId.isEmpty ||
+          _cartItems.isEmpty) {
+        throw StateError(
+            'Pilih cabang dan isi ulang keranjang pada akun aktif.');
       }
       final epoch = cartSessionEpoch;
       final prefs = await SharedPreferences.getInstance();
       requireCurrentSession(scope, epoch, prefs);
-      if (cashierId != scope.accountId || SupabaseConfig.client.auth.currentUser?.id != scope.accountId) {
+      if (cashierId != scope.accountId ||
+          SupabaseConfig.client.auth.currentUser?.id != scope.accountId) {
         throw StateError('Akun kasir telah berubah.');
       }
       final branchIdForOrder = scope.branchId;
       final receiptAccountId = scope.accountId;
 
       stage = 'ingredient_availability';
-      final availability = await StockAvailabilityService.load(branchIdForOrder);
+      final availability =
+          await StockAvailabilityService.load(branchIdForOrder);
       final problem = availability.validateCart(_cartItems
-          .map((c) => MapEntry<String, num>(c.menuItem.name, c.qty)).toList());
+          .map((c) => MapEntry<String, num>(c.menuItem.name, c.qty))
+          .toList());
       if (problem != null) {
         throw MenuStockHabisException(problem.key, detail: problem.value);
       }
@@ -541,7 +669,8 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
       stage = 'daily_sequence';
       int dailySeq = 1;
       try {
-        final seqRes = await SupabaseConfig.client.rpc('get_next_daily_seq', params: {
+        final seqRes =
+            await SupabaseConfig.client.rpc('get_next_daily_seq', params: {
           'p_branch_id': branchIdForOrder,
         }).timeout(const Duration(seconds: 4));
         dailySeq = (seqRes as int?) ?? 1;
@@ -551,7 +680,8 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
       }
 
       final kasirName = prefs.getString(AppConstants.keyKasirName) ??
-          prefs.getString(AppConstants.keyName) ?? '';
+          prefs.getString(AppConstants.keyName) ??
+          '';
 
       final orderMap = {
         'order_number': orderNumber,
@@ -596,17 +726,28 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
               branch_id, daily_seq, created_at, updated_at
             ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           ''', [
-            orderMap['order_number'], orderMap['table_number'],
-            orderMap['order_type'], orderMap['status'],
-            orderMap['subtotal'], orderMap['discount_type'],
-            orderMap['discount_value'], orderMap['discount_amount'],
-            orderMap['tax_percent'], orderMap['tax_amount'],
-            orderMap['service_charge_amount'], orderMap['total'],
-            orderMap['payment_method'], orderMap['paid_amount'],
-            orderMap['change_amount'], orderMap['cashier_id'],
-            orderMap['cashier_name'], orderMap['note'],
-            orderMap['branch_id'], orderMap['daily_seq'],
-            orderMap['created_at'], orderMap['updated_at'],
+            orderMap['order_number'],
+            orderMap['table_number'],
+            orderMap['order_type'],
+            orderMap['status'],
+            orderMap['subtotal'],
+            orderMap['discount_type'],
+            orderMap['discount_value'],
+            orderMap['discount_amount'],
+            orderMap['tax_percent'],
+            orderMap['tax_amount'],
+            orderMap['service_charge_amount'],
+            orderMap['total'],
+            orderMap['payment_method'],
+            orderMap['paid_amount'],
+            orderMap['change_amount'],
+            orderMap['cashier_id'],
+            orderMap['cashier_name'],
+            orderMap['note'],
+            orderMap['branch_id'],
+            orderMap['daily_seq'],
+            orderMap['created_at'],
+            orderMap['updated_at'],
           ]);
         } catch (e) {
           debugPrint('🌐 [ONLINE] INSERT with daily_seq failed, fallback: $e');
@@ -619,16 +760,27 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
               branch_id, created_at, updated_at
             ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           ''', [
-            orderMap['order_number'], orderMap['table_number'],
-            orderMap['order_type'], orderMap['status'],
-            orderMap['subtotal'], orderMap['discount_type'],
-            orderMap['discount_value'], orderMap['discount_amount'],
-            orderMap['tax_percent'], orderMap['tax_amount'],
-            orderMap['service_charge_amount'], orderMap['total'],
-            orderMap['payment_method'], orderMap['paid_amount'],
-            orderMap['change_amount'], orderMap['cashier_id'],
-            orderMap['cashier_name'], orderMap['note'],
-            orderMap['branch_id'], orderMap['created_at'], orderMap['updated_at'],
+            orderMap['order_number'],
+            orderMap['table_number'],
+            orderMap['order_type'],
+            orderMap['status'],
+            orderMap['subtotal'],
+            orderMap['discount_type'],
+            orderMap['discount_value'],
+            orderMap['discount_amount'],
+            orderMap['tax_percent'],
+            orderMap['tax_amount'],
+            orderMap['service_charge_amount'],
+            orderMap['total'],
+            orderMap['payment_method'],
+            orderMap['paid_amount'],
+            orderMap['change_amount'],
+            orderMap['cashier_id'],
+            orderMap['cashier_name'],
+            orderMap['note'],
+            orderMap['branch_id'],
+            orderMap['created_at'],
+            orderMap['updated_at'],
           ]);
         }
 
@@ -641,9 +793,15 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
             INSERT INTO order_items (order_id, menu_item_id, name, price, qty, qty_real, unit, note, subtotal)
             VALUES (?,?,?,?,?,?,?,?,?)
           ''', [
-            orderId, cartItem.menuItem.id, cartItem.menuItem.name,
-            cartItem.menuItem.price, cartItem.qty, cartItem.qty, cartItem.menuItem.unit,
-            cartItem.note, itemSubtotal,
+            orderId,
+            cartItem.menuItem.id,
+            cartItem.menuItem.name,
+            cartItem.menuItem.price,
+            cartItem.qty,
+            cartItem.qty,
+            cartItem.menuItem.unit,
+            cartItem.note,
+            itemSubtotal,
           ]);
 
           savedItems.add(OrderItemModel(
@@ -658,8 +816,8 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
           ));
 
           if (cartItem.menuItem.hasStock) {
-            final newStock =
-            (scopedStock[cartItem.menuItem.id]! - cartItem.qty).clamp(0, 99999);
+            final newStock = (scopedStock[cartItem.menuItem.id]! - cartItem.qty)
+                .clamp(0, 99999);
             final changed = await txn.update('menu_items', {'stock': newStock},
                 where: 'id = ? AND (branch_id = ? OR branch_id IS NULL)',
                 whereArgs: [cartItem.menuItem.id, scope.branchId]);
@@ -680,8 +838,8 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
             final ingId = ing['ingredient_id'] as int;
             final qtyUsed = (ing['quantity_used'] as num).toDouble();
             final currentStock = (ing['current_stock'] as num).toDouble();
-            final newIngStock =
-            (currentStock - qtyUsed * cartItem.qty).clamp(0.0, double.infinity);
+            final newIngStock = (currentStock - qtyUsed * cartItem.qty)
+                .clamp(0.0, double.infinity);
             await txn.rawUpdate(
               'UPDATE ingredients SET current_stock = ?, updated_at = ? WHERE id = ?',
               [newIngStock, DateTime.now().toIso8601String(), ingId],
@@ -689,14 +847,20 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
           }
         }
         stage = 'local_outbox';
-        await OfflineOrderSyncService.enqueue(txn,
+        await OfflineOrderSyncService.enqueue(
+          txn,
           orderId: orderId,
           accountId: receiptAccountId,
           order: orderMap,
-          items: savedItems.map((item) => <String, dynamic>{
-            'item_name': item.name, 'quantity': item.qty,
-            'price': item.price, 'subtotal': item.subtotal, 'unit': item.unit,
-          }).toList(),
+          items: savedItems
+              .map((item) => <String, dynamic>{
+                    'item_name': item.name,
+                    'quantity': item.qty,
+                    'price': item.price,
+                    'subtotal': item.subtotal,
+                    'unit': item.unit,
+                  })
+              .toList(),
         );
         requireCurrentSession(scope, epoch, prefs);
       });
@@ -716,7 +880,9 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
       return result;
     } catch (e, stackTrace) {
       await _captureCheckoutDiagnostic(e, stage,
-        receiptSaved: receiptSaved, orderNumber: savedOrderNumber, sessionEpoch: requestEpoch);
+          receiptSaved: receiptSaved,
+          orderNumber: savedOrderNumber,
+          sessionEpoch: requestEpoch);
       debugPrint('🌐 [ONLINE] ❌ ERROR: $e\n$stackTrace');
       notifyListeners();
       return null;
@@ -728,27 +894,43 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
 
   static String platformLabel(String platform) {
     switch (platform) {
-      case 'gojek':    return 'GoFood';
-      case 'grab':     return 'GrabFood';
-      case 'shopee':   return 'ShopeeFood';
-      case 'internal': return 'Digunakan Pribadi';
-      case 'rusak':    return 'Barang Rusak';
-      default: return platform;
+      case 'gojek':
+        return 'GoFood';
+      case 'grab':
+        return 'GrabFood';
+      case 'shopee':
+        return 'ShopeeFood';
+      case 'internal':
+        return 'Digunakan Pribadi';
+      case 'rusak':
+        return 'Barang Rusak';
+      default:
+        return platform;
     }
   }
 
   static String paymentMethodLabel(String method) {
     switch (method) {
-      case 'cash':            return 'Tunai';
-      case 'qris':            return 'QRIS';
-      case 'transfer':        return 'Transfer';
-      case 'card':            return 'Kartu';
-      case 'online_gojek':    return 'Online (GoFood)';
-      case 'online_grab':     return 'Online (GrabFood)';
-      case 'online_shopee':   return 'Online (ShopeeFood)';
-      case 'online_internal': return 'Digunakan Pribadi';
-      case 'online_rusak':    return 'Barang Rusak';
-      default: return method;
+      case 'cash':
+        return 'Tunai';
+      case 'qris':
+        return 'QRIS';
+      case 'transfer':
+        return 'Transfer';
+      case 'card':
+        return 'Kartu';
+      case 'online_gojek':
+        return 'Online (GoFood)';
+      case 'online_grab':
+        return 'Online (GrabFood)';
+      case 'online_shopee':
+        return 'Online (ShopeeFood)';
+      case 'online_internal':
+        return 'Digunakan Pribadi';
+      case 'online_rusak':
+        return 'Barang Rusak';
+      default:
+        return method;
     }
   }
 
@@ -760,14 +942,20 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
     CheckoutMember? member,
   }) async {
     if (_cartItems.isEmpty) {
-      _lastCheckoutDiagnostic = CheckoutDiagnostic(code: 'CART_EMPTY', stage: 'cart',
-        detail: 'Keranjang kosong', timestamp: DateTime.now().toUtc().toIso8601String());
+      _lastCheckoutDiagnostic = CheckoutDiagnostic(
+          code: 'CART_EMPTY',
+          stage: 'cart',
+          detail: 'Keranjang kosong',
+          timestamp: DateTime.now().toUtc().toIso8601String());
       return null;
     }
     final lease = _checkoutGate.tryAcquire();
     if (lease == null) {
-      _lastCheckoutDiagnostic = CheckoutDiagnostic(code: 'CHECKOUT_BUSY', stage: 'guard',
-        detail: 'Checkout lain masih berjalan', timestamp: DateTime.now().toUtc().toIso8601String());
+      _lastCheckoutDiagnostic = CheckoutDiagnostic(
+          code: 'CHECKOUT_BUSY',
+          stage: 'guard',
+          detail: 'Checkout lain masih berjalan',
+          timestamp: DateTime.now().toUtc().toIso8601String());
       debugPrint('checkout: ⚠️ Checkout sedang berjalan, request diabaikan');
       return null;
     }
@@ -780,20 +968,28 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
 
     debugPrint('🛒 [CHECKOUT] START ─────────────────────');
     debugPrint('🛒 [CHECKOUT] items=${_cartItems.length}');
-    debugPrint('🛒 [CHECKOUT] subtotal=$subtotal discountManual=${discountAmount} discountBranch=${branchDiscountAmount}');
-    debugPrint('🛒 [CHECKOUT] total=$total tax=$taxAmount sc=$serviceChargeAmount rounding=$_branchRounding');
+    debugPrint(
+        '🛒 [CHECKOUT] subtotal=$subtotal discountManual=${discountAmount} discountBranch=${branchDiscountAmount}');
+    debugPrint(
+        '🛒 [CHECKOUT] total=$total tax=$taxAmount sc=$serviceChargeAmount rounding=$_branchRounding');
     debugPrint('🛒 [CHECKOUT] payment=$paymentMethod paid=$paidAmount');
 
     try {
       final scope = await prepareSession();
-      if (scope == null || requestEpoch != cartSessionEpoch || scope.branchId.isEmpty || _cartItems.isEmpty) {
-        throw StateError('Pilih cabang dan isi ulang keranjang pada akun aktif.');
+      if (scope == null ||
+          requestEpoch != cartSessionEpoch ||
+          scope.branchId.isEmpty ||
+          _cartItems.isEmpty) {
+        throw StateError(
+            'Pilih cabang dan isi ulang keranjang pada akun aktif.');
       }
       final epoch = cartSessionEpoch;
       final prefs = await SharedPreferences.getInstance();
       requireCurrentSession(scope, epoch, prefs);
-      if (member != null && !member.matches(scope, epoch)) throw StateError('Member harus diverifikasi pada sesi aktif.');
-      if (cashierId != scope.accountId || SupabaseConfig.client.auth.currentUser?.id != scope.accountId) {
+      if (member != null && !member.matches(scope, epoch))
+        throw StateError('Member harus diverifikasi pada sesi aktif.');
+      if (cashierId != scope.accountId ||
+          SupabaseConfig.client.auth.currentUser?.id != scope.accountId) {
         throw StateError('Akun kasir telah berubah.');
       }
       final branchIdForOrder = scope.branchId;
@@ -807,14 +1003,19 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
               where: 'id = ? AND (branch_id = ? OR branch_id IS NULL)',
               whereArgs: [cartItem.menuItem.id, scope.branchId]);
           requireCurrentSession(scope, epoch, prefs);
-          if (rows.isEmpty) throw StateError('Menu tidak tersedia di cabang aktif.');
+          if (rows.isEmpty)
+            throw StateError('Menu tidak tersedia di cabang aktif.');
           if (rows.isNotEmpty) {
             final currentStock = (rows.first['stock'] as num?)?.toDouble() ?? 0;
             if (currentStock < cartItem.qty) {
-              _lastCheckoutDiagnostic = CheckoutDiagnostic(code: 'LOCAL_STOCK_SHORT',
-                stage: stage, detail: 'Sisa lokal ' + currentStock.toString() +
-                  ', kebutuhan ' + cartItem.qty.toString(),
-                timestamp: DateTime.now().toUtc().toIso8601String());
+              _lastCheckoutDiagnostic = CheckoutDiagnostic(
+                  code: 'LOCAL_STOCK_SHORT',
+                  stage: stage,
+                  detail: 'Sisa lokal ' +
+                      currentStock.toString() +
+                      ', kebutuhan ' +
+                      cartItem.qty.toString(),
+                  timestamp: DateTime.now().toUtc().toIso8601String());
               notifyListeners();
               return null;
             }
@@ -826,7 +1027,8 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
       // Saat offline gunakan snapshot hari ini dikurangi penjualan lokal.
       if (branchIdForOrder.isNotEmpty) {
         stage = 'ingredient_availability';
-        final avail = await StockAvailabilityService.load(branchIdForOrder);
+        final avail = await StockAvailabilityService.load(branchIdForOrder,
+            qrBill: _qrBill);
         final problem = avail.validateCart(_cartItems
             .map((c) => MapEntry<String, num>(c.menuItem.name, c.qty))
             .toList());
@@ -842,7 +1044,8 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
       final h = offset.inHours.abs().toString().padLeft(2, '0');
       final m = (offset.inMinutes.abs() % 60).toString().padLeft(2, '0');
       final now = '${nowLocal.toIso8601String().substring(0, 23)}$sign$h:$m';
-      final orderNumber = AppUtils.generateOrderNumber();
+      final orderNumber = _qrBill?['receipt_number']?.toString() ??
+          AppUtils.generateOrderNumber();
       savedOrderNumber = orderNumber;
       final change = paymentMethod == 'cash'
           ? (paidAmount - total).clamp(0.0, double.infinity)
@@ -862,7 +1065,8 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
       stage = 'daily_sequence';
       int dailySeq = 1;
       try {
-        final seqRes = await SupabaseConfig.client.rpc('get_next_daily_seq', params: {
+        final seqRes =
+            await SupabaseConfig.client.rpc('get_next_daily_seq', params: {
           'p_branch_id': branchIdForOrder,
         }).timeout(const Duration(seconds: 4));
         dailySeq = (seqRes as int?) ?? 1;
@@ -872,12 +1076,16 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
       }
 
       final kasirName = (await SharedPreferences.getInstance())
-          .getString(AppConstants.keyKasirName) ??
+              .getString(AppConstants.keyKasirName) ??
           (await SharedPreferences.getInstance())
               .getString(AppConstants.keyName) ??
           '';
 
       final orderMap = {
+        if (_qrBill != null) ...{
+          'qr_visit_id': _qrBill!['visit_id'],
+          'qr_bill_token': _qrBill!['bill_token']
+        },
         'order_number': orderNumber,
         'table_number': _tableNumber,
         'order_type': _orderType,
@@ -921,19 +1129,31 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
               branch_id, daily_seq, created_at, updated_at
             ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           ''', [
-            orderMap['order_number'], orderMap['table_number'],
-            orderMap['order_type'], orderMap['status'],
-            orderMap['subtotal'], orderMap['discount_type'],
-            orderMap['discount_value'], orderMap['discount_amount'],
-            orderMap['tax_percent'], orderMap['tax_amount'],
-            orderMap['service_charge_amount'], orderMap['total'],
-            orderMap['payment_method'], orderMap['paid_amount'],
-            orderMap['change_amount'], orderMap['cashier_id'],
-            orderMap['note'], orderMap['branch_id'],
-            orderMap['daily_seq'], orderMap['created_at'], orderMap['updated_at'],
+            orderMap['order_number'],
+            orderMap['table_number'],
+            orderMap['order_type'],
+            orderMap['status'],
+            orderMap['subtotal'],
+            orderMap['discount_type'],
+            orderMap['discount_value'],
+            orderMap['discount_amount'],
+            orderMap['tax_percent'],
+            orderMap['tax_amount'],
+            orderMap['service_charge_amount'],
+            orderMap['total'],
+            orderMap['payment_method'],
+            orderMap['paid_amount'],
+            orderMap['change_amount'],
+            orderMap['cashier_id'],
+            orderMap['note'],
+            orderMap['branch_id'],
+            orderMap['daily_seq'],
+            orderMap['created_at'],
+            orderMap['updated_at'],
           ]);
         } catch (e) {
-          debugPrint('🛒 [CHECKOUT] INSERT with daily_seq failed, fallback: $e');
+          debugPrint(
+              '🛒 [CHECKOUT] INSERT with daily_seq failed, fallback: $e');
           orderId = await txn.rawInsert('''
             INSERT INTO orders (
               order_number, table_number, order_type, status,
@@ -943,16 +1163,26 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
               branch_id, created_at, updated_at
             ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           ''', [
-            orderMap['order_number'], orderMap['table_number'],
-            orderMap['order_type'], orderMap['status'],
-            orderMap['subtotal'], orderMap['discount_type'],
-            orderMap['discount_value'], orderMap['discount_amount'],
-            orderMap['tax_percent'], orderMap['tax_amount'],
-            orderMap['service_charge_amount'], orderMap['total'],
-            orderMap['payment_method'], orderMap['paid_amount'],
-            orderMap['change_amount'], orderMap['cashier_id'],
-            orderMap['note'], orderMap['branch_id'],
-            orderMap['created_at'], orderMap['updated_at'],
+            orderMap['order_number'],
+            orderMap['table_number'],
+            orderMap['order_type'],
+            orderMap['status'],
+            orderMap['subtotal'],
+            orderMap['discount_type'],
+            orderMap['discount_value'],
+            orderMap['discount_amount'],
+            orderMap['tax_percent'],
+            orderMap['tax_amount'],
+            orderMap['service_charge_amount'],
+            orderMap['total'],
+            orderMap['payment_method'],
+            orderMap['paid_amount'],
+            orderMap['change_amount'],
+            orderMap['cashier_id'],
+            orderMap['note'],
+            orderMap['branch_id'],
+            orderMap['created_at'],
+            orderMap['updated_at'],
           ]);
         }
 
@@ -965,9 +1195,15 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
             INSERT INTO order_items (order_id, menu_item_id, name, price, qty, qty_real, unit, note, subtotal)
             VALUES (?,?,?,?,?,?,?,?,?)
           ''', [
-            orderId, cartItem.menuItem.id, cartItem.menuItem.name,
-            cartItem.menuItem.price, cartItem.qty, cartItem.qty, cartItem.menuItem.unit,
-            cartItem.note, itemSubtotal,
+            orderId,
+            cartItem.menuItem.id,
+            cartItem.menuItem.name,
+            cartItem.menuItem.price,
+            cartItem.qty,
+            cartItem.qty,
+            cartItem.menuItem.unit,
+            cartItem.note,
+            itemSubtotal,
           ]);
 
           savedItems.add(OrderItemModel(
@@ -982,8 +1218,8 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
           ));
 
           if (cartItem.menuItem.hasStock) {
-            final newStock =
-            (scopedStock[cartItem.menuItem.id]! - cartItem.qty).clamp(0, 99999);
+            final newStock = (scopedStock[cartItem.menuItem.id]! - cartItem.qty)
+                .clamp(0, 99999);
             final changed = await txn.update('menu_items', {'stock': newStock},
                 where: 'id = ? AND (branch_id = ? OR branch_id IS NULL)',
                 whereArgs: [cartItem.menuItem.id, scope.branchId]);
@@ -1015,15 +1251,21 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
           }
         }
         stage = 'local_outbox';
-        await OfflineOrderSyncService.enqueue(txn,
+        await OfflineOrderSyncService.enqueue(
+          txn,
           orderId: orderId,
           accountId: receiptAccountId,
           order: orderMap,
           member: member,
-          items: savedItems.map((item) => <String, dynamic>{
-            'item_name': item.name, 'quantity': item.qty,
-            'price': item.price, 'subtotal': item.subtotal, 'unit': item.unit,
-          }).toList(),
+          items: savedItems
+              .map((item) => <String, dynamic>{
+                    'item_name': item.name,
+                    'quantity': item.qty,
+                    'price': item.price,
+                    'subtotal': item.subtotal,
+                    'unit': item.unit,
+                  })
+              .toList(),
         );
         requireCurrentSession(scope, epoch, prefs);
       });
@@ -1050,7 +1292,9 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
       rethrow;
     } catch (e, stackTrace) {
       await _captureCheckoutDiagnostic(e, stage,
-        receiptSaved: receiptSaved, orderNumber: savedOrderNumber, sessionEpoch: requestEpoch);
+          receiptSaved: receiptSaved,
+          orderNumber: savedOrderNumber,
+          sessionEpoch: requestEpoch);
       debugPrint('🛒 [CHECKOUT] ❌ ERROR: $e\n$stackTrace');
       notifyListeners();
       return null;
@@ -1059,13 +1303,12 @@ class CashierProvider extends ChangeNotifier with SessionBoundCart {
       notifyListeners();
     }
   }
-
-
 }
 
 class MenuStockHabisException implements Exception {
   final String menuName;
-  final String? detail; // mis. "Bahan Habis" / "Stok nasi putih tidak cukup (...)"
+  final String?
+      detail; // mis. "Bahan Habis" / "Stok nasi putih tidak cukup (...)"
   const MenuStockHabisException(this.menuName, {this.detail});
   @override
   String toString() => detail != null

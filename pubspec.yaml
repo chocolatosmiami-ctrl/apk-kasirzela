@@ -24,6 +24,7 @@ dependencies:
   connectivity_plus: ^6.0.3
   http: ^1.2.0
   url_launcher: ^6.3.0
+  qr: 3.0.2
 
   # Bluetooth Thermal Printer
   print_bluetooth_thermal: ^1.1.9

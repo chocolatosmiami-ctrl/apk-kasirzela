@@ -1,3 +1,4 @@
+import '../../../qr_ordering/qr_orders_screen.dart';
 import '../../../../core/theme/minimal_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -42,14 +43,24 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
   Widget build(BuildContext context) {
     final prov = context.watch<TableProvider>();
     final auth = context.watch<AuthProvider>();
-    final canManageTables = const {'kasir', 'owner', 'manajer', 'admin', 'superadmin'}
-        .contains(auth.currentUser?.role.trim().toLowerCase());
+    final canManageTables = const {
+      'kasir',
+      'owner',
+      'manajer',
+      'admin',
+      'superadmin'
+    }.contains(auth.currentUser?.role.trim().toLowerCase());
 
     return Scaffold(
       backgroundColor: AppTheme.onAction,
       appBar: AppBar(
         title: const Text('Manajemen Meja'),
         actions: [
+          IconButton(
+              tooltip: 'Pesanan QR meja',
+              icon: const Icon(Icons.qr_code_scanner),
+              onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const QrOrdersScreen()))),
           if (canManageTables)
             TextButton.icon(
               icon: const Icon(Icons.add),
@@ -68,9 +79,11 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             : Column(
                 children: [
                   if (prov.lastError != null)
-                    Padding(padding: const EdgeInsets.all(12),
-                      child: Text(prov.lastError!, style: const TextStyle(
-                        color: AppTheme.warningInk, fontSize: 12))),
+                    Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Text(prov.lastError!,
+                            style: const TextStyle(
+                                color: AppTheme.warningInk, fontSize: 12))),
                   // ── Summary bar ───────────────────────────────────
                   Container(
                     color: AppTheme.onAction,
@@ -78,7 +91,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _summaryChip('Kosong', prov.emptyCount, AppTheme.primary),
+                        _summaryChip(
+                            'Kosong', prov.emptyCount, AppTheme.primary),
                         _summaryChip(
                           'Terisi',
                           prov.occupiedCount,
@@ -116,7 +130,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: sel ? AppTheme.primaryRed : AppTheme.onAction,
+                              color:
+                                  sel ? AppTheme.primaryRed : AppTheme.onAction,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: sel
@@ -131,9 +146,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                     ? AppTheme.onAction
                                     : AppTheme.textSecondary,
                                 fontSize: 14,
-                                fontWeight: sel
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
+                                fontWeight:
+                                    sel ? FontWeight.w600 : FontWeight.normal,
                               ),
                             ),
                           ),
@@ -148,20 +162,20 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                     child: prov.loading
                         ? const Center(child: CircularProgressIndicator())
                         : prov.tables.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'Belum ada meja',
-                              style: TextStyle(color: AppTheme.textSecondary),
-                            ),
-                          )
-                        : GridView.builder(
-                            physics: const ClampingScrollPhysics(),
-                            padding: const EdgeInsets.all(12),
-                            gridDelegate:
-                                SliverGridDelegateWithMaxCrossAxisExtent(
+                            ? const Center(
+                                child: Text(
+                                  'Belum ada meja',
+                                  style:
+                                      TextStyle(color: AppTheme.textSecondary),
+                                ),
+                              )
+                            : GridView.builder(
+                                physics: const ClampingScrollPhysics(),
+                                padding: const EdgeInsets.all(12),
+                                gridDelegate:
+                                    SliverGridDelegateWithMaxCrossAxisExtent(
                                   maxCrossAxisExtent: 240,
-                                  mainAxisExtent:
-                                      210 +
+                                  mainAxisExtent: 210 +
                                       (MediaQuery.textScalerOf(
                                                 context,
                                               ).scale(14) -
@@ -170,17 +184,19 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
                                   crossAxisSpacing: 12,
                                   mainAxisSpacing: 12,
                                 ),
-                            itemCount: prov.tables.length,
-                            itemBuilder: (_, i) => _TableCard(
-                              table: prov.tables[i],
-                              onTap: () => _onTableTap(prov.tables[i]),
-                              onEdit: canManageTables
-                                  ? () => _showTableEditor(table: prov.tables[i]) : null,
-                              onLongPress: canManageTables
-                                  ? () => _showTableOptions(prov.tables[i])
-                                  : null,
-                            ),
-                          ),
+                                itemCount: prov.tables.length,
+                                itemBuilder: (_, i) => _TableCard(
+                                  table: prov.tables[i],
+                                  onTap: () => _onTableTap(prov.tables[i]),
+                                  onEdit: canManageTables
+                                      ? () => _showTableEditor(
+                                          table: prov.tables[i])
+                                      : null,
+                                  onLongPress: canManageTables
+                                      ? () => _showTableOptions(prov.tables[i])
+                                      : null,
+                                ),
+                              ),
                   ),
                 ],
               ),
@@ -202,7 +218,7 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
- scrollable: true,
+        scrollable: true,
         title: Text('Dudukkan Tamu - ${table.name}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -235,12 +251,12 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             onPressed: () async {
               Navigator.pop(context);
               await context.read<TableProvider>().updateStatus(
-                table,
-                TableStatus.occupied,
-                customerName: nameCtrl.text.trim().isEmpty
-                    ? null
-                    : nameCtrl.text.trim(),
-              );
+                    table,
+                    TableStatus.occupied,
+                    customerName: nameCtrl.text.trim().isEmpty
+                        ? null
+                        : nameCtrl.text.trim(),
+                  );
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -330,9 +346,9 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
             onTap: () async {
               Navigator.pop(context);
               await context.read<TableProvider>().updateStatus(
-                table,
-                TableStatus.bill,
-              );
+                    table,
+                    TableStatus.bill,
+                  );
             },
           ),
           ListTile(
@@ -385,9 +401,8 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
 
   void _showMoveTableDialog(TableModel fromTable) {
     final prov = context.read<TableProvider>();
-    final emptyTables = prov.allTables
-        .where((t) => t.isEmpty && t.id != fromTable.id)
-        .toList();
+    final emptyTables =
+        prov.allTables.where((t) => t.isEmpty && t.id != fromTable.id).toList();
 
     showDialog(
       context: context,
@@ -445,45 +460,64 @@ class _TableManagementScreenState extends State<TableManagementScreen> {
   }
 
   Future<void> _showTableEditor({TableModel? table}) async {
-    final saved = await showDialog<bool>(context: context, barrierDismissible: false,
-      builder: (_) => TableEditorDialog(table: table));
+    final saved = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => TableEditorDialog(table: table));
     if (mounted && saved == true) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Meja berhasil disimpan ke server.'), backgroundColor: AppTheme.primary));
+          content: Text('Meja berhasil disimpan ke server.'),
+          backgroundColor: AppTheme.primary));
     }
   }
 
   void _showTableOptions(TableModel table) {
-    showModalBottomSheet(context: context, builder: (sheetContext) => SafeArea(
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        ListTile(leading: const Icon(Icons.edit_outlined), title: const Text('Edit meja'),
-          onTap: () { Navigator.pop(sheetContext); _showTableEditor(table: table); }),
-        if (context.read<AuthProvider>().isAdmin && table.isEmpty)
-          ListTile(leading: const Icon(Icons.delete_outline, color: AppTheme.danger),
-            title: Text('Hapus ${table.name}'), onTap: () async {
-              Navigator.pop(sheetContext);
-              final provider = context.read<TableProvider>();
-              final ok = await provider.deleteTable(table.id!);
-              if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text(ok ? 'Meja dihapus dari server.' : provider.lastError ?? 'Gagal menghapus meja.')));
-            }),
-      ]),
-    ));
+    showModalBottomSheet(
+        context: context,
+        builder: (sheetContext) => SafeArea(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                ListTile(
+                    leading: const Icon(Icons.edit_outlined),
+                    title: const Text('Edit meja'),
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _showTableEditor(table: table);
+                    }),
+                if (context.read<AuthProvider>().isAdmin && table.isEmpty)
+                  ListTile(
+                      leading: const Icon(Icons.delete_outline,
+                          color: AppTheme.danger),
+                      title: Text('Hapus ${table.name}'),
+                      onTap: () async {
+                        Navigator.pop(sheetContext);
+                        final provider = context.read<TableProvider>();
+                        final ok = await provider.deleteTable(table.id!);
+                        if (mounted)
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text(ok
+                                  ? 'Meja dihapus dari server.'
+                                  : provider.lastError ??
+                                      'Gagal menghapus meja.')));
+                      }),
+              ]),
+            ));
   }
 
   Widget _summaryChip(String label, int count, Color color) => Column(
-    children: [
-      Text(
-        '$count',
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: color,
-        ),
-      ),
-      Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-    ],
-  );
+        children: [
+          Text(
+            '$count',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(label,
+              style:
+                  const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+        ],
+      );
 }
 
 // ── Table Card Widget ──────────────────────────────────────
@@ -543,9 +577,12 @@ class _TableCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (onEdit != null)
-              Align(alignment: Alignment.topRight, child: IconButton(
-                tooltip: 'Edit nama meja', onPressed: onEdit,
-                icon: const Icon(Icons.edit_outlined, size: 18))),
+              Align(
+                  alignment: Alignment.topRight,
+                  child: IconButton(
+                      tooltip: 'Edit nama meja',
+                      onPressed: onEdit,
+                      icon: const Icon(Icons.edit_outlined, size: 18))),
             Icon(
               Icons.table_restaurant_outlined,
               size: 28,

@@ -1,7 +1,7 @@
 name: Build new backend debug APK
 on:
   push:
-    branches: [build/self-hosted-debug]
+    branches: [build/self-hosted-debug, feat/qr-table-ordering]
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,11 +26,17 @@ jobs:
           echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
       - name: Resolve locked packages
         run: flutter pub get --enforce-lockfile
+      - name: Analyze QR integration
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings lib/features/qr_ordering lib/features/cashier/presentation/providers/cashier_provider.dart lib/features/cashier/presentation/screens/cashier_screen.dart lib/features/inventory/data/stock_availability_service.dart lib/core/services/order_outbox.dart
+      - name: Verify receipt retry contracts
+        run: |
+          dart test/order_outbox_test.dart
+          dart test/qr_checkout_test.dart
       - name: Build debug APK
-        run: flutter build apk --debug --build-name=1.0.3 --build-number=4 --dart-define-from-file=config/backend-public.json
+        run: flutter build apk --debug --build-name=1.0.4 --build-number=5 --dart-define-from-file=config/backend-public.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: kasir-zela-new-backend-debug
+          name: kasir-zela-qr-ordering-debug
           path: build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 7

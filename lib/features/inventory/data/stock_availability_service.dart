@@ -21,7 +21,7 @@ class StockAvailability {
   final String? unavailableReason;
   final Map<String, double> stock; // bahanKey → sisa
   final Map<String, List<MapEntry<String, double>>>
-  comps; // menuKey → [(bahanKey, qty)]
+      comps; // menuKey → [(bahanKey, qty)]
 
   const StockAvailability({
     required this.enforced,
@@ -35,7 +35,8 @@ class StockAvailability {
   static String keyOf(String s) => s.toLowerCase().trim();
 
   int? portionsFor(String menuName) => !enforced || unavailableReason != null
-      ? null : recipePortions(menuName, stock, comps);
+      ? null
+      : recipePortions(menuName, stock, comps);
 
   /// Alasan menu dikunci (teks overlay), atau null kalau boleh dijual.
   String? reasonFor(String menuName) {
@@ -82,7 +83,9 @@ class StockAvailability {
       }
       final k = keyOf(it.key);
       final qty = it.value.toDouble();
-      if (stock.containsKey(k) && !(comps[k] ?? const <MapEntry<String, double>>[]).any((c) => c.key == k)) {
+      if (stock.containsKey(k) &&
+          !(comps[k] ?? const <MapEntry<String, double>>[])
+              .any((c) => c.key == k)) {
         need[k] = (need[k] ?? 0) + qty;
         usedBy.putIfAbsent(k, () => it.key);
       }
@@ -124,11 +127,14 @@ class StockAvailabilityService {
     final stock = Map<String, double>.from(snapshot.stock);
     // Include acknowledgements since this snapshot as well: otherwise an online
     // sale followed by disconnect would resurrect stock in the offline cache.
-    final pending = await OfflineOrderSyncService.pendingItems(branchId, capturedAt);
+    final pending =
+        await OfflineOrderSyncService.pendingItems(branchId, capturedAt);
     for (final item in pending) {
       final key = StockAvailability.keyOf(item['item_name'].toString());
       final qty = (item['quantity'] as num).toDouble();
-      if (stock.containsKey(key) && !(snapshot.comps[key] ?? const <MapEntry<String, double>>[]).any((c) => c.key == key)) {
+      if (stock.containsKey(key) &&
+          !(snapshot.comps[key] ?? const <MapEntry<String, double>>[])
+              .any((c) => c.key == key)) {
         stock[key] = stock[key]! - qty;
       }
       for (final comp
@@ -145,19 +151,29 @@ class StockAvailabilityService {
   }
 
   /// Reuse only today's branch-scoped snapshot and subtract unacknowledged sales.
-  static Future<StockAvailability> load(String branchId) async {
-    if (branchId.isEmpty) return const StockAvailability(
-      enforced: true, stock: {}, comps: {},
-      unavailableReason: 'Pilih cabang\nuntuk memuat stok');
+  static Future<StockAvailability> load(String branchId,
+      {Map<String, dynamic>? qrBill}) async {
+    if (branchId.isEmpty)
+      return const StockAvailability(
+          enforced: true,
+          stock: {},
+          comps: {},
+          unavailableReason: 'Pilih cabang\nuntuk memuat stok');
     final capturedAt = DateTime.now().toUtc().toIso8601String();
     try {
       final client = SupabaseConfig.client;
       final dynamic stockRes = await client
-          .rpc('get_menu_stock_today', params: {'p_branch_id': branchId})
+          .rpc(qrBill == null ? 'get_menu_stock_today' : 'get_qr_bill_stock_v1',
+              params: qrBill == null
+                  ? {'p_branch_id': branchId}
+                  : {
+                      'p_visit_id': qrBill['visit_id'],
+                      'p_bill_token': qrBill['bill_token']
+                    })
           .timeout(const Duration(seconds: 4));
-      final dynamic compRes = await client
-          .rpc('get_menu_components', params: {'p_branch_id': branchId})
-          .timeout(const Duration(seconds: 4));
+      final dynamic compRes = await client.rpc('get_menu_components', params: {
+        'p_branch_id': branchId
+      }).timeout(const Duration(seconds: 4));
       if (stockRes is! List || compRes is! List)
         throw StateError('Respons stok tidak valid');
 
@@ -192,6 +208,8 @@ class StockAvailabilityService {
         stock: stock,
         comps: comps,
       );
+      if (qrBill != null)
+        return await _reservePending(snapshot, branchId, capturedAt);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(
         'ingredient_snapshot_$branchId',
@@ -209,6 +227,13 @@ class StockAvailabilityService {
       );
       return await _reservePending(snapshot, branchId, capturedAt);
     } catch (e) {
+      if (qrBill != null)
+        return const StockAvailability(
+            enforced: true,
+            stock: {},
+            comps: {},
+            unavailableReason:
+                'Hubungkan internet untuk memverifikasi tagihan QR');
       debugPrint('📦 [AVAIL] load error → local snapshot: $e');
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString('ingredient_snapshot_$branchId');

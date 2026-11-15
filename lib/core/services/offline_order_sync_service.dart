@@ -15,9 +15,8 @@ class OfflineOrderSyncService extends ChangeNotifier {
   static final instance = OfflineOrderSyncService._();
   OfflineOrderSyncService._() {
     _outbox = OrderOutbox(_SqliteOrderOutbox(), (payload) async {
-      final result = await SupabaseConfig.client
-          .rpc(checkoutSyncRpc(payload), params: {'p_payload': payload})
-          .timeout(const Duration(seconds: 15));
+      final result = await SupabaseConfig.client.rpc(checkoutSyncRpc(payload),
+          params: {'p_payload': payload}).timeout(const Duration(seconds: 15));
       if (result is! Map) throw StateError('Respons sinkronisasi tidak valid');
       return Map<String, dynamic>.from(result);
     });
@@ -26,13 +25,14 @@ class OfflineOrderSyncService extends ChangeNotifier {
   Timer? _retryTimer;
   Future<OutboxRun>? _active;
   bool syncing = false;
-  int stockRevision = 0; // Changes only after server acknowledgement, never for an idle scan.
+  int stockRevision =
+      0; // Changes only after server acknowledgement, never for an idle scan.
   int pendingCount = 0;
   String? lastError;
   bool needsLogin = false;
   String _statusAccountId = '';
-  bool get statusMatchesAccount => _statusAccountId ==
-      (SupabaseConfig.client.auth.currentUser?.id ?? '');
+  bool get statusMatchesAccount =>
+      _statusAccountId == (SupabaseConfig.client.auth.currentUser?.id ?? '');
 
   void start() {
     _retryTimer ??= Timer.periodic(const Duration(seconds: 30), (_) => kick());
@@ -106,10 +106,11 @@ class OfflineOrderSyncService extends ChangeNotifier {
       if (rows.isNotEmpty) ...rows.single,
       'local_saved': rows.isNotEmpty,
       'session_present': uid.isNotEmpty,
-      'same_account': rows.isNotEmpty && uid.isNotEmpty && rows.single['account_id'] == uid,
+      'same_account':
+          rows.isNotEmpty && uid.isNotEmpty && rows.single['account_id'] == uid,
       'project': Uri.parse(SupabaseConfig.supabaseUrl).host,
       'last_error': CheckoutDiagnostic.sanitize(
-        rows.isEmpty ? '' : rows.single['last_error']?.toString() ?? ''),
+          rows.isEmpty ? '' : rows.single['last_error']?.toString() ?? ''),
     };
   }
 
@@ -127,8 +128,9 @@ class OfflineOrderSyncService extends ChangeNotifier {
         'Identitas akun/cabang kosong. Login dan pilih cabang dahulu.',
       );
     }
-    if (member != null && (member.scope.accountId != accountId ||
-        member.scope.branchId != order['branch_id'])) {
+    if (member != null &&
+        (member.scope.accountId != accountId ||
+            member.scope.branchId != order['branch_id'])) {
       throw StateError('Sesi member tidak sesuai receipt.');
     }
     final payload = <String, dynamic>{
@@ -147,9 +149,14 @@ class OfflineOrderSyncService extends ChangeNotifier {
       'paid_amount': order['paid_amount'],
       'change_amount': order['change_amount'],
       'notes': order['note'],
+      if (order['qr_visit_id'] != null) ...{
+        'qr_visit_id': order['qr_visit_id'],
+        'qr_bill_token': order['qr_bill_token'],
+      },
       'items': items,
       if (member != null) ...{
-        'order_type': order['order_type'], ...member.toPayload(),
+        'order_type': order['order_type'],
+        ...member.toPayload(),
       },
     };
     await txn.insert('order_sync_outbox', {
