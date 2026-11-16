@@ -188,7 +188,7 @@ class _QrOrdersScreenState extends State<QrOrdersScreen>
                           painter: _QrPainter(result['url'].toString()))),
                   const SizedBox(height: 16),
                   const Text(
-                      'Pelanggan memindai QR ini. Buka meja sebelum menerima pesanan.'),
+                      'Pelanggan memindai QR ini dan mengirim pesanan. Kunjungan dibuat otomatis; pembayaran menutup kunjungan.'),
                   const SizedBox(height: 12),
                   SelectableText(result['url'].toString())
                 ]),
@@ -251,7 +251,7 @@ class _QrOrdersScreenState extends State<QrOrdersScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                              '${table['name']} — ${table['state'] == 'open' ? 'Menerima pesanan' : table['state'] == 'closing' ? 'Menunggu pembayaran' : 'Belum dibuka'}',
+                              '${table['name']} — ${table['state'] == 'open' ? 'Menerima pesanan' : table['state'] == 'closing' ? 'Menunggu pembayaran' : 'Siap menerima pesanan otomatis'}',
                               style: Theme.of(context).textTheme.titleMedium),
                           Wrap(spacing: 8, children: [
                             TextButton.icon(
@@ -260,20 +260,6 @@ class _QrOrdersScreenState extends State<QrOrdersScreen>
                                     : () => run(() => showQr(table)),
                                 icon: const Icon(Icons.qr_code),
                                 label: const Text('QR meja')),
-                            if (table['state'] == 'closed')
-                              TextButton(
-                                  onPressed: working
-                                      ? null
-                                      : () => run(() async {
-                                            if (OfflineOrderSyncService
-                                                    .instance.pendingCount >
-                                                0)
-                                              throw StateError(
-                                                  'Sinkronkan transaksi tersimpan sebelum membuka meja QR.');
-                                            await api.call('open',
-                                                {'table_id': table['id']});
-                                          }),
-                                  child: const Text('Buka meja')),
                             if (table['visit_id'] != null) ...[
                               TextButton(
                                   onPressed: working
@@ -289,7 +275,7 @@ class _QrOrdersScreenState extends State<QrOrdersScreen>
                                                 'visit_id': table['visit_id']
                                               });
                                             }),
-                                    child: const Text('Tutup meja kosong'))
+                                    child: const Text('Batalkan kunjungan kosong'))
                             ]
                           ])
                         ])),

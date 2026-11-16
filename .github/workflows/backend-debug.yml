@@ -33,7 +33,7 @@ jobs:
           dart test/order_outbox_test.dart
           dart test/qr_checkout_test.dart
       - name: Build debug APK
-        run: flutter build apk --debug --build-name=1.0.4 --build-number=5 --dart-define-from-file=config/backend-public.json
+        run: flutter build apk --debug --build-name=1.0.5 --build-number=6 --dart-define-from-file=config/backend-public.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: kasir-zela-qr-ordering-debug
